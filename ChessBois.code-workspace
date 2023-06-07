@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "three-d-template"
+		},
+		{
+			"name": "start-tracing",
+			"path": "../../../../CodeEnv/REPOS/start-tracing"
+		},
+		{
+			"path": "/Users/calebyates/.env"
+		}
+	]
+}
