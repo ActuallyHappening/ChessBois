@@ -47,7 +47,7 @@ fn chess_piece_interactions(
 				info!("Clicked on {:?}", chess_square);
 				// commands.entity(entity).despawn_recursive();
 				*bg = random_colour().into();
-				(*style).size = style.size / 2.;
+				style.size = style.size / 2.;
 			}
 			_ => {}
 		}
