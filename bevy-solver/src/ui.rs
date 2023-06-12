@@ -36,17 +36,18 @@ fn random_colour() -> Color {
 
 fn chess_piece_interactions(
 	mut commands: Commands,
-	mut interaction_query: Query<(&Interaction, &ChessSquare, &mut BackgroundColor), (Changed<Interaction>)>,
+	mut interaction_query: Query<(&Interaction, &ChessSquare, &mut BackgroundColor, &mut Style), Changed<Interaction>>,
 ) {
 	// info!("chess_piece_interactions");
 	// info!("interaction_query: {:?}", interaction_query.iter().count());
-	for (interaction, chess_square, mut bg) in interaction_query.iter_mut() {
+	for (interaction, chess_square, mut bg, mut style) in interaction_query.iter_mut() {
 		// info!("Interaction: {:?} on {:?}", interaction, chess_square);
 		match *interaction {
 			Interaction::Clicked => {
 				info!("Clicked on {:?}", chess_square);
 				// commands.entity(entity).despawn_recursive();
 				*bg = random_colour().into();
+				(*style).size = style.size / 2.;
 			}
 			_ => {}
 		}
