@@ -1,0 +1,5 @@
+[serve]
+open = true
+
+# You must manually specify this
+no-default-features = true

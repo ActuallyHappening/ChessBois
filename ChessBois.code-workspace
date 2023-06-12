@@ -12,5 +12,10 @@
 		{
 			"path": "/Users/calebyates/.env"
 		}
-	]
+	],
+	"settings": {
+		"cSpell.words": [
+			"Fullscreen"
+		]
+	}
 }

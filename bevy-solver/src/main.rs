@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, window::WindowMode};
 use tracing::{debug, info};
 
 fn main() {
@@ -11,7 +11,23 @@ fn main() {
 		// startup systems
 		.add_startup_system(hello_world)
 		// plugins
-		.add_plugins(DefaultPlugins)
+		.add_plugins(DefaultPlugins.set(WindowPlugin {
+			primary_window: Some(
+				Window {
+				title: "Bevy Solver".to_string(),
+
+				// #[cfg(not(target_arch = "wasm32"))]
+				// mode: WindowMode::BorderlessFullscreen,
+
+				#[cfg(target_arch = "wasm32")]
+				// auto-expands parent
+				fit_canvas_to_parent: true,
+
+				..default()
+			}, // Default::default()
+			),
+			..default()
+		}))
 		.add_plugin(bevy_solver::GraphicsPlugin)
 		// run
 		.run();
@@ -20,5 +36,5 @@ fn main() {
 }
 
 fn hello_world() {
-	println!("Hello world!")
+	warn!("Hello world!")
 }

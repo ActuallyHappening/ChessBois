@@ -1,12 +1,18 @@
-use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
+use bevy::{prelude::*, sprite::MaterialMesh2dBundle, window::PrimaryWindow};
+
+pub mod ui;
 
 pub struct GraphicsPlugin;
 
 impl Plugin for GraphicsPlugin {
 	fn build(&self, app: &mut App) {
 		app
-			.add_startup_system(setup_cam)
-			.add_startup_system(setup_shapes);
+			.add_startup_system(setup)
+			.add_startup_system(setup_shapes)
+// .add_system(my_cursor_system)
+.add_plugin(ui::UiPlugin)
+			// for formatting	
+			;
 	}
 }
 
@@ -16,8 +22,19 @@ pub struct ChessSquare {
 	pub y: u8,
 }
 
-fn setup_cam(mut commands: Commands) {
-	commands.spawn(Camera2dBundle::default());
+#[derive(Component, Debug)]
+struct MainCamera;
+
+fn setup(mut commands: Commands) {
+	commands.spawn((Camera2dBundle::default(), MainCamera));
+}
+
+fn get_random_colour() -> Color {
+	Color::rgb(
+		(rand::random::<f32>() * 255.) as f32,
+		(rand::random::<f32>() * 255.) as f32,
+		(rand::random::<f32>() * 255.) as f32,
+	)
 }
 
 fn setup_shapes(
@@ -63,35 +80,26 @@ fn setup_shapes(
 	});
 }
 
-// #[cfg(target_arch = "wasm32")]
-// pub fn init_debug_tools() {
-// 	use tracing_subscriber::fmt::format::Pretty;
-// 	use tracing_subscriber::fmt::time::UtcTime;
-// 	use tracing_subscriber::prelude::*;
-// 	use tracing_web::{performance_layer, MakeConsoleWriter};
+// fn my_cursor_system(
+// 	// need to get window dimensions
+// 	window_q: Query<&Window, With<PrimaryWindow>>,
 
-// 	console_error_panic_hook::set_once();
+// 	// query to get camera transform
+// 	camera_q: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
+// ) {
+// 	// get the camera info and transform
+// 	// assuming there is exactly one main camera entity, so query::single() is OK
+// 	let (camera, camera_transform) = camera_q.single();
 
-// 	let fmt_layer = tracing_subscriber::fmt::layer()
-// 			.with_ansi(false) // Only partially supported across browsers
-// 			.with_timer(UtcTime::rfc_3339()) // std::time is not available in browsers
-// 			.with_writer(MakeConsoleWriter) // write events to the console
-// 			// .with_span_events(FmtSpan::ACTIVE)
-// 		;
-// 	let perf_layer = performance_layer().with_details_from_fields(Pretty::default());
+// 	let window: &Window = window_q.single();
 
-// 	tracing_subscriber::registry()
-// 		.with(fmt_layer)
-// 		.with(perf_layer)
-// 		.init(); // Install these as subscribers to tracing events
-// }
-
-// #[cfg(not(target_arch = "wasm32"))]
-// pub fn init_debug_tools() {
-// 	use tracing::Level;
-// 	use tracing_subscriber::FmtSubscriber;
-// 	let subscriber = FmtSubscriber::builder()
-// 		.with_max_level(Level::INFO)
-// 		.finish();
-// 	tracing::subscriber::set_global_default(subscriber).unwrap();
+// 	// check if the cursor is inside the window and get its position
+// 	// then, ask bevy to convert into world coordinates, and truncate to discard Z
+// 	if let Some(world_position) = window
+// 		.cursor_position()
+// 		.and_then(|cursor| camera.viewport_to_world(camera_transform, cursor))
+// 		.map(|ray| ray.origin.truncate())
+// 	{
+// 		eprintln!("World coords: {}/{}", world_position.x, world_position.y);
+// 	}
 // }
