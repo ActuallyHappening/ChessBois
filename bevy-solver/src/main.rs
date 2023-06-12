@@ -10,8 +10,9 @@ fn main() {
 	App::new()
 		// startup systems
 		.add_startup_system(hello_world)
-		// plugins	
+		// plugins
 		.add_plugins(DefaultPlugins)
+		.add_plugin(bevy_solver::GraphicsPlugin)
 		// run
 		.run();
 

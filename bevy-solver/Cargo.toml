@@ -3,6 +3,13 @@ name = "bevy_solver"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+crate-type = ["rlib", "dylib"]
+
+[features]
+default = ["dylink"]
+dylink = ["bevy/dynamic_linking"]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 # Enable a small amount of optimization in debug mode
@@ -14,7 +21,7 @@ opt-level = 1
 opt-level = 3
 
 [dependencies]
-bevy = { version = "0.10.1", features = ["dynamic_linking"] }
+bevy = { version = "0.10.1" }
 serde = { version = "1.0.163", features = ["derive"] }
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.17", features = ["time"] }
