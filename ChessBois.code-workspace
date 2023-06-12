@@ -3,15 +3,15 @@
 		{
 			"path": "bevy-solver"
 		},
-		// {
-		// 	"path": "."
-		// },
-		// {
-		// 	"path": "../../../../CodeEnv/REPOS/start-tracing"
-		// },
-		// {
-		// 	"path": "/Users/calebyates/.env"
-		// }
+		{
+			"path": "."
+		},
+		{
+			"path": "../../../../CodeEnv/REPOS/start-tracing"
+		},
+		{
+			"path": "/Users/calebyates/.env"
+		}
 	],
 	"settings": {
 		"cSpell.words": [

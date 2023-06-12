@@ -67,7 +67,7 @@ pub fn build_ui(commands: &mut Commands, asset_server: &Res<AssetServer>) -> Ent
 			..default()
 		})
 		.with_children(|parent| {
-			for y in 0..=8 {
+			for y in (1..=8).rev() {
 				parent
 					.spawn(NodeBundle {
 						style: Style {
@@ -81,7 +81,7 @@ pub fn build_ui(commands: &mut Commands, asset_server: &Res<AssetServer>) -> Ent
 						..default()
 					})
 					.with_children(|parent| {
-						for x in 0..=8 {
+						for x in 1..=8 {
 							parent.spawn((
 								ButtonBundle {
 									style: Style {
