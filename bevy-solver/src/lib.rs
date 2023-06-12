@@ -16,11 +16,7 @@ impl Plugin for GraphicsPlugin {
 	}
 }
 
-#[derive(Component, Debug)]
-pub struct ChessSquare {
-	pub x: u8,
-	pub y: u8,
-}
+
 
 #[derive(Component, Debug)]
 struct MainCamera;

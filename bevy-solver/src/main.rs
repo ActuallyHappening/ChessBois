@@ -1,5 +1,6 @@
 use bevy::{prelude::*, window::WindowMode};
 use tracing::{debug, info};
+use std::any::TypeId;
 
 fn main() {
 	// Bevy's default plugins include setting up logging
@@ -29,6 +30,8 @@ fn main() {
 			..default()
 		}))
 		.add_plugin(bevy_solver::GraphicsPlugin)
+		// .add_plugin(bevy_inspector_egui::quick::WorldInspectorPlugin::new())
+		.add_plugin(bevy_editor_pls::prelude::EditorPlugin::default())
 		// run
 		.run();
 
