@@ -1,5 +1,7 @@
 use std::fmt;
 
+use tracing::info;
+
 const SIZE: usize = 8;
 const SHORT_STEP: i32 = 1;
 const LONG_STEP: i32 = 2;
@@ -114,10 +116,10 @@ fn main() {
 	msrc_q11::init_debug_tools();
 
 	let (x, y) = (3, 1);
-	println!("Board size: {}", SIZE);
-	println!("Starting position: ({}, {})", x, y);
+	info!("Board size: {}", SIZE);
+	info!("Starting position: ({}, {})", x, y);
 	match knights_tour(x, y) {
-		Some(b) => print!("{}", b),
-		None => println!("Fail!"),
+		Some(b) => info!("Board: \n{}", b),
+		None => info!("Fail!"),
 	}
 }
