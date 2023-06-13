@@ -114,6 +114,8 @@ fn div(style: Style, color: Color) -> NodeBundle {
 	}
 }
 
+fn text()
+
 /// Adds rows (and chess squares into those rows) directly onto the parent
 fn build_grid(
 	parent: &mut ChildBuilder,
