@@ -21,7 +21,7 @@ const MOVES: [(i32, i32); 8] = [
 	(-LONG_STEP, -SHORT_STEP),
 	(-SHORT_STEP, -LONG_STEP),
 	(SHORT_STEP, -LONG_STEP),
-	(LONG_STEP, -SHORT_STEP)
+	(LONG_STEP, -SHORT_STEP),
 ];
 
 #[derive(Copy, Clone, Eq, PartialEq, PartialOrd, Ord)]

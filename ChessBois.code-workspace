@@ -9,9 +9,9 @@
 		// {
 		// 	"path": "../../../../CodeEnv/REPOS/start-tracing"
 		// },
-		// {
-		// 	"path": "/Users/calebyates/.env"
-		// }
+		{
+			"path": "/Users/calebyates/.env"
+		}
 	],
 	"settings": {
 		"cSpell.words": [
