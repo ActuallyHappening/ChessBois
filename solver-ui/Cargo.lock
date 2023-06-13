@@ -940,6 +940,7 @@ dependencies = [
  "bevy_editor_pls",
  "console_error_panic_hook",
  "getrandom",
+ "once_cell",
  "rand",
  "serde",
  "tracing",

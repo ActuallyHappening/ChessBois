@@ -1,247 +1,139 @@
 use bevy::prelude::*;
 
-const CHESS_PIECE_HOVER_BG_COLOUR: Color = Color::rgb(0.5, 0.5, 0.5);
-const CHESS_PIECE_SELECTED_BG_COLOUR: Color = Color::rgb(0.25, 0.25, 0.25);
-const CHESS_PIECE_BG_COLOUR: Color = Color::rgb(0.0, 0.0, 0.0);
-
-pub struct UiPlugin;
-impl Plugin for UiPlugin {
+pub struct ChessBoardPlugin;
+impl Plugin for ChessBoardPlugin {
 	fn build(&self, app: &mut App) {
 		app
-			.add_startup_system(spawn_ui)
-			// .add_system(despawn_ui)
-			.add_system(hover_chess_piece)
-			.add_state::<UiState>()
-			// for formatting
-			.register_type::<ChessSquare>();
+			// types
+    .register_type::<ChessSquare>()
+    .register_type::<ChessEngineState>()
+		// states
+    .add_state::<ChessEngineState>()
+		// systems
+    .add_startup_system(setup)
+    .add_startup_system(spawn_chess_board)
+		// for formatting
+		;
 	}
 }
 
-#[derive(Component, Debug, Reflect)]
-pub struct ChessSquare {
+fn setup(mut commands: Commands) {
+	commands.spawn(Camera2dBundle::default());
+}
+
+#[derive(Component, Copy, Clone, Debug, Reflect)]
+struct ChessSquare {
 	pub x: u8,
 	pub y: u8,
 }
 
-#[derive(States, Default, Debug, Clone, Eq, PartialEq, Hash)]
-enum UiState {
+#[derive(Debug, Reflect, Clone)]
+struct ChessBoardProperties {
+	width: u8,
+	height: u8,
+}
+
+#[derive(States, Default, Reflect, Debug, Clone, Eq, PartialEq, Hash)]
+enum ChessEngineState {
 	#[default]
 	PickStartingPosition,
 
-	ViewPaths,
+	ViewValidPaths,
 }
 
-#[derive(Resource, Debug, Clone)]
-struct ChessBoard {
-	starting_position: Entity,
-}
-
-#[derive(Component, Debug)]
-struct Header {
-}
-
-impl ChessBoard {
-	pub fn new_with_starting_position(entity: Entity, commands: &mut Commands) -> Self {
-		let this = Self {
-			starting_position: entity,
-		};
-		commands.insert_resource(this.clone());
-		this
-	}
-}
-
-pub fn spawn_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
-	let main_menu_entity = build_ui(&mut commands, &asset_server);
-}
-
-fn random_colour() -> Color {
-	Color::rgb(
-		rand::random::<f32>(),
-		rand::random::<f32>(),
-		rand::random::<f32>(),
-	)
-}
-
-// pub fn despawn_ui(commands: &mut Commands, main_menu_entity: Entity) {
-// 	commands.despawn_recursive(main_menu_entity);
-// }
-
-fn header_select_start_pos(
-	mut commands: Commands,
-	header_q: Q,
-) {
-	
-}
-
-fn hover_chess_piece(
-	mut commands: Commands,
-	mut interaction_query: Query<
-		(&Interaction, &ChessSquare, &mut BackgroundColor),
-		Changed<Interaction>,
-	>,
-) {
-	for (interaction, chess_square, mut bg) in interaction_query.iter_mut() {
-		match *interaction {
-			Interaction::Clicked => {
-				info!("Clicked on {:?}", chess_square);
-			}
-			Interaction::Hovered => {
-				*bg = CHESS_PIECE_HOVER_BG_COLOUR.into();
-			}
-			Interaction::None => {
-				*bg = CHESS_PIECE_BG_COLOUR.into();
-			}
-		}
-	}
-}
-
-pub fn build_ui(commands: &mut Commands, asset_server: &Res<AssetServer>) -> Entity {
-	let mut header = None;
-	let main_menu_entity = commands
-		.spawn(NodeBundle {
-			style: Style {
-				size: Size::new(Val::Percent(100.), Val::Percent(100.)),
-				justify_content: JustifyContent::Center,
-				align_items: AlignItems::Center,
-				flex_direction: FlexDirection::Column,
-				..default()
-			},
-			background_color: Color::WHITE.into(),
-			..default()
-		})
+fn spawn_chess_board(mut commands: Commands) {
+	commands.spawn((
+		div(Style {
+			// justify_content: JustifyContent::FlexStart,
+			// align_items: AlignItems::FlexStart,
+			..EXPAND_STYLE.clone()
+		}, Color::WHITE),
+		Name::new("Screen UI"),
+	))
+	// for formatting
+	.with_children(|parent| {
+		parent.spawn((
+			div(EXPAND_STYLE.clone(), Color::GRAY),
+			Name::new("Chess Board Space"),
+		))
 		.with_children(|parent| {
-			parent
-				.spawn(NodeBundle {
-					style: Style {
-						size: Size::new(Val::Percent(100.), Val::Px(50.)),
-						justify_content: JustifyContent::Center,
-						align_items: AlignItems::Center,
-						flex_shrink: 8.,
-						..default()
-					},
-					background_color: Color::RED.into(),
-					..default()
-				})
-				.with_children(|p| header = Some(build_header_ui(p, asset_server)));
-			// build_header_ui(parent);
-			parent
-				.spawn(NodeBundle {
-					style: Style {
-						justify_content: JustifyContent::Center,
-						align_items: AlignItems::Center,
-						flex_direction: FlexDirection::Column,
-						..default()
-					},
-					..default()
-				})
-				.with_children(|parent| {
-					for y in (1..=8).rev() {
-						parent
-							.spawn(NodeBundle {
-								style: Style {
-									// size: Size::new(Val::Px(200.), Val::Px(200.)),
-									justify_content: JustifyContent::Center,
-									// arrange items horizontally, instead of vertically
-									align_items: AlignItems::Center,
-									// flex_direction: FlexDirection::RowReverse,
-									..default()
-								},
-								..default()
-							})
-							.with_children(|parent| {
-								for x in 1..=8 {
-									parent.spawn((
-										ButtonBundle {
-											style: Style {
-												size: Size::new(Val::Px(50.), Val::Px(50.)),
-												justify_content: JustifyContent::Center,
-												align_items: AlignItems::Center,
-												margin: UiRect::all(Val::Px(2.)),
-												..default()
-											},
-											background_color: CHESS_PIECE_BG_COLOUR.into(),
-											..default()
-										},
-										ChessSquare { x, y },
-									));
-								}
-							});
-					}
-				});
-		})
-		.id();
-
-	if let Some(header) = header {
-		commands.insert_resource(Header { header });
-	}
-
-	main_menu_entity
+			build_grid(parent, &ChessBoardProperties { width: 8, height: 8 }, |parent, square| {
+				parent.spawn((div(CELL_STYLE.clone(), Color::GREEN), square, Name::new(format!("Cell ({}, {})", square.x, square.y))));
+			});
+		});
+	})
+	// for formatting
+	;
 }
 
-pub fn build_header_ui(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) -> Entity {
-	parent.spawn((
-		TextBundle::from_section(
-			"Header",
-			TextStyle {
-				font_size: 25.0,
-				color: Color::GREEN,
-				font: asset_server.load("fonts/FiraMono-Medium.ttf"),
-			},
-		),
-		Name::new("Header Text"),
-	)).id()
+static EXPAND_STYLE: Style = Style {
+	size: Size::new(Val::Percent(100.), Val::Percent(100.)),
+	justify_content: JustifyContent::Center,
+	align_items: AlignItems::Center,
+	..Style::DEFAULT
+};
 
-	// parent
-	// 	.spawn(ButtonBundle {
-	// 		style: Style {
-	// 			size: Size::new(Val::Px(150.), Val::Px(65.)),
-	// 			// horizontally center child text
-	// 			justify_content: JustifyContent::Center,
-	// 			// vertically center child text
-	// 			align_items: AlignItems::Center,
-	// 			..default()
-	// 		},
-	// 		background_color: Color::DARK_GRAY.into(),
-	// 		..default()
-	// 	})
-	// 	.with_children(|parent| {
-	// 		parent.spawn(TextBundle::from_section(
-	// 			"Play",
-	// 			TextStyle {
-	// 				font_size: 40.0,
-	// 				color: Color::GREEN,
-	// 				..default()
-	// 			},
-	// 		));
-	// 	});
-	// parent
-	// 	.spawn(NodeBundle {
-	// 		style: Style {
-	// 			size: Size::width(Val::Percent(100.0)),
-	// 			..default()
-	// 		},
-	// 		background_color: Color::rgb(0.15, 0.15, 0.15).into(),
-	// 		..default()
-	// 	})
-	// 	.with_children(|parent| {
-	// 		// text
-	// 		parent.spawn((
-	// 			TextBundle::from_section(
-	// 				"Text Example",
-	// 				TextStyle {
-	// 					font: asset_server.load("fonts/FiraMono-Medium.ttf"),
-	// 					font_size: 30.0,
-	// 					color: Color::WHITE,
-	// 				},
-	// 			)
-	// 			.with_style(Style {
-	// 				margin: UiRect::all(Val::Px(5.0)),
-	// 				..default()
-	// 			}),
-	// 			// Because this is a distinct label widget and
-	// 			// not button/list item text, this is necessary
-	// 			// for accessibility to treat the text accordingly.
-	// 			Label,
-	// 		));
-	// 	});
+const CELL_MARGIN: f32 = 10.;
+/// Style applied directly to row
+static ROW_STYLE: Style = Style {
+	flex_direction: FlexDirection::Row,
+	// margin: UiRect::all(Val::Px(10.)),
+	margin: UiRect {
+		top: Val::Px(CELL_MARGIN),
+		bottom: Val::Px(CELL_MARGIN),
+		..UiRect::DEFAULT
+	},
+	..EXPAND_STYLE
+};
+
+/// Style for container of rows
+static ROWS_STYLE: Style = Style {
+	flex_direction: FlexDirection::Column,
+	// margin: UiRect::all(Val::Px(10.)),
+	..EXPAND_STYLE
+};
+
+const CELL_SIZE: f32 = 10.;
+static CELL_STYLE: Style = Style {
+	min_size: Size::new(Val::Px(CELL_SIZE), Val::Px(CELL_SIZE)),
+	aspect_ratio: Some(1.),
+	// margin: UiRect::all(Val::Px(CELL_SIZE / 2.)),
+	margin: UiRect {
+		left: Val::Px(CELL_MARGIN),
+		right: Val::Px(CELL_MARGIN),
+		..UiRect::DEFAULT
+	},
+	..EXPAND_STYLE
+};
+
+fn div(style: Style, color: Color) -> NodeBundle {
+	NodeBundle {
+		style,
+		background_color: color.into(),
+		..default()
+	}
+}
+
+/// Adds rows (and chess squares into those rows) directly onto the parent
+fn build_grid(
+	parent: &mut ChildBuilder,
+	properties: &ChessBoardProperties,
+	mut builder: impl FnMut(&mut ChildBuilder, ChessSquare),
+) {
+	parent
+		.spawn((div(ROWS_STYLE.clone(), Color::BLACK), Name::from("Grid Parent (contains rows)")))
+		.with_children(|parent| {
+			for row in (0..properties.height).rev() {
+				parent
+					.spawn((
+						div(ROW_STYLE.clone(), Color::WHITE),
+						Name::new(format!("Row {}", row)),
+					))
+					.with_children(|parent| {
+						for column in 0..properties.width {
+							builder(parent, ChessSquare { x: column, y: row });
+						}
+					});
+			};
+		});
 }
