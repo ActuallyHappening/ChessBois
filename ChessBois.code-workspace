@@ -6,9 +6,6 @@
 		{
 			"path": "."
 		},
-		// {
-		// 	"path": "../../../../CodeEnv/REPOS/start-tracing"
-		// },
 		{
 			"path": "/Users/calebyates/.env"
 		}

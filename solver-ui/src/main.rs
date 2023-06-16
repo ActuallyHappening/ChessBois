@@ -33,7 +33,7 @@ fn main() {
 		.add_plugin(bevy_solver::ui::ChessBoardPlugin);
 
 	// .add_plugin(bevy_inspector_egui::quick::WorldInspectorPlugin::new())
-	#[cfg(not(target_arch = "wasm32"))]
+	#[cfg(feature = "editor")]
 	app.add_plugin(bevy_editor_pls::prelude::EditorPlugin::default());
 	// run
 	app.run();
