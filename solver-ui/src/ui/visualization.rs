@@ -1,8 +1,7 @@
 use super::*;
 use bevy::{
-	input::keyboard,
 	prelude::*,
-	sprite::{Anchor, MaterialMesh2dBundle},
+	sprite::Anchor,
 };
 
 pub struct VisualizationStatePlugin;

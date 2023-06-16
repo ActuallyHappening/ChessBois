@@ -936,7 +936,6 @@ name = "bevy_solver"
 version = "0.1.0"
 dependencies = [
  "bevy",
- "bevy-inspector-egui",
  "bevy_editor_pls",
  "console_error_panic_hook",
  "getrandom",

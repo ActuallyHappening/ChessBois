@@ -2,6 +2,9 @@
 bw = "b --target wasm32-unknown-unknown"
 cw = "c --target wasm32-unknown-unknown"
 
+# [build]
+# rustc-wrapper = "/opt/homebrew/bin/sccache"
+
 # Add the contents of this file to `config.toml` to enable "fast build" configuration. Please read the notes below.
 
 # NOTE: For maximum performance, build using a nightly compiler

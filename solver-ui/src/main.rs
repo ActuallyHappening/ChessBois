@@ -7,7 +7,8 @@ fn main() {
 
 	info!("Bevy app running ...");
 
-	App::new()
+	let mut app = App::new();
+	app
 		// startup systems
 		.add_startup_system(hello_world)
 		// plugins
@@ -29,11 +30,13 @@ fn main() {
 			..default()
 		}))
 		// .add_plugin(bevy_solver::GraphicsPlugin)
-		.add_plugin(bevy_solver::ui::ChessBoardPlugin)
-		// .add_plugin(bevy_inspector_egui::quick::WorldInspectorPlugin::new())
-		.add_plugin(bevy_editor_pls::prelude::EditorPlugin::default())
-		// run
-		.run();
+		.add_plugin(bevy_solver::ui::ChessBoardPlugin);
+
+	// .add_plugin(bevy_inspector_egui::quick::WorldInspectorPlugin::new())
+	#[cfg(not(target_arch = "wasm32"))]
+	app.add_plugin(bevy_editor_pls::prelude::EditorPlugin::default());
+	// run
+	app.run();
 
 	debug!("Bevy app finished.");
 }
