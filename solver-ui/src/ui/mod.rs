@@ -1,0 +1,72 @@
+#![allow(clippy::type_complexity)]
+
+mod selection;
+use crate::ui::selection::*;
+
+use bevy::prelude::*;
+
+pub struct ChessBoardPlugin;
+impl Plugin for ChessBoardPlugin {
+	fn build(&self, app: &mut App) {
+		app
+			// types
+    .register_type::<ChessEngineState>()
+		// states
+    .add_state::<ChessEngineState>()
+		// systems
+    .add_startup_system(setup)
+		// ui state plugin
+		.add_plugin(UiStatePlugin)
+		// -
+		;
+	}
+}
+
+fn setup(mut commands: Commands) {
+	commands.spawn(Camera2dBundle::default());
+}
+
+
+#[derive(States, Default, Reflect, Debug, Clone, Eq, PartialEq, Hash)]
+enum ChessEngineState {
+	#[default]
+	PickStartingPosition,
+
+	ViewValidPaths,
+}
+
+
+// fn div(style: Style, color: Color) -> NodeBundle {
+// 	NodeBundle {
+// 		style,
+// 		background_color: color.into(),
+// 		..default()
+// 	}
+// }
+
+// /// Adds rows (and chess squares into those rows) directly onto the parent
+// fn build_grid(
+// 	parent: &mut ChildBuilder,
+// 	properties: &ChessBoardProperties,
+// 	mut builder: impl FnMut(&mut ChildBuilder, ChessSquare),
+// ) {
+// 	parent
+// 		.spawn((
+// 			div(COLUMNS.clone(), Color::BLACK),
+// 			Name::from("Grid Parent (contains rows)"),
+// 		))
+// 		.with_children(|parent| {
+// 			for row in (0..properties.height).rev() {
+// 				parent
+// 					.spawn((
+// 						div(ROWS.clone(), Color::WHITE),
+// 						Name::new(format!("Row {}", row)),
+// 					))
+// 					.with_children(|parent| {
+// 						for column in 0..properties.width {
+// 							builder(parent, ChessSquare { x: column, y: row });
+// 						}
+// 					});
+// 			}
+// 		});
+// }
