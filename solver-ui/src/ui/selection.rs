@@ -192,6 +192,7 @@ fn spawn_chess_board(mut commands: Commands, ass: Res<AssetServer>) {
 					NodeBundle {
 						// background_color: Color::WHITE.into(),
 						style: Style {
+							flex_direction: FlexDirection::Column,
 							..EXPAND_STYLE.clone()
 						},
 						visibility: Visibility::Hidden,
@@ -201,13 +202,13 @@ fn spawn_chess_board(mut commands: Commands, ass: Res<AssetServer>) {
 					ChessBoardUIMarker,
 				))
 				.with_children(|parent| {
-					for y in 1..=8 {
+					for y in (1..=8).rev() {
 						parent
 							.spawn((
 								NodeBundle {
 									// background_color: Color::YELLOW.into(),
 									style: Style {
-										flex_direction: FlexDirection::Column,
+										flex_direction: FlexDirection::Row,
 										// margin: UiRect::bottom(Val::Px(10.)),
 										justify_content: JustifyContent::Center,
 										align_items: AlignItems::Center,
