@@ -1,7 +1,9 @@
 #![allow(clippy::type_complexity)]
 
 mod selection;
+mod visualization;
 use crate::ui::selection::*;
+use crate::ui::visualization::*;
 
 use bevy::prelude::*;
 
@@ -17,6 +19,8 @@ impl Plugin for ChessBoardPlugin {
     .add_startup_system(setup)
 		// ui state plugin
 		.add_plugin(UiStatePlugin)
+		// visualization state plugin
+		.add_plugin(VisualizationStatePlugin)
 		// -
 		;
 	}
@@ -26,7 +30,6 @@ fn setup(mut commands: Commands) {
 	commands.spawn(Camera2dBundle::default());
 }
 
-
 #[derive(States, Default, Reflect, Debug, Clone, Eq, PartialEq, Hash)]
 enum ChessEngineState {
 	#[default]
@@ -34,7 +37,6 @@ enum ChessEngineState {
 
 	ViewValidPaths,
 }
-
 
 // fn div(style: Style, color: Color) -> NodeBundle {
 // 	NodeBundle {
