@@ -1,5 +1,6 @@
 use super::*;
 use bevy::{
+	input::keyboard,
 	prelude::*,
 	sprite::{Anchor, MaterialMesh2dBundle},
 };
@@ -9,27 +10,54 @@ impl Plugin for VisualizationStatePlugin {
 	fn build(&self, app: &mut App) {
 		app
 			// -
+	  	.add_system(keyboard_back)
     	.add_system(spawn_chess_pieces.in_schedule(OnEnter(ChessEngineState::ViewValidPaths)))
-    .add_system(despawn_chess_pieces.in_schedule(OnExit(ChessEngineState::ViewValidPaths)))
+    	.add_system(despawn_chess_pieces.in_schedule(OnExit(ChessEngineState::ViewValidPaths)))
 			// -
 			;
 	}
 }
 
 #[derive(Component, Debug, Clone)]
-struct ChessPiece {
+struct ChessSquareVisual {
 	x: u8,
 	y: u8,
 }
 
-fn despawn_chess_pieces(mut commands: Commands, chess_pieces: Query<Entity, With<ChessPiece>>) {
+impl From<ChessSquareUi> for ChessSquareVisual {
+	fn from(ui: ChessSquareUi) -> Self {
+		Self { x: ui.x, y: ui.y }
+	}
+}
+
+/// <ChessSquareUi> == (x, y)
+impl<T: PartialEq<u8>> PartialEq<(T, T)> for ChessSquareVisual {
+	fn eq(&self, (x, y): &(T, T)) -> bool {
+		x == &self.x && y == &self.y
+	}
+}
+
+fn keyboard_back(
+	keyboard_input: Res<Input<KeyCode>>,
+	mut state: ResMut<NextState<ChessEngineState>>,
+) {
+	if keyboard_input.just_pressed(KeyCode::Escape) || keyboard_input.just_pressed(KeyCode::B) {
+		state.set(ChessEngineState::PickStartingPosition);
+	}
+}
+
+fn despawn_chess_pieces(
+	mut commands: Commands,
+	chess_pieces: Query<Entity, With<ChessSquareVisual>>,
+) {
 	for entity in chess_pieces.iter() {
 		commands.entity(entity).despawn_recursive();
 	}
 }
 
-fn spawn_chess_pieces(mut commands: Commands) {
-	#![allow(non_upper_case_globals)]
+fn spawn_chess_pieces(mut commands: Commands, selected: Res<ChessSquareSelected>) {
+	info!("Spawning chess board visualization ...");
+	let selected: ChessSquareVisual = selected.selected.expect("No square selected?").into();
 
 	// commands.spawn(
 	// 	(SpriteBundle {
@@ -67,7 +95,9 @@ fn spawn_chess_pieces(mut commands: Commands) {
 				SpriteBundle {
 					sprite: Sprite {
 						color: {
-							if (x + y + 1) % 2 == 0 {
+							if selected == (x as u8, y as u8) {
+								Color::RED
+							} else if (x + y + 1) % 2 == 0 {
 								Color::BLACK
 							} else {
 								Color::WHITE
@@ -81,7 +111,7 @@ fn spawn_chess_pieces(mut commands: Commands) {
 					..default()
 				},
 				Name::new(format!("Chess Square ({}, {})", x, y)),
-				ChessPiece {
+				ChessSquareVisual {
 					x: x as u8,
 					y: y as u8,
 				},

@@ -6,7 +6,7 @@ pub struct UiStatePlugin;
 impl Plugin for UiStatePlugin {
 	fn build(&self, app: &mut App) {
 		app
-			.register_type::<ChessSquare>()
+			.register_type::<ChessSquareUi>()
 			.add_startup_system(spawn_chess_board)
 			// show-hide chess board
 			.add_system(on_chess_square_clicked.in_set(OnUpdate(ChessEngineState::PickStartingPosition)))
@@ -20,15 +20,15 @@ impl Plugin for UiStatePlugin {
 }
 
 #[derive(Component, Copy, Clone, Debug, Reflect)]
-struct ChessSquare {
+pub struct ChessSquareUi {
 	pub x: u8,
 	pub y: u8,
 }
 
 /// Chess square selected resource
 #[derive(Resource, Copy, Clone, Debug, Default)]
-struct ChessSquareSelected {
-	pub selected: Option<ChessSquare>,
+pub struct ChessSquareSelected {
+	pub selected: Option<ChessSquareUi>,
 }
 
 #[derive(Debug, Reflect, Clone)]
@@ -111,7 +111,7 @@ fn change_to_view_state(
 fn on_chess_square_clicked(
 	mut commands: Commands,
 	mut interaction_query: Query<
-		(&Interaction, &mut BackgroundColor, &ChessSquare),
+		(&Interaction, &mut BackgroundColor, &ChessSquareUi),
 		(Changed<Interaction>, With<Button>),
 	>,
 	mut next_state: ResMut<NextState<ChessEngineState>>,
@@ -124,6 +124,7 @@ fn on_chess_square_clicked(
 					selected: Some(*square),
 				});
 				next_state.set(ChessEngineState::ViewValidPaths);
+				info!("Selected square: {:?}", square);
 			}
 			Interaction::Hovered => {
 				*color = HOVERED_BUTTON.into();
@@ -228,7 +229,7 @@ fn spawn_chess_board(mut commands: Commands, ass: Res<AssetServer>) {
 											},
 											..default()
 										},
-										ChessSquare { x, y },
+										ChessSquareUi { x, y },
 										Name::new(format!("Square ({}, {})", x, y)),
 									));
 								}
