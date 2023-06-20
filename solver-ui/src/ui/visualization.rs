@@ -1,5 +1,8 @@
 use super::*;
-use bevy::{prelude::*, sprite::Anchor};
+use bevy::{
+	prelude::*,
+	sprite::{Anchor, MaterialMesh2dBundle},
+};
 
 pub struct VisualizationStatePlugin;
 impl Plugin for VisualizationStatePlugin {
@@ -56,8 +59,8 @@ const HEIGHT: f32 = 8.;
 const SQUARE_SIZE: f32 = 50.;
 const MARGIN: f32 = 5.;
 
-fn get_spacial_coord(chess_position: ChessSquareUi) -> Vec3 {
-	let ChessSquareUi { x, y } = chess_position;
+fn get_spacial_coord(chess_position: ChessSquareVisual) -> Vec3 {
+	let ChessSquareVisual { x, y } = chess_position;
 
 	Vec3::new(
 		{
@@ -76,9 +79,34 @@ fn get_spacial_coord(chess_position: ChessSquareUi) -> Vec3 {
 	)
 }
 
-fn spawn_chess_pieces(mut commands: Commands, selected: Res<ChessSquareSelected>) {
+fn spawn_path_line(
+	commands: &mut Commands,
+	meshes: &mut ResMut<Assets<Mesh>>,
+	materials: &mut ResMut<Assets<ColorMaterial>>,
+	from: &ChessSquareVisual,
+	to: &ChessSquareVisual,
+) {
+	let from = get_spacial_coord(from.clone());
+	let to = get_spacial_coord(to.clone());
+
+	commands.spawn(MaterialMesh2dBundle {
+		mesh: meshes.add(shape::Circle::new(50.).into()).into(),
+		material: materials.add(ColorMaterial::from(Color::PURPLE)),
+		transform: Transform::from_translation(from),
+		..default()
+	});
+}
+
+fn spawn_chess_pieces(
+	mut commands: Commands,
+	selected: Res<ChessSquareSelected>,
+	mut meshes: ResMut<Assets<Mesh>>,
+	mut materials: ResMut<Assets<ColorMaterial>>,
+) {
 	info!("Spawning chess board visualization ...");
 	let selected: ChessSquareVisual = selected.selected.expect("No square selected?").into();
+
+	spawn_path_line(&mut commands, &mut meshes, &mut materials, &selected, &selected);
 
 	// commands.spawn(
 	// 	(SpriteBundle {
@@ -109,7 +137,10 @@ fn spawn_chess_pieces(mut commands: Commands, selected: Res<ChessSquareSelected>
 						anchor: Anchor::BottomCenter,
 						..default()
 					},
-					transform: Transform::from_translation(get_spacial_coord(ChessSquareUi { x: x as u8, y: y as u8 })),
+					transform: Transform::from_translation(get_spacial_coord(ChessSquareVisual {
+						x: x as u8,
+						y: y as u8,
+					})),
 					..default()
 				},
 				Name::new(format!("Chess Square ({}, {})", x, y)),
