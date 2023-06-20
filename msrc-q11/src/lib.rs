@@ -31,8 +31,7 @@ pub fn init_debug_tools() {
 	tracing::subscriber::set_global_default(subscriber).unwrap();
 }
 
-use std::fmt;
-use tracing::info;
+use std::fmt::{self, Display};
 pub mod old;
 
 // 1 indexed
@@ -50,6 +49,18 @@ impl ChessPoint {
 			row: self.row.wrapping_add(dx as u8),
 			column: self.column.wrapping_add(dy as u8),
 		}
+	}
+}
+
+impl From<(u8, u8)> for ChessPoint {
+	fn from((row, column): (u8, u8)) -> Self {
+		Self { row, column }
+	}
+}
+
+impl Display for ChessPoint {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write!(f, "({}, {})", self.row, self.column)
 	}
 }
 
@@ -74,6 +85,26 @@ impl Move {
 	}
 }
 
+#[derive(Debug)]
+pub struct Moves {
+	moves: Vec<Move>,
+}
+
+impl Display for Moves {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		for m in self.moves.iter() {
+			writeln!(f, "{} -> {}", m.from, m.to)?;
+		}
+		Ok(())
+	}
+}
+
+impl From<Vec<Move>> for Moves {
+	fn from(moves: Vec<Move>) -> Self {
+		Self { moves }
+	}
+}
+
 /// State of active board
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum CellState {
@@ -82,7 +113,7 @@ pub enum CellState {
 
 	/// Has been occupied but can be moved to again.
 	/// number represents the order in which it was occupied
-	/// 
+	///
 	/// TODO: add number of crosses as well
 	HasBeenOccupied(u8),
 
@@ -126,6 +157,22 @@ impl Default for Board {
 	}
 }
 
+impl Display for Board {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		for row in self.cell_states.iter() {
+			for cell in row.iter() {
+				match cell {
+					CellState::NeverOccupied => write!(f, " 0 ")?,
+					CellState::HasBeenOccupied(n) => write!(f, "{:2} ", n)?,
+					CellState::Unavailable => write!(f, " X ")?,
+				}
+			}
+			writeln!(f)?;
+		}
+		Ok(())
+	}
+}
+
 pub trait ChessPiece {
 	fn relative_moves(&self) -> &[(i8, i8)];
 }
@@ -162,19 +209,22 @@ impl Board {
 	}
 
 	pub fn validate_point(&self, p: &ChessPoint) -> bool {
-		1 <= p.row
-			&& p.row <= self.cell_states.len() as u8
-			&& 1 <= p.column
-			&& p.column <= self.cell_states[0].len() as u8
+		// 1 <= p.row
+		// 	&& p.row <= self.cell_states.len() as u8
+		// 	&& 1 <= p.column
+		// 	&& p.column <= self.cell_states[0].len() as u8
+		1 <= p.row && p.row <= self.height() && 1 <= p.column && p.column <= self.width()
 	}
 
-	pub fn validate_point_or_panic(&self, p: ChessPoint) {
-		if !self.validate_point(&p) {
+	pub fn validate_point_or_panic(&self, p: &ChessPoint) {
+		if !self.validate_point(p) {
 			panic!("Invalid point: {:?}", p);
 		}
 	}
 
-	fn get(&self, p: ChessPoint) -> CellState {
+	fn get(&self, p: &ChessPoint) -> CellState {
+		self.validate_point_or_panic(p);
+
 		self.cell_states[p.row as usize - 1][p.column as usize - 1]
 	}
 
@@ -182,53 +232,58 @@ impl Board {
 		self.cell_states[p.row as usize - 1][p.column as usize - 1] = state;
 	}
 
-	/// Returns bool if point is NeverOccupied
-	fn get_availability_no_repeat(&self, p: ChessPoint) -> bool {
-		self.validate_point_or_panic(p);
+	/// Returns true if point is NeverOccupied.
+	/// Returns None if point is invalid
+	fn get_availability_no_repeat(&self, p: &ChessPoint) -> Option<bool> {
+		if !self.validate_point(p) {
+			return None;
+		}
 
-		matches!(self.get(p), CellState::NeverOccupied)
+		Some(matches!(self.get(p), CellState::NeverOccupied))
 	}
 
 	/// Returns bool if point is NeverOccupied or HasBeenOccupied
-	fn get_availability_allowing_repeat(&self, p: ChessPoint) -> bool {
-		self.validate_point_or_panic(p);
+	// fn get_availability_allowing_repeat(&self, p: ChessPoint) -> bool {
+	// 	self.validate_point_or_panic(p);
 
-		matches!(
-			self.get(p),
-			CellState::NeverOccupied | CellState::HasBeenOccupied(_)
-		)
-	}
+	// 	matches!(
+	// 		self.get(p),
+	// 		CellState::NeverOccupied | CellState::HasBeenOccupied(_)
+	// 	)
+	// }
 
 	fn get_degree_no_repeat(&self, start: ChessPoint, moves: &impl ChessPiece) -> u16 {
-		self.validate_point_or_panic(start);
+		self.validate_point_or_panic(&start);
 
 		let mut degree = 0;
 		for &(dx, dy) in moves.relative_moves() {
 			let p = start.mov(&(dx, dy));
-			if self.get_availability_no_repeat(p) {
+			if self.get_availability_no_repeat(&p) == Some(true) {
 				degree += 1;
 			}
 		}
 		degree
 	}
 
-	fn get_degree_allowing_repeat(&self, start: ChessPoint, moves: &impl ChessPiece) -> u16 {
-		self.validate_point_or_panic(start);
+	// fn get_degree_allowing_repeat(&self, start: ChessPoint, moves: &impl ChessPiece) -> u16 {
+	// 	self.validate_point_or_panic(start);
 
-		let mut degree = 0;
-		for &(dx, dy) in moves.relative_moves() {
-			let p = start.mov(&(dx, dy));
-			if self.get_availability_allowing_repeat(p) {
-				degree += 1;
-			}
-		}
-		degree
-	}
+	// 	let mut degree = 0;
+	// 	for &(dx, dy) in moves.relative_moves() {
+	// 		let p = start.mov(&(dx, dy));
+	// 		if self.get_availability_allowing_repeat(p) {
+	// 			degree += 1;
+	// 		}
+	// 	}
+	// 	degree
+	// }
 
+	/// 1 indexed
 	fn width(&self) -> u8 {
 		self.cell_states[0].len() as u8
 	}
 
+	/// 1 indexed
 	fn height(&self) -> u8 {
 		self.cell_states.len() as u8
 	}
@@ -236,27 +291,27 @@ impl Board {
 
 pub fn piece_tour_no_repeat(
 	piece: &impl ChessPiece,
-	board: Board,
+	board: &mut Board,
 	start: ChessPoint,
-) -> Option<(Board, Vec<Move>)> {
-	let mut board = board;
+) -> Option<Moves> {
+	let board = board;
 	let mut moves = Vec::new();
 	let mut current = start;
 
-	for _ in 0..board.width() * board.height() {
+	for _ in 1..board.width() * board.height() {
 		if !board.validate_point(&current) {
 			return None;
 		}
 
 		// board.cell_states[current.row as usize - 1][current.column as usize - 1] =
-			// CellState::HasBeenOccupied(moves.len() as u8 + 1);
+		// CellState::HasBeenOccupied(moves.len() as u8 + 1);
 		board.set(current, CellState::HasBeenOccupied(moves.len() as u8 + 1));
 
 		let mut next = None;
 		let mut min_degree = u16::MAX;
 		for &(dx, dy) in piece.relative_moves() {
 			let p = current.mov(&(dx, dy));
-			if board.get_availability_no_repeat(p) {
+			if board.get_availability_no_repeat(&p) == Some(true) {
 				let degree = board.get_degree_no_repeat(p, piece);
 				if degree < min_degree {
 					min_degree = degree;
@@ -266,12 +321,12 @@ pub fn piece_tour_no_repeat(
 		}
 
 		if let Some(next) = next {
-			moves.push(Move::new_checked(current, next, &board).expect("moves generated to be valid"));
+			moves.push(Move::new_checked(current, next, board).expect("moves generated to be valid"));
 			current = next;
 		} else {
 			return None;
 		}
 	}
 
-	Some((board, moves))
+	Some(moves.into())
 }
