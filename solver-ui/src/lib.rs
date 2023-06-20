@@ -2,6 +2,7 @@ use bevy::{prelude::*, sprite::MaterialMesh2dBundle, window::PrimaryWindow};
 
 // pub mod _old_ui;
 pub mod ui;
+pub mod solver;
 
 // #[derive(Component, Debug)]
 // struct MainCamera;

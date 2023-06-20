@@ -31,12 +31,6 @@ pub struct ChessSquareSelected {
 	pub selected: Option<ChessSquareUi>,
 }
 
-#[derive(Debug, Reflect, Clone)]
-struct ChessBoardProperties {
-	width: u8,
-	height: u8,
-}
-
 /// What is shown-hidden when state changes
 #[derive(Component)]
 struct ChessBoardUIMarker;
