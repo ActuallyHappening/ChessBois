@@ -2,7 +2,7 @@ use std::f32::consts::PI;
 
 use super::*;
 use bevy::prelude::*;
-use msrc_q11::{piece_tour_no_repeat, Board, ChessPoint, StandardKnight, Move};
+use msrc_q11::{piece_tour_no_repeat, Board, ChessPoint, Move, StandardKnight};
 
 pub struct VisualizationStatePlugin;
 impl Plugin for VisualizationStatePlugin {
@@ -18,30 +18,46 @@ impl Plugin for VisualizationStatePlugin {
 }
 
 #[derive(Component, Debug, Clone)]
-struct ChessSquareVisual {
-	x: u8,
-	y: u8,
+struct VisualChessSquare {
+	point: ChessPoint,
 }
 
-impl From<ChessSquareUi> for ChessSquareVisual {
-	fn from(ui: ChessSquareUi) -> Self {
-		Self { x: ui.x, y: ui.y }
+impl From<ChessPoint> for VisualChessSquare {
+	fn from(point: ChessPoint) -> Self {
+		Self { point }
 	}
 }
 
-impl From<ChessPoint> for ChessSquareVisual {
-	fn from(point: ChessPoint) -> Self {
+impl From<VisualChessSquare> for ChessPoint {
+	fn from(VisualChessSquare { point }: VisualChessSquare) -> Self {
 		Self {
-			x: point.row,
-			y: point.column,
+			row: point.row,
+			column: point.column,
+		}
+	}
+}
+
+impl From<&VisualChessSquare> for ChessPoint {
+	fn from(VisualChessSquare { point }: &VisualChessSquare) -> Self {
+		Self {
+			row: point.row,
+			column: point.column,
+		}
+	}
+}
+
+impl VisualChessSquare {
+	pub fn new(row: u8, column: u8) -> Self {
+		Self {
+			point: ChessPoint::new(row, column),
 		}
 	}
 }
 
 /// <ChessSquareUi> == (x, y)
-impl<T: PartialEq<u8>> PartialEq<(T, T)> for ChessSquareVisual {
+impl<T: PartialEq<u8>> PartialEq<(T, T)> for VisualChessSquare {
 	fn eq(&self, (x, y): &(T, T)) -> bool {
-		x == &self.x && y == &self.y
+		x == &self.point.row && y == &self.point.column
 	}
 }
 
@@ -56,7 +72,7 @@ fn keyboard_back(
 
 fn despawn_chess_pieces(
 	mut commands: Commands,
-	chess_pieces: Query<Entity, With<ChessSquareVisual>>,
+	chess_pieces: Query<Entity, With<VisualChessSquare>>,
 ) {
 	for entity in chess_pieces.iter() {
 		commands.entity(entity).despawn_recursive();
@@ -68,20 +84,20 @@ const HEIGHT: f32 = 8.;
 const SQUARE_SIZE: f32 = 5.;
 const MARGIN: f32 = 1.;
 
-fn get_spacial_coord(chess_position: ChessSquareVisual) -> Vec3 {
-	let ChessSquareVisual { x, y } = chess_position;
+fn get_spacial_coord(chess_position: ChessPoint) -> Vec3 {
+	let ChessPoint { row, column } = chess_position;
 
 	Vec3::new(
 		{
 			// get x position, assuming margin between every square
 			let total_width = WIDTH * (SQUARE_SIZE + MARGIN) - MARGIN;
-			let full_x = x as f32 * (SQUARE_SIZE + MARGIN);
+			let full_x = row as f32 * (SQUARE_SIZE + MARGIN);
 			full_x - total_width / 2.
 		},
 		{
 			// repeat for y
 			let total_height = HEIGHT * (SQUARE_SIZE + MARGIN) - MARGIN;
-			let full_y = y as f32 * (SQUARE_SIZE + MARGIN);
+			let full_y = column as f32 * (SQUARE_SIZE + MARGIN);
 			full_y - total_height / 2.
 		},
 		-5.,
@@ -92,8 +108,8 @@ fn spawn_path_line(
 	commands: &mut Commands,
 	meshes: &mut ResMut<Assets<Mesh>>,
 	materials: &mut ResMut<Assets<StandardMaterial>>,
-	from: &ChessSquareVisual,
-	to: &ChessSquareVisual,
+	from: &ChessPoint,
+	to: &ChessPoint,
 ) {
 	let from = get_spacial_coord(from.clone());
 	let to = get_spacial_coord(to.clone());
@@ -128,7 +144,9 @@ fn spawn_chess_pieces(
 	mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
 	info!("Spawning chess board visualization ...");
-	let selected: ChessSquareVisual = selected.selected.expect("No square selected?").into();
+	let selected: ChessSquareUi = selected.selected.expect("No square selected?");
+	let selected: ChessPoint = selected.into();
+	let selected: VisualChessSquare = selected.into();
 
 	// ground plane
 	commands.spawn(PbrBundle {
@@ -150,11 +168,11 @@ fn spawn_chess_pieces(
 	// 	}),
 	// );
 
-	for x in 1..=WIDTH.floor() as i32 {
-		for y in 1..=HEIGHT.floor() as i32 {
-			let colour = if selected == (x as u8, y as u8) {
+	for row in 1..=WIDTH.floor() as i32 {
+		for column in 1..=HEIGHT.floor() as i32 {
+			let colour = if selected == (row as u8, column as u8) {
 				Color::RED
-			} else if (x + y + 1) % 2 == 0 {
+			} else if (row + column + 1) % 2 == 0 {
 				Color::BLACK
 			} else {
 				Color::WHITE
@@ -164,43 +182,24 @@ fn spawn_chess_pieces(
 				PbrBundle {
 					mesh,
 					material: materials.add(StandardMaterial::from(colour)),
-					transform: Transform::from_translation(get_spacial_coord(ChessSquareVisual {
-						x: x as u8,
-						y: y as u8,
-					}))
+					transform: Transform::from_translation(get_spacial_coord(ChessPoint::new(
+						row as u8,
+						column as u8,
+					)))
 					.with_scale(Vec3::new(1., 1., 2.)),
 					..default()
 				},
-				Name::new(format!("Chess Square ({}, {})", x, y)),
-				ChessSquareVisual {
-					x: x as u8,
-					y: y as u8,
-				},
+				Name::new(format!("Chess Square ({}, {})", row, column)),
+				VisualChessSquare::new(row as u8, column as u8),
 			));
 		}
 	}
 
-	match piece_tour_no_repeat(
-		&StandardKnight {},
-		&mut Board::new(8, 8),
-		ChessPoint::new(selected.x, selected.y),
-	) {
+	match piece_tour_no_repeat(&StandardKnight {}, &mut Board::new(8, 8), selected.point) {
 		Some(moves) => {
 			let moves: Vec<&Move> = moves.iter().collect();
 			for Move { from, to } in moves {
-				spawn_path_line(
-					&mut commands,
-					&mut meshes,
-					&mut materials,
-					&ChessSquareVisual {
-						x: from.row,
-						y: from.column,
-					},
-					&ChessSquareVisual {
-						x: to.row,
-						y: to.column,
-					},
-				);
+				spawn_path_line(&mut commands, &mut meshes, &mut materials, from, to);
 			}
 			// spawn_path_line(
 			// 	&mut commands,

@@ -1,4 +1,5 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, a11y::accesskit::Point};
+use msrc_q11::ChessPoint;
 
 use super::ChessEngineState;
 
@@ -6,7 +7,6 @@ pub struct UiStatePlugin;
 impl Plugin for UiStatePlugin {
 	fn build(&self, app: &mut App) {
 		app
-			.register_type::<ChessSquareUi>()
 			.add_startup_system(spawn_chess_board)
 			// show-hide chess board
 			.add_system(on_chess_square_clicked.in_set(OnUpdate(ChessEngineState::PickStartingPosition)))
@@ -19,10 +19,34 @@ impl Plugin for UiStatePlugin {
 	}
 }
 
-#[derive(Component, Copy, Clone, Debug, Reflect)]
+#[derive(Component, Copy, Clone, Debug)]
 pub struct ChessSquareUi {
-	pub x: u8,
-	pub y: u8,
+	point: ChessPoint,
+}
+
+impl From<ChessPoint> for ChessSquareUi {
+	fn from(point: ChessPoint) -> Self {
+		Self {
+			point,
+		}
+	}
+}
+
+impl From<ChessSquareUi> for ChessPoint {
+	fn from(ChessSquareUi { point }: ChessSquareUi) -> Self {
+		Self {
+			row: point.row,
+			column: point.column,
+		}
+	}
+}
+
+impl ChessSquareUi {
+	pub fn new(row: u8, column: u8) -> Self {
+		Self {
+			point: ChessPoint::new(row, column),
+		}
+	}
 }
 
 /// Chess square selected resource
@@ -196,7 +220,7 @@ fn spawn_chess_board(mut commands: Commands, ass: Res<AssetServer>) {
 					ChessBoardUIMarker,
 				))
 				.with_children(|parent| {
-					for y in (1..=8).rev() {
+					for column in (1..=8).rev() {
 						parent
 							.spawn((
 								NodeBundle {
@@ -210,10 +234,10 @@ fn spawn_chess_board(mut commands: Commands, ass: Res<AssetServer>) {
 									},
 									..default()
 								},
-								Name::new(format!("Row {}", y)),
+								Name::new(format!("Row {}", column)),
 							))
 							.with_children(|parent| {
-								for x in 1..=8 {
+								for row in 1..=8 {
 									parent.spawn((
 										ButtonBundle {
 											background_color: Color::BLACK.into(),
@@ -224,8 +248,8 @@ fn spawn_chess_board(mut commands: Commands, ass: Res<AssetServer>) {
 											},
 											..default()
 										},
-										ChessSquareUi { x, y },
-										Name::new(format!("Square ({}, {})", x, y)),
+										ChessSquareUi { point: ChessPoint::new(row, column) },
+										Name::new(format!("Square ({}, {})", row, column)),
 									));
 								}
 							});
