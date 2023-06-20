@@ -89,10 +89,23 @@ fn spawn_path_line(
 	let from = get_spacial_coord(from.clone());
 	let to = get_spacial_coord(to.clone());
 
+	let transform = Transform::from_translation(from)
+	// .looking_at(to, Vec3::Y)
+.with_rotation(Quat::from_rotation_z((45_f32).to_radians()))
+.with_scale(Vec3::new(1., 1., 50.))
+	// -
+	;
+
+	info!("Transform: {:?}", transform);
+
+	// let mesh_circle = meshes.add(shape::Circle::new(50.).into()).into();
+	let mesh_thin_rectangle = meshes.add(shape::Quad::new(Vec2::new(10., 50.)).into()).into();
+
 	commands.spawn(MaterialMesh2dBundle {
-		mesh: meshes.add(shape::Circle::new(50.).into()).into(),
+		// mesh: mesh_circle,
+		mesh: mesh_thin_rectangle,
 		material: materials.add(ColorMaterial::from(Color::PURPLE)),
-		transform: Transform::from_translation(from),
+		transform,
 		..default()
 	});
 }
@@ -106,7 +119,6 @@ fn spawn_chess_pieces(
 	info!("Spawning chess board visualization ...");
 	let selected: ChessSquareVisual = selected.selected.expect("No square selected?").into();
 
-	spawn_path_line(&mut commands, &mut meshes, &mut materials, &selected, &selected);
 
 	// commands.spawn(
 	// 	(SpriteBundle {
@@ -151,4 +163,6 @@ fn spawn_chess_pieces(
 			));
 		}
 	}
+
+	spawn_path_line(&mut commands, &mut meshes, &mut materials, &selected, &selected);
 }
