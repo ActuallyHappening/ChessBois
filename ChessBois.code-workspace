@@ -8,6 +8,9 @@
 		},
 		{
 			"path": "/Users/calebyates/.env"
+		},
+		{
+			"path": "bevy"
 		}
 	],
 	"settings": {

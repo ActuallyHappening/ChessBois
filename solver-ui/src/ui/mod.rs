@@ -27,7 +27,23 @@ impl Plugin for ChessBoardPlugin {
 }
 
 fn setup(mut commands: Commands) {
-	commands.spawn(Camera2dBundle::default());
+	commands.spawn(Camera3dBundle {
+		transform: Transform::from_xyz(0., 0., 100.),
+		..default()
+	});
+
+	commands.spawn(PointLightBundle {
+		point_light: PointLight {
+			intensity: 9000.0,
+			range: 250.,
+			shadows_enabled: true,
+			..default()
+		},
+		transform: Transform::from_xyz(8.0, 16.0, 80.),
+		..default()
+	});
+
+	 
 }
 
 #[derive(States, Default, Reflect, Debug, Clone, Eq, PartialEq, Hash)]
