@@ -32,121 +32,246 @@ pub fn init_debug_tools() {
 }
 
 use std::fmt;
-
 use tracing::info;
+pub mod old;
 
-pub const SIZE: usize = 8;
-const SHORT_STEP: i32 = 1;
-const LONG_STEP: i32 = 2;
-const MOVES: [(i32, i32); 8] = [
-	// (2, 1),
-	// (1, 2),
-	// (-1, 2),
-	// (-2, 1),
-	// (-2, -1),
-	// (-1, -2),
-	// (1, -2),
-	// (2, -1),
-	(LONG_STEP, SHORT_STEP),
-	(SHORT_STEP, LONG_STEP),
-	(-SHORT_STEP, LONG_STEP),
-	(-LONG_STEP, SHORT_STEP),
-	(-LONG_STEP, -SHORT_STEP),
-	(-SHORT_STEP, -LONG_STEP),
-	(SHORT_STEP, -LONG_STEP),
-	(LONG_STEP, -SHORT_STEP),
-];
-
-#[derive(Copy, Debug, Clone, Eq, PartialEq, PartialOrd, Ord)]
-pub struct Point {
-	pub x: i32,
-	pub y: i32,
+// 1 indexed
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+pub struct ChessPoint {
+	// Between 1 and ROW_SIZE
+	pub row: u8,
+	// Between 1 and COLUMN_SIZE
+	pub column: u8,
 }
 
-impl Point {
-	fn mov(&self, &(dx, dy): &(i32, i32)) -> Self {
+impl ChessPoint {
+	fn mov(&self, &(dx, dy): &(i8, i8)) -> Self {
 		Self {
-			x: self.x + dx,
-			y: self.y + dy,
+			row: self.row.wrapping_add(dx as u8),
+			column: self.column.wrapping_add(dy as u8),
 		}
 	}
 }
 
+/// Represents move from one point to another
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+pub struct Move {
+	pub from: ChessPoint,
+	pub to: ChessPoint,
+}
+
+impl Move {
+	pub fn new(from: ChessPoint, to: ChessPoint) -> Self {
+		Self { from, to }
+	}
+
+	pub fn new_checked(from: ChessPoint, to: ChessPoint, board: &Board) -> Option<Self> {
+		if board.validate_point(&from) && board.validate_point(&to) {
+			Some(Self { from, to })
+		} else {
+			None
+		}
+	}
+}
+
+/// State of active board
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum CellState {
+	/// Can be moved to but never has
+	NeverOccupied,
+
+	/// Has been occupied but can be moved to again.
+	/// number represents the order in which it was occupied
+	/// 
+	/// TODO: add number of crosses as well
+	HasBeenOccupied(u8),
+
+	/// Can't be moved to
+	Unavailable,
+}
+
+pub enum CellOption {
+	Available,
+	Unavailable,
+}
+
+impl From<CellOption> for CellState {
+	fn from(o: CellOption) -> Self {
+		match o {
+			CellOption::Available => CellState::NeverOccupied,
+			CellOption::Unavailable => CellState::Unavailable,
+		}
+	}
+}
+
+impl CellOption {
+	pub fn is_available(&self) -> bool {
+		match self {
+			CellOption::Available => true,
+			CellOption::Unavailable => false,
+		}
+	}
+}
+
+type CellStates = Vec<Vec<CellState>>;
+type CellOptions = Vec<Vec<CellOption>>;
+
 pub struct Board {
-	field: [[i32; SIZE]; SIZE],
+	cell_states: CellStates,
+}
+
+impl Default for Board {
+	fn default() -> Self {
+		Self::new(8, 8)
+	}
+}
+
+pub trait ChessPiece {
+	fn relative_moves(&self) -> &[(i8, i8)];
+}
+pub struct StandardKnight;
+impl ChessPiece for StandardKnight {
+	fn relative_moves(&self) -> &[(i8, i8)] {
+		&[
+			(2, 1),
+			(1, 2),
+			(-1, 2),
+			(-2, 1),
+			(-2, -1),
+			(-1, -2),
+			(1, -2),
+			(2, -1),
+		]
+	}
 }
 
 impl Board {
-	fn new() -> Self {
+	/// Creates square board with given dimensions and all cells available
+	pub fn new(rows: u8, columns: u8) -> Self {
 		Self {
-			field: [[0; SIZE]; SIZE],
+			cell_states: vec![vec![CellState::NeverOccupied; columns as usize]; rows as usize],
 		}
 	}
 
-	fn available(&self, p: Point) -> bool {
-		0 <= p.x
-			&& p.x < SIZE as i32
-			&& 0 <= p.y
-			&& p.y < SIZE as i32
-			&& self.field[p.x as usize][p.y as usize] == 0
+	pub fn from_options(cell_options: CellOptions) -> Self {
+		let cell_states = cell_options
+			.into_iter()
+			.map(|row| row.into_iter().map(|cell| cell.into()).collect())
+			.collect();
+		Self { cell_states }
 	}
 
-	// calculate the number of possible moves
-	fn count_degree(&self, p: Point) -> i32 {
-		let mut count = 0;
-		for dir in MOVES.iter() {
-			let next = p.mov(dir);
-			if self.available(next) {
-				count += 1;
+	pub fn validate_point(&self, p: &ChessPoint) -> bool {
+		1 <= p.row
+			&& p.row <= self.cell_states.len() as u8
+			&& 1 <= p.column
+			&& p.column <= self.cell_states[0].len() as u8
+	}
+
+	pub fn validate_point_or_panic(&self, p: ChessPoint) {
+		if !self.validate_point(&p) {
+			panic!("Invalid point: {:?}", p);
+		}
+	}
+
+	fn get(&self, p: ChessPoint) -> CellState {
+		self.cell_states[p.row as usize - 1][p.column as usize - 1]
+	}
+
+	fn set(&mut self, p: ChessPoint, state: CellState) {
+		self.cell_states[p.row as usize - 1][p.column as usize - 1] = state;
+	}
+
+	/// Returns bool if point is NeverOccupied
+	fn get_availability_no_repeat(&self, p: ChessPoint) -> bool {
+		self.validate_point_or_panic(p);
+
+		matches!(self.get(p), CellState::NeverOccupied)
+	}
+
+	/// Returns bool if point is NeverOccupied or HasBeenOccupied
+	fn get_availability_allowing_repeat(&self, p: ChessPoint) -> bool {
+		self.validate_point_or_panic(p);
+
+		matches!(
+			self.get(p),
+			CellState::NeverOccupied | CellState::HasBeenOccupied(_)
+		)
+	}
+
+	fn get_degree_no_repeat(&self, start: ChessPoint, moves: &impl ChessPiece) -> u16 {
+		self.validate_point_or_panic(start);
+
+		let mut degree = 0;
+		for &(dx, dy) in moves.relative_moves() {
+			let p = start.mov(&(dx, dy));
+			if self.get_availability_no_repeat(p) {
+				degree += 1;
 			}
 		}
-		count
+		degree
+	}
+
+	fn get_degree_allowing_repeat(&self, start: ChessPoint, moves: &impl ChessPiece) -> u16 {
+		self.validate_point_or_panic(start);
+
+		let mut degree = 0;
+		for &(dx, dy) in moves.relative_moves() {
+			let p = start.mov(&(dx, dy));
+			if self.get_availability_allowing_repeat(p) {
+				degree += 1;
+			}
+		}
+		degree
+	}
+
+	fn width(&self) -> u8 {
+		self.cell_states[0].len() as u8
+	}
+
+	fn height(&self) -> u8 {
+		self.cell_states.len() as u8
 	}
 }
 
-impl fmt::Display for Board {
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		for row in self.field.iter() {
-			for x in row.iter() {
-				write!(f, "{:3} ", x)?;
-			}
-			writeln!(f)?;
+pub fn piece_tour_no_repeat(
+	piece: &impl ChessPiece,
+	board: Board,
+	start: ChessPoint,
+) -> Option<(Board, Vec<Move>)> {
+	let mut board = board;
+	let mut moves = Vec::new();
+	let mut current = start;
+
+	for _ in 0..board.width() * board.height() {
+		if !board.validate_point(&current) {
+			return None;
 		}
-		Ok(())
-	}
-}
 
-pub fn knights_tour(x: i32, y: i32) -> Option<(Board, Vec<(Point, Point)>)> {
-	let mut board = Board::new();
-	let mut p = Point { x, y };
-	let mut step = 1;
-	board.field[p.x as usize][p.y as usize] = step;
-	step += 1;
+		// board.cell_states[current.row as usize - 1][current.column as usize - 1] =
+			// CellState::HasBeenOccupied(moves.len() as u8 + 1);
+		board.set(current, CellState::HasBeenOccupied(moves.len() as u8 + 1));
 
-	let initial_point = p;
-	let mut moves: Vec<(Point, Point)> = vec![];
-
-	while step <= (SIZE * SIZE) as i32 {
-		// choose next square by Warnsdorf's rule
-		let mut candidates = vec![];
-		for dir in MOVES.iter() {
-			let adj = p.mov(dir);
-			if board.available(adj) {
-				let degree = board.count_degree(adj);
-				candidates.push((degree, adj));
+		let mut next = None;
+		let mut min_degree = u16::MAX;
+		for &(dx, dy) in piece.relative_moves() {
+			let p = current.mov(&(dx, dy));
+			if board.get_availability_no_repeat(p) {
+				let degree = board.get_degree_no_repeat(p, piece);
+				if degree < min_degree {
+					min_degree = degree;
+					next = Some(p);
+				}
 			}
 		}
-		match candidates.iter().min() {
-			// move to next square
-			Some(&(_, adj)) => {
-				moves.push((p, adj));
-				p = adj;
-			}
-			// can't move
-			None => return None,
-		};
-		board.field[p.x as usize][p.y as usize] = step;
-		step += 1;
+
+		if let Some(next) = next {
+			moves.push(Move::new_checked(current, next, &board).expect("moves generated to be valid"));
+			current = next;
+		} else {
+			return None;
+		}
 	}
+
 	Some((board, moves))
 }

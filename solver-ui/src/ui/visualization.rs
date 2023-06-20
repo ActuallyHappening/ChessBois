@@ -103,7 +103,7 @@ fn spawn_path_line(
 	;
 
 	// info!("Transform: {:?}", transform);
-	info!("Angle: {:?}, Length: {:?}", angle, length);
+	// info!("Angle: {:?}, Length: {:?}", angle, length);
 
 	let mesh_thin_rectangle = meshes
 		.add(shape::Box::new(length, 1., 1.).into());
@@ -181,8 +181,8 @@ fn spawn_chess_pieces(
 					&mut commands,
 					&mut meshes,
 					&mut materials,
-					&ChessSquareVisual { x: from.x as u8, y: from.y as u8 },
-					&ChessSquareVisual { x: to.x as u8, y: to.y as u8 },
+					&ChessSquareVisual { x: from.x as u8 + 1, y: from.y as u8 + 1 },
+					&ChessSquareVisual { x: to.x as u8 + 1, y: to.y as u8 + 1 },
 				);
 			}
 			// spawn_path_line(
