@@ -31,11 +31,13 @@ pub fn init_debug_tools() {
 	tracing::subscriber::set_global_default(subscriber).unwrap();
 }
 
+
 use std::{fmt::{self, Display}, ops::Deref};
 pub mod old;
+use bevy::prelude::*;
 
 // 1 indexed
-#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Component, Reflect, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct ChessPoint {
 	// Between 1 and ROW_SIZE
 	pub row: u8,

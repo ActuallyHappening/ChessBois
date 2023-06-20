@@ -9,15 +9,15 @@
 		{
 			"path": "."
 		},
-		{
-			"path": "/Users/calebyates/.env"
-		},
-		{
-			"path": "bevy"
-		},
-		{
-			"path": "bevy_mod_picking"
-		}
+		// {
+		// 	"path": "/Users/calebyates/.env"
+		// },
+		// {
+		// 	"path": "bevy"
+		// },
+		// {
+		// 	"path": "bevy_mod_picking"
+		// }
 	],
 	"settings": {
 		"cSpell.words": [
