@@ -939,6 +939,7 @@ dependencies = [
  "bevy_editor_pls",
  "console_error_panic_hook",
  "getrandom",
+ "msrc-q11",
  "once_cell",
  "rand",
  "serde",
@@ -2379,6 +2380,18 @@ dependencies = [
  "log",
  "wasi",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "msrc-q11"
+version = "0.1.0"
+dependencies = [
+ "console_error_panic_hook",
+ "getrandom",
+ "serde",
+ "tracing",
+ "tracing-subscriber",
+ "tracing-web",
 ]
 
 [[package]]

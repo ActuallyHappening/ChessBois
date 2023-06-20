@@ -5,6 +5,7 @@ use bevy::{
 	prelude::*,
 	sprite::{MaterialMesh2dBundle},
 };
+use msrc_q11::knights_tour;
 
 pub struct VisualizationStatePlugin;
 impl Plugin for VisualizationStatePlugin {
@@ -173,11 +174,27 @@ fn spawn_chess_pieces(
 		}
 	}
 
-	spawn_path_line(
-		&mut commands,
-		&mut meshes,
-		&mut materials,
-		&selected,
-		&ChessSquareVisual { x: 2, y: 7 },
-	);
+	match knights_tour(selected.x as i32, selected.y as i32) {
+		Some((_, moves)) => {
+			for (from, to) in moves {
+				spawn_path_line(
+					&mut commands,
+					&mut meshes,
+					&mut materials,
+					&ChessSquareVisual { x: from.x as u8, y: from.y as u8 },
+					&ChessSquareVisual { x: to.x as u8, y: to.y as u8 },
+				);
+			}
+			// spawn_path_line(
+			// 	&mut commands,
+			// 	&mut meshes,
+			// 	&mut materials,
+			// 	&selected,
+			// 	&ChessSquareVisual { x: 2, y: 7 },
+			// );
+		},
+		None => info!("Fail!"),
+	}
+	
+	
 }
