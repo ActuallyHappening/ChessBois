@@ -91,23 +91,25 @@ fn spawn_path_line(
 	let from = get_spacial_coord(from.clone());
 	let to = get_spacial_coord(to.clone());
 
-	let transform = Transform::from_translation(from + Vec3::new(0., 0., 4.))
+	let center = (from + to) / 2.;
+	let length = (from - to).length();
+	let angle: f32 = (to.y - from.y).atan2(to.x - from.x);
+
+	let transform = Transform::from_translation(center + Vec3::new(0., 0., 4.))
 	// .looking_at(to, Vec3::Y)
-	.with_rotation(Quat::from_rotation_z((45_f32).to_radians()))
+	.with_rotation(Quat::from_rotation_z(angle))
 	// -
 	;
 
-	info!("Transform: {:?}", transform);
+	// info!("Transform: {:?}", transform);
+	info!("Angle: {:?}, Length: {:?}", angle, length);
 
-	// let mesh_circle = meshes.add(shape::Circle::new(50.).into()).into();
 	let mesh_thin_rectangle = meshes
-		.add(shape::Box::new(2., 5., 1.).into());
+		.add(shape::Box::new(length, 1., 1.).into());
 
 	commands.spawn(PbrBundle {
-		// mesh: mesh_circle,
 		mesh: mesh_thin_rectangle,
-		// material: materials.add(Color::from(Color::PURPLE).into()),
-		//  material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+		material: materials.add(Color::GREEN.into()),
 		transform,
 		..default()
 	});
@@ -176,6 +178,6 @@ fn spawn_chess_pieces(
 		&mut meshes,
 		&mut materials,
 		&selected,
-		&selected,
+		&ChessSquareVisual { x: 2, y: 7 },
 	);
 }

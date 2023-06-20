@@ -28,7 +28,7 @@ impl Plugin for ChessBoardPlugin {
 
 fn setup(mut commands: Commands) {
 	commands.spawn(Camera3dBundle {
-		transform: Transform::from_xyz(0., 0., 100.),
+		transform: Transform::from_xyz(0., 10., 80.),
 		..default()
 	});
 
@@ -39,7 +39,7 @@ fn setup(mut commands: Commands) {
 			shadows_enabled: true,
 			..default()
 		},
-		transform: Transform::from_xyz(8.0, 16.0, 80.),
+		transform: Transform::from_xyz(0., 0., 10.),
 		..default()
 	});
 
