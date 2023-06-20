@@ -1,8 +1,5 @@
 use super::*;
-use bevy::{
-	prelude::*,
-	sprite::Anchor,
-};
+use bevy::{prelude::*, sprite::Anchor};
 
 pub struct VisualizationStatePlugin;
 impl Plugin for VisualizationStatePlugin {
@@ -54,6 +51,31 @@ fn despawn_chess_pieces(
 	}
 }
 
+const WIDTH: f32 = 8.;
+const HEIGHT: f32 = 8.;
+const SQUARE_SIZE: f32 = 50.;
+const MARGIN: f32 = 5.;
+
+fn get_spacial_coord(chess_position: ChessSquareUi) -> Vec3 {
+	let ChessSquareUi { x, y } = chess_position;
+
+	Vec3::new(
+		{
+			// get x position, assuming margin between every square
+			let total_width = WIDTH * (SQUARE_SIZE + MARGIN) - MARGIN;
+			let full_x = x as f32 * (SQUARE_SIZE + MARGIN);
+			full_x - total_width / 2.
+		},
+		{
+			// repeat for y
+			let total_height = HEIGHT * (SQUARE_SIZE + MARGIN) - MARGIN;
+			let full_y = y as f32 * (SQUARE_SIZE + MARGIN);
+			full_y - total_height / 2.
+		},
+		0.,
+	)
+}
+
 fn spawn_chess_pieces(mut commands: Commands, selected: Res<ChessSquareSelected>) {
 	info!("Spawning chess board visualization ...");
 	let selected: ChessSquareVisual = selected.selected.expect("No square selected?").into();
@@ -68,28 +90,9 @@ fn spawn_chess_pieces(mut commands: Commands, selected: Res<ChessSquareSelected>
 	// 		..default()
 	// 	}),
 	// );
-	const SQUARE_SIZE: f32 = 50.;
-	const WIDTH: f32 = 8.;
-	const HEIGHT: f32 = 8.;
-	const MARGIN: f32 = 5.;
 
 	for x in 1..=WIDTH.floor() as i32 {
 		for y in 1..=HEIGHT.floor() as i32 {
-			let translation = Vec3::new(
-				{
-					// get x position, assuming margin between every square
-					let total_width = WIDTH * (SQUARE_SIZE + MARGIN) - MARGIN;
-					let full_x = x as f32 * (SQUARE_SIZE + MARGIN);
-					full_x - total_width / 2.
-				},
-				{
-					// repeat for y
-					let total_height = HEIGHT * (SQUARE_SIZE + MARGIN) - MARGIN;
-					let full_y = y as f32 * (SQUARE_SIZE + MARGIN);
-					full_y - total_height / 2.
-				},
-				0.,
-			);
 			commands.spawn((
 				SpriteBundle {
 					sprite: Sprite {
@@ -106,7 +109,7 @@ fn spawn_chess_pieces(mut commands: Commands, selected: Res<ChessSquareSelected>
 						anchor: Anchor::BottomCenter,
 						..default()
 					},
-					transform: Transform::from_translation(translation),
+					transform: Transform::from_translation(get_spacial_coord(ChessSquareUi { x: x as u8, y: y as u8 })),
 					..default()
 				},
 				Name::new(format!("Chess Square ({}, {})", x, y)),
