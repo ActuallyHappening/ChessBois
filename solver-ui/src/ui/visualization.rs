@@ -1,11 +1,8 @@
 use std::f32::consts::PI;
 
 use super::*;
-use bevy::{
-	prelude::*,
-	sprite::{MaterialMesh2dBundle},
-};
-use msrc_q11::knights_tour;
+use bevy::prelude::*;
+use msrc_q11::{piece_tour_no_repeat, Board, ChessPoint, StandardKnight, Move};
 
 pub struct VisualizationStatePlugin;
 impl Plugin for VisualizationStatePlugin {
@@ -29,6 +26,15 @@ struct ChessSquareVisual {
 impl From<ChessSquareUi> for ChessSquareVisual {
 	fn from(ui: ChessSquareUi) -> Self {
 		Self { x: ui.x, y: ui.y }
+	}
+}
+
+impl From<ChessPoint> for ChessSquareVisual {
+	fn from(point: ChessPoint) -> Self {
+		Self {
+			x: point.row,
+			y: point.column,
+		}
 	}
 }
 
@@ -105,8 +111,7 @@ fn spawn_path_line(
 	// info!("Transform: {:?}", transform);
 	// info!("Angle: {:?}, Length: {:?}", angle, length);
 
-	let mesh_thin_rectangle = meshes
-		.add(shape::Box::new(length, 1., 1.).into());
+	let mesh_thin_rectangle = meshes.add(shape::Box::new(length, 1., 1.).into());
 
 	commands.spawn(PbrBundle {
 		mesh: mesh_thin_rectangle,
@@ -126,13 +131,13 @@ fn spawn_chess_pieces(
 	let selected: ChessSquareVisual = selected.selected.expect("No square selected?").into();
 
 	// ground plane
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(shape::Plane::from_size(500.0).into()),
-        material: materials.add(Color::SILVER.into()),
-				// transform to be behind, xy plane
-				transform: Transform::from_xyz(0., 0., -10.).with_rotation(Quat::from_rotation_x(PI / 2.)),
-        ..default()
-    });
+	commands.spawn(PbrBundle {
+		mesh: meshes.add(shape::Plane::from_size(500.0).into()),
+		material: materials.add(Color::SILVER.into()),
+		// transform to be behind, xy plane
+		transform: Transform::from_xyz(0., 0., -10.).with_rotation(Quat::from_rotation_x(PI / 2.)),
+		..default()
+	});
 
 	// commands.spawn(
 	// 	(SpriteBundle {
@@ -162,7 +167,8 @@ fn spawn_chess_pieces(
 					transform: Transform::from_translation(get_spacial_coord(ChessSquareVisual {
 						x: x as u8,
 						y: y as u8,
-					})).with_scale(Vec3::new(1., 1., 2.)),
+					}))
+					.with_scale(Vec3::new(1., 1., 2.)),
 					..default()
 				},
 				Name::new(format!("Chess Square ({}, {})", x, y)),
@@ -174,15 +180,26 @@ fn spawn_chess_pieces(
 		}
 	}
 
-	match knights_tour(selected.x as i32, selected.y as i32) {
-		Some((_, moves)) => {
-			for (from, to) in moves {
+	match piece_tour_no_repeat(
+		&StandardKnight {},
+		&mut Board::new(8, 8),
+		ChessPoint::new(selected.x, selected.y),
+	) {
+		Some(moves) => {
+			let moves: Vec<&Move> = moves.iter().collect();
+			for Move { from, to } in moves {
 				spawn_path_line(
 					&mut commands,
 					&mut meshes,
 					&mut materials,
-					&ChessSquareVisual { x: from.x as u8 + 1, y: from.y as u8 + 1 },
-					&ChessSquareVisual { x: to.x as u8 + 1, y: to.y as u8 + 1 },
+					&ChessSquareVisual {
+						x: from.row,
+						y: from.column,
+					},
+					&ChessSquareVisual {
+						x: to.row,
+						y: to.column,
+					},
 				);
 			}
 			// spawn_path_line(
@@ -192,9 +209,7 @@ fn spawn_chess_pieces(
 			// 	&selected,
 			// 	&ChessSquareVisual { x: 2, y: 7 },
 			// );
-		},
+		}
 		None => info!("Fail!"),
 	}
-	
-	
 }

@@ -31,7 +31,7 @@ pub fn init_debug_tools() {
 	tracing::subscriber::set_global_default(subscriber).unwrap();
 }
 
-use std::fmt::{self, Display};
+use std::{fmt::{self, Display}, ops::Deref};
 pub mod old;
 
 // 1 indexed
@@ -48,6 +48,18 @@ impl ChessPoint {
 		Self {
 			row: self.row.wrapping_add(dx as u8),
 			column: self.column.wrapping_add(dy as u8),
+		}
+	}
+
+	pub fn new(row: u8, column: u8) -> Self {
+		Self { row, column }
+	}
+
+	pub fn new_checked(row: u8, column: u8, board: &Board) -> Option<Self> {
+		if board.validate_point(&Self { row, column }) {
+			Some(Self { row, column })
+		} else {
+			None
 		}
 	}
 }
@@ -102,6 +114,14 @@ impl Display for Moves {
 impl From<Vec<Move>> for Moves {
 	fn from(moves: Vec<Move>) -> Self {
 		Self { moves }
+	}
+}
+
+impl Deref for Moves {
+	type Target = Vec<Move>;
+
+	fn deref(&self) -> &Self::Target {
+		&self.moves
 	}
 }
 
