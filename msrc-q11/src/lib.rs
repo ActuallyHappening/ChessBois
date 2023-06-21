@@ -31,8 +31,10 @@ pub fn init_debug_tools() {
 	tracing::subscriber::set_global_default(subscriber).unwrap();
 }
 
-
-use std::{fmt::{self, Display}, ops::Deref};
+use std::{
+	fmt::{self, Display},
+	ops::Deref,
+};
 pub mod old;
 use bevy::prelude::*;
 
@@ -62,6 +64,14 @@ impl ChessPoint {
 			Some(Self { row, column })
 		} else {
 			None
+		}
+	}
+
+	pub fn get_standard_colour(&self) -> Color {
+		if (self.row + self.column) % 2 == 0 {
+			Color::WHITE
+		} else {
+			Color::BLACK
 		}
 	}
 }
@@ -143,6 +153,7 @@ pub enum CellState {
 	Unavailable,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum CellOption {
 	Available,
 	Unavailable,
@@ -166,8 +177,8 @@ impl CellOption {
 	}
 }
 
-type CellStates = Vec<Vec<CellState>>;
-type CellOptions = Vec<Vec<CellOption>>;
+pub type CellStates = Vec<Vec<CellState>>;
+pub type CellOptions = Vec<Vec<CellOption>>;
 
 pub struct Board {
 	cell_states: CellStates,
@@ -301,13 +312,26 @@ impl Board {
 	// }
 
 	/// 1 indexed
-	fn width(&self) -> u8 {
+	pub fn width(&self) -> u8 {
 		self.cell_states[0].len() as u8
 	}
 
 	/// 1 indexed
-	fn height(&self) -> u8 {
+	pub fn height(&self) -> u8 {
 		self.cell_states.len() as u8
+	}
+
+	pub fn all_unvisited_available_points(&self) -> Vec<ChessPoint> {
+		let mut points = Vec::new();
+		for row in 1..=self.height() {
+			for column in 1..=self.width() {
+				let p = ChessPoint::new(row, column);
+				if self.get_availability_no_repeat(&p) == Some(true) {
+					points.push(p);
+				}
+			}
+		}
+		points
 	}
 }
 
