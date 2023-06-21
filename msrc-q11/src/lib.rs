@@ -68,7 +68,7 @@ impl ChessPoint {
 	}
 
 	pub fn get_standard_colour(&self) -> Color {
-		if (self.row + self.column) % 2 == 0 {
+		if (self.row + self.column + 1) % 2 == 0 {
 			Color::WHITE
 		} else {
 			Color::BLACK

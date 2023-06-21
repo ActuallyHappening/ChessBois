@@ -53,11 +53,10 @@ fn get_spacial_coord(board: &Board, chess_position: ChessPoint) -> Vec3 {
 }
 
 pub fn debug_trigger_default_board(
-	mut commands: Commands,
 	mut new_options: EventWriter<OptionsChanged>,
 ) {
 	let options = Options {
-		options: CellOptions::new(8, 8),
+		options: CellOptions::new(2, 2),
 		selected_start: ChessPoint::new(1, 1),
 	};
 	new_options.send(OptionsChanged {

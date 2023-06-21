@@ -11,7 +11,7 @@ impl Plugin for ChessSolverPlugin {
 	}
 }
 
-const CAMERA_HEIGHT: f32 = 25.;
+const CAMERA_HEIGHT: f32 = 75.;
 const LIGHT_HEIGHT: f32 = CAMERA_HEIGHT;
 
 /// Square width and height
@@ -38,7 +38,7 @@ pub fn setup(
 	// light
 	commands.spawn(PointLightBundle {
 		point_light: PointLight {
-			intensity: 1000.0,
+			intensity: 50000.0,
 			range: 250.,
 			// shadows_enabled: true,
 			..default()
