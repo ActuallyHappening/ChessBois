@@ -169,7 +169,7 @@ impl From<CellOption> for CellState {
 }
 
 impl CellOption {
-	pub fn is_available(&self) -> bool {
+	fn is_available(&self) -> bool {
 		match self {
 			CellOption::Available => true,
 			CellOption::Unavailable => false,
@@ -178,7 +178,29 @@ impl CellOption {
 }
 
 pub type CellStates = Vec<Vec<CellState>>;
-pub type CellOptions = Vec<Vec<CellOption>>;
+
+#[derive(Debug, Clone)]
+pub struct CellOptions(Vec<Vec<CellOption>>);
+
+impl CellOptions {
+	/// Creates square board with given dimensions and all cells available
+	pub fn new(rows: u8, columns: u8) -> Self {
+		Self(vec![
+			vec![CellOption::Available; columns as usize];
+			rows as usize
+		])
+	}
+}
+
+impl From<CellOptions> for CellStates {
+	fn from(options: CellOptions) -> Self {
+		options
+			.0
+			.into_iter()
+			.map(|row| row.into_iter().map(|cell| cell.into()).collect())
+			.collect()
+	}
+}
 
 pub struct Board {
 	cell_states: CellStates,
@@ -229,12 +251,13 @@ impl Board {
 	/// Creates square board with given dimensions and all cells available
 	pub fn new(rows: u8, columns: u8) -> Self {
 		Self {
-			cell_states: vec![vec![CellState::NeverOccupied; columns as usize]; rows as usize],
+			cell_states: CellOptions::new(rows, columns).into(),
 		}
 	}
 
 	pub fn from_options(cell_options: CellOptions) -> Self {
 		let cell_states = cell_options
+			.0
 			.into_iter()
 			.map(|row| row.into_iter().map(|cell| cell.into()).collect())
 			.collect();

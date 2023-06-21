@@ -1,3 +1,5 @@
+use std::f32::consts::TAU;
+
 use bevy::prelude::*;
 use msrc_q11::{Board, CellOptions, ChessPoint};
 
@@ -6,7 +8,10 @@ use crate::{CELL_DEPTH, CELL_HEIGHT, CELL_MARGIN, CELL_SELECTED, CELL_SIZE};
 pub struct BoardPlugin;
 impl Plugin for BoardPlugin {
 	fn build(&self, app: &mut App) {
-			app.add_system(handle_options_changed).add_event::<OptionsChanged>();
+		app
+			.add_system(handle_options_changed)
+			.add_event::<OptionsChanged>()
+			.add_startup_system(debug_trigger_default_board);
 	}
 }
 
@@ -45,6 +50,20 @@ fn get_spacial_coord(board: &Board, chess_position: ChessPoint) -> Vec3 {
 			full_y - total_height / 2.
 		},
 	)
+}
+
+pub fn debug_trigger_default_board(
+	mut commands: Commands,
+	mut new_options: EventWriter<OptionsChanged>,
+) {
+	let options = Options {
+		options: CellOptions::new(8, 8),
+		selected_start: ChessPoint::new(1, 1),
+	};
+	new_options.send(OptionsChanged {
+		new: options.clone(),
+		old: options,
+	});
 }
 
 pub fn handle_options_changed(
@@ -94,7 +113,8 @@ fn spawn_cell(
 	meshes: &mut ResMut<Assets<Mesh>>,
 	materials: &mut ResMut<Assets<StandardMaterial>>,
 ) {
-	let transform = Transform::from_translation(get_spacial_coord(board, at));
+	let transform = Transform::from_translation(get_spacial_coord(board, at))
+		.with_rotation(Quat::from_rotation_x(-TAU / 4.));
 	let mesh = meshes.add(shape::Box::new(CELL_SIZE, CELL_SIZE, CELL_DEPTH).into());
 
 	commands.spawn((
