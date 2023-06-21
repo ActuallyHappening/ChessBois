@@ -33,21 +33,28 @@ struct CurrentOptions {
 }
 
 fn get_spacial_coord(board: &Board, chess_position: ChessPoint) -> Vec3 {
-	let ChessPoint { row, column } = chess_position;
+	let ChessPoint { row: y, column: x } = chess_position;
+
+	let total_width = board.width() as f32 * (CELL_SIZE + CELL_MARGIN) - CELL_MARGIN;
+	let total_height = board.height() as f32 * (CELL_SIZE + CELL_MARGIN) - CELL_MARGIN;
 
 	Vec3::new(
 		{
 			// get x position, assuming margin between every square
-			let total_width = board.width() as f32 * (CELL_SIZE + CELL_MARGIN) - CELL_MARGIN;
-			let full_x = row as f32 * (CELL_SIZE + CELL_MARGIN);
+
+			// X position from center -> towards right
+			let full_x = x as f32 * (CELL_SIZE + CELL_MARGIN);
 			full_x - total_width / 2.
 		},
 		CELL_HEIGHT,
 		{
 			// repeat for y
-			let total_height = board.height() as f32 * (CELL_SIZE + CELL_MARGIN) - CELL_MARGIN;
-			let full_y = column as f32 * (CELL_SIZE + CELL_MARGIN);
-			full_y - total_height / 2.
+
+			/// Y position from center ^ upwards
+			let full_y_up = y as f32 * (CELL_SIZE + CELL_MARGIN);
+			let full_y_down = total_height - full_y_up;
+			// full_y_up - total_height / 2.
+			full_y_down + total_height / 2.
 		},
 	)
 }

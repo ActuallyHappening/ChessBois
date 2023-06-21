@@ -41,10 +41,13 @@ use bevy::prelude::*;
 // 1 indexed
 #[derive(Copy, Component, Reflect, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct ChessPoint {
-	// Between 1 and ROW_SIZE
-	pub row: u8,
-	// Between 1 and COLUMN_SIZE
+	// Between 1 and COLUMN_SIZE.
+	/// Corresponds to x axis
 	pub column: u8,
+
+	// Between 1 and ROW_SIZE.
+	/// Corresponds to y axis
+	pub row: u8,
 }
 
 impl ChessPoint {
