@@ -3,7 +3,7 @@ use std::f32::consts::TAU;
 use bevy::prelude::*;
 use msrc_q11::{Board, CellOptions, ChessPoint};
 
-use crate::{CELL_DEPTH, CELL_HEIGHT, CELL_MARGIN, CELL_SELECTED, CELL_SIZE};
+use crate::{CELL_DEPTH, CELL_HEIGHT, CELL_SELECTED, CELL_SIZE};
 
 pub struct BoardPlugin;
 impl Plugin for BoardPlugin {
@@ -32,39 +32,78 @@ struct CurrentOptions {
 	current: Options,
 }
 
-fn get_spacial_coord(board: &Board, chess_position: ChessPoint) -> Vec3 {
+// fn get_spacial_coord(board: &Board, chess_position: ChessPoint) -> Vec3 {
+// 	let ChessPoint { row: y, column: x } = chess_position;
+
+// 	let total_width = board.width() as f32 * (CELL_SIZE + CELL_MARGIN) - CELL_MARGIN;
+// 	let total_height = board.height() as f32 * (CELL_SIZE + CELL_MARGIN) - CELL_MARGIN;
+
+// 	Vec3::new(
+// 		{
+// 			// get x position, assuming margin between every square
+
+// 			// X position from center -> towards right
+// 			let full_x = x as f32 * (CELL_SIZE + CELL_MARGIN);
+// 			full_x - total_width / 2.
+// 		},
+// 		CELL_HEIGHT,
+// 		{
+// 			// repeat for y
+// 			let full_y_up = y as f32 * (CELL_SIZE + CELL_MARGIN);
+// 			let full_y_down = total_height - full_y_up;
+// 			// full_y_up - total_height / 2.
+// 			full_y_down + total_height / 2.
+// 		},
+// 	)
+// }
+
+/// Returns spacial coordinates of center of cell mesh
+fn get_spacial_coord_normalized(board: &Board, chess_position: ChessPoint) -> Vec2 {
 	let ChessPoint { row: y, column: x } = chess_position;
+	let x = x as f32;
+	let y = y as f32;
+	let width = board.width() as f32;
+	let height = board.height() as f32;
 
-	let total_width = board.width() as f32 * (CELL_SIZE + CELL_MARGIN) - CELL_MARGIN;
-	let total_height = board.height() as f32 * (CELL_SIZE + CELL_MARGIN) - CELL_MARGIN;
+	// normalized: (column, row) = (x, y)
+	// Adjusted = ((x - 1) -X Delta, (y - 1) - Y Delta)
+	// X Delta = (width - 1) / 2
 
-	Vec3::new(
-		{
-			// get x position, assuming margin between every square
+	let x_adjusted = (x - 1.) - (width - 1.) / 2.;
+	let y_adjusted = (y - 1.) - (height - 1.) / 2.;
 
-			// X position from center -> towards right
-			let full_x = x as f32 * (CELL_SIZE + CELL_MARGIN);
-			full_x - total_width / 2.
-		},
-		CELL_HEIGHT,
-		{
-			// repeat for y
-
-			/// Y position from center ^ upwards
-			let full_y_up = y as f32 * (CELL_SIZE + CELL_MARGIN);
-			let full_y_down = total_height - full_y_up;
-			// full_y_up - total_height / 2.
-			full_y_down + total_height / 2.
-		},
-	)
+	Vec2::new(x_adjusted, y_adjusted)
 }
 
-pub fn debug_trigger_default_board(
-	mut new_options: EventWriter<OptionsChanged>,
-) {
+fn get_spacial_coord(board: &Board, chess_position: ChessPoint) -> Vec3 {
+	let normalized = get_spacial_coord_normalized(board, chess_position) * CELL_SIZE;
+
+	Vec3::new(normalized.x, CELL_HEIGHT, normalized.y)
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn test_coords_center() {
+		let coords = get_spacial_coord_normalized(&Board::new(3, 3), ChessPoint::new(2, 2));
+
+		assert_eq!(coords, Vec2::new(0., 0.));
+	}
+
+	#[test]
+	fn test_coords_bl() {
+		let coords = get_spacial_coord_normalized(&Board::new(2, 2), ChessPoint::new(1, 1));
+
+		assert_eq!(coords, Vec2::new(-0.5, -0.5));
+	}
+}
+
+pub fn debug_trigger_default_board(mut new_options: EventWriter<OptionsChanged>) {
 	let options = Options {
-		options: CellOptions::new(2, 2),
-		selected_start: ChessPoint::new(1, 1),
+		options: CellOptions::new(8, 8),
+		selected_start: ChessPoint::new(4, 5),
 	};
 	new_options.send(OptionsChanged {
 		new: options.clone(),

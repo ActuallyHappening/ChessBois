@@ -16,7 +16,6 @@ const LIGHT_HEIGHT: f32 = CAMERA_HEIGHT;
 
 /// Square width and height
 const CELL_SIZE: f32 = 5.;
-const CELL_MARGIN: f32 = 1.;
 /// Distance from ground plane, y = 0
 const CELL_HEIGHT: f32 = 1.;
 /// Depth of cell
