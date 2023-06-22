@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_mod_picking::prelude::RaycastPickCamera;
 use std::f32::consts::PI;
 mod board;
 use board::*;
@@ -28,11 +29,14 @@ pub fn setup(
 	mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
 	// cam
-	commands.spawn(Camera3dBundle {
-		transform: Transform::from_xyz(0., CAMERA_HEIGHT, 0.)
-			.with_rotation(Quat::from_rotation_x(-PI / 2.)),
-		..default()
-	});
+	commands.spawn((
+		Camera3dBundle {
+			transform: Transform::from_xyz(0., CAMERA_HEIGHT, 0.)
+				.with_rotation(Quat::from_rotation_x(-PI / 2.)),
+			..default()
+		},
+		RaycastPickCamera::default(),
+	));
 
 	// light
 	commands.spawn(PointLightBundle {

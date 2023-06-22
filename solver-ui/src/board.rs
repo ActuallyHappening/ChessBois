@@ -1,7 +1,7 @@
-use std::f32::consts::TAU;
-
 use bevy::prelude::*;
+use bevy_mod_picking::prelude::*;
 use msrc_q11::{Board, CellOptions, ChessPoint};
+use std::f32::consts::TAU;
 
 use crate::{CELL_DEPTH, CELL_HEIGHT, CELL_SELECTED, CELL_SIZE};
 
@@ -10,7 +10,15 @@ impl Plugin for BoardPlugin {
 	fn build(&self, app: &mut App) {
 		app
 			.add_event::<UpdateSelectedCell>()
-			.add_startup_system(spawn_initial_board);
+			.add_startup_system(spawn_initial_board)
+			// picker plugins
+			// .add_plugins(DefaultPickingPlugins)
+			.add_plugins(
+				DefaultPickingPlugins
+					.build()
+					.disable::<DefaultHighlightingPlugin>()
+					.disable::<DebugPickingPlugin>(),
+			);
 	}
 }
 
@@ -143,21 +151,11 @@ fn spawn_cell(
 		},
 		Name::new(format!("Chess Square ({}, {})", at.row, at.column)),
 		at,
+		PickableBundle::default(),    // Makes the entity pickable
+		RaycastPickTarget::default(), // Marker for the `bevy_picking_raycast` backend
+		// OnPointer::<Move>::run_callback(),
+		OnPointer::<Click>::target_component_mut::<ChessPoint>(|_, point| {
+			info!("Clicked on {:?}", point);
+		}),
 	));
 }
-
-// /// Returns options, None if none, or panics if multiple events
-// fn get_options(mut event_stream: EventReader<OptionsChanged>) -> Option<OptionsChanged> {
-// 	let mut iter = event_stream.into_iter();
-// 	let options = iter.next();
-// 	match options {
-// 		None => None,
-// 		Some(first) => {
-// 			if iter.next().is_some() {
-// 				panic!("Multiple options events");
-// 			} else {
-// 				Some(first.clone())
-// 			}
-// 		}
-// 	}
-// }

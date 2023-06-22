@@ -22,7 +22,9 @@
 	"settings": {
 		"cSpell.words": [
 			"denormalized",
-			"Fullscreen"
+			"Fullscreen",
+			"Pickable",
+			"Raycast"
 		]
 	}
 }
