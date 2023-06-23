@@ -4,7 +4,8 @@ use msrc_q11::{Board, BoardOptions, ChessPoint};
 use std::f32::consts::TAU;
 
 use crate::{
-	CELL_DEPTH, CELL_HEIGHT, CELL_SELECTED, CELL_SIZE, VISUALIZATION_COLOUR, VISUALIZATION_HEIGHT,
+	CELL_DEPTH, CELL_HEIGHT, CELL_SELECTED_COLOUR, CELL_SIZE, VISUALIZATION_COLOUR,
+	VISUALIZATION_HEIGHT,
 };
 
 pub struct BoardPlugin;
@@ -30,7 +31,7 @@ impl Plugin for BoardPlugin {
 #[derive(Debug, Clone)]
 pub struct Options {
 	options: BoardOptions,
-	selected_start: ChessPoint,
+	selected_start: Option<ChessPoint>,
 }
 
 #[derive(Debug, Clone)]
@@ -117,7 +118,7 @@ fn spawn_initial(
 ) {
 	let options = Options {
 		options: BoardOptions::new(8, 8),
-		selected_start: ChessPoint::new(9, 9),
+		selected_start: Some(ChessPoint::new(9, 9)),
 	};
 	let current_options = CurrentOptions {
 		current: options.clone(),
@@ -134,6 +135,7 @@ fn spawn_initial(
 use cells::*;
 mod cells {
 	use super::*;
+	use crate::CELL_DISABLED_COLOUR;
 
 	pub fn spawn_cells(
 		commands: &mut Commands,
@@ -141,14 +143,19 @@ mod cells {
 		meshes: &mut ResMut<Assets<Mesh>>,
 		materials: &mut ResMut<Assets<StandardMaterial>>,
 	) {
+		let disabled_points = options.options.get_unavailable_points();
 		let board = Board::from_options(options.options.clone());
 		let start = options.selected_start;
 
 		for point in board.all_unvisited_available_points() {
-			let colour = if point == start {
-				CELL_SELECTED
-			} else {
-				point.get_standard_colour()
+			let colour = {
+				if disabled_points.contains(&point) {
+					CELL_DISABLED_COLOUR
+				} else if Some(point) == start {
+					CELL_SELECTED_COLOUR
+				} else {
+					point.get_standard_colour()
+				}
 			};
 			spawn_cell(point, &board, colour, commands, meshes, materials);
 		}
@@ -203,12 +210,12 @@ mod cells {
 		let (mat, point) = square.get(event.target).unwrap();
 
 		let options = &current_options.current;
-		if options.selected_start == *point {
+		if options.selected_start == Some(*point) {
 			Bubble::Up
 		} else {
 			// sets colour to selected
 			let material = materials.get_mut(mat).unwrap();
-			material.base_color = CELL_SELECTED;
+			material.base_color = CELL_SELECTED_COLOUR;
 
 			// send event
 			new_cell_selected.send(NewCellSelected { new: *point });
@@ -246,7 +253,7 @@ mod cells {
 		if let Some(new_starting_point) = new_starting_point.into_iter().next() {
 			let new_options = Options {
 				options: current_options.options.clone(),
-				selected_start: new_starting_point.new,
+				selected_start: Some(new_starting_point.new),
 			};
 			commands.insert_resource(CurrentOptions {
 				current: new_options.clone(),
@@ -270,21 +277,9 @@ mod cells {
 		mut materials: ResMut<Assets<StandardMaterial>>,
 	) {
 		if let Some(new_board) = new_board.into_iter().next() {
-			let new_options = &new_board.new;
-
-			let mut start_pos = current_options.current.selected_start;
-			if !new_options.validate_point(&start_pos) {
-				start_pos = ChessPoint::new(1, 1);
-
-				assert!(
-					new_options.validate_point(&start_pos),
-					"(1, 1) is not a valid chess point, um, don't chose too small chess board sizes!"
-				);
-			}
-
 			let new_options = Options {
 				options: new_board.new.clone(),
-				selected_start: start_pos,
+				selected_start: None,
 			};
 			commands.insert_resource(CurrentOptions {
 				current: new_options.clone(),
@@ -317,18 +312,19 @@ mod visualization {
 		meshes: &mut ResMut<Assets<Mesh>>,
 		materials: &mut ResMut<Assets<StandardMaterial>>,
 	) {
-		let mut board = Board::from_options(options.options.clone());
-		let start = options.selected_start;
-		let piece = StandardKnight {};
+		if let Some(start) = options.selected_start {
+			let mut board = Board::from_options(options.options.clone());
+			let piece = StandardKnight {};
 
-		match piece_tour_no_repeat(&piece, &mut board, start) {
-			Some(moves) => {
-				for Move { from, to } in moves.iter() {
-					spawn_path_line(commands, meshes, materials, from, to, &board)
+			match piece_tour_no_repeat(&piece, &mut board, start) {
+				Some(moves) => {
+					for Move { from, to } in moves.iter() {
+						spawn_path_line(commands, meshes, materials, from, to, &board)
+					}
 				}
-			}
-			None => {
-				info!("No solution found!");
+				None => {
+					info!("No solution found!");
+				}
 			}
 		}
 

@@ -273,6 +273,19 @@ impl BoardOptions {
 		}
 		Self { options }
 	}
+
+	pub fn get_unavailable_points(&self) -> Vec<ChessPoint> {
+		let mut points = Vec::new();
+		for row in 1..=self.height() {
+			for column in 1..=self.width() {
+				let p = ChessPoint::new(row, column);
+				if self.get(&p) == Some(CellOption::Unavailable) {
+					points.push(p);
+				}
+			}
+		}
+		points
+	}
 }
 
 impl From<BoardOptions> for CellStates {
