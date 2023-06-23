@@ -134,6 +134,8 @@ fn spawn_initial(
 
 use cells::*;
 mod cells {
+	use msrc_q11::CellOption;
+
 	use super::*;
 	use crate::CELL_DISABLED_COLOUR;
 
@@ -143,20 +145,12 @@ mod cells {
 		meshes: &mut ResMut<Assets<Mesh>>,
 		materials: &mut ResMut<Assets<StandardMaterial>>,
 	) {
-		let disabled_points = options.options.get_unavailable_points();
 		let board = Board::from_options(options.options.clone());
 		let start = options.selected_start;
+		let options = options.options.clone();
 
-		for point in board.all_unvisited_available_points() {
-			let colour = {
-				if disabled_points.contains(&point) {
-					CELL_DISABLED_COLOUR
-				} else if Some(point) == start {
-					CELL_SELECTED_COLOUR
-				} else {
-					point.get_standard_colour()
-				}
-			};
+		for point in options.get_all_points() {
+			let colour = compute_colour(&point, Some(&options), start);
 			spawn_cell(point, &board, colour, commands, meshes, materials);
 		}
 	}
@@ -164,6 +158,25 @@ mod cells {
 	fn despawn_cells(commands: &mut Commands, cells: Query<Entity, With<ChessPoint>>) {
 		for cell in cells.iter() {
 			commands.entity(cell).despawn_recursive();
+		}
+	}
+
+	/// Takes as much information as it can get and returns the colour the cell should be.
+	/// 
+	/// - Pass None to options to skip checking if cell is disabled
+	/// - Pass None to start to skip checking if cell is selected
+	fn compute_colour(
+		point: &ChessPoint,
+		options: Option<&BoardOptions>,
+		start: Option<ChessPoint>,
+	) -> Color {
+		if options.is_some_and(|options| options.get_unavailable_points().contains(point)) {
+			// info!("Point {} is unavailable", point);
+			CELL_DISABLED_COLOUR
+		} else if Some(*point) == start {
+			CELL_SELECTED_COLOUR
+		} else {
+			point.get_standard_colour()
 		}
 	}
 
@@ -193,48 +206,89 @@ mod cells {
 			// OnPointer::<Move>::run_callback(),
 			OnPointer::<Over>::run_callback(cell_selected),
 			OnPointer::<Out>::run_callback(cell_deselected),
+			OnPointer::<Click>::run_callback(toggle_cell_availability),
 		));
 	}
 
+	/// Changes selected cell
 	fn cell_selected(
 		// The first parameter is always the `ListenedEvent`, passed in by the event listening system.
 		In(event): In<ListenedEvent<Over>>,
 
 		mut materials: ResMut<Assets<StandardMaterial>>,
 
-		square: Query<(&Handle<StandardMaterial>, &ChessPoint)>,
+		cells: Query<(&Handle<StandardMaterial>, &ChessPoint)>,
 		current_options: ResMut<CurrentOptions>,
 
 		mut new_cell_selected: EventWriter<NewCellSelected>,
 	) -> Bubble {
-		let (mat, point) = square.get(event.target).unwrap();
+		let (mat, point) = cells.get(event.target).unwrap();
 
-		let options = &current_options.current;
-		if options.selected_start == Some(*point) {
-			Bubble::Up
-		} else {
+		let options = &current_options.current.options;
+		let is_disabled = options.get_unavailable_points().contains(point);
+
+		if !is_disabled {
 			// sets colour to selected
 			let material = materials.get_mut(mat).unwrap();
 			material.base_color = CELL_SELECTED_COLOUR;
 
 			// send event
 			new_cell_selected.send(NewCellSelected { new: *point });
-
-			Bubble::Up
 		}
+
+		Bubble::Up
 	}
 
+	/// Just undoes colour change to normal
 	fn cell_deselected(
 		In(event): In<ListenedEvent<Out>>,
 		mut materials: ResMut<Assets<StandardMaterial>>,
 		square: Query<(&Handle<StandardMaterial>, &ChessPoint)>,
+		options: Res<CurrentOptions>,
 	) -> Bubble {
 		let (mat, point) = square.get(event.target).unwrap();
 
 		// sets colour to selected
 		let material = materials.get_mut(mat).unwrap();
-		material.base_color = point.get_standard_colour();
+		material.base_color = compute_colour(
+			point,
+			Some(&options.current.options),
+			None,
+		);
 
+		Bubble::Up
+	}
+
+	fn toggle_cell_availability(
+		In(event): In<ListenedEvent<Click>>,
+		// mut materials: ResMut<Assets<StandardMaterial>>,
+		cells: Query<(&Handle<StandardMaterial>, &ChessPoint)>,
+		current_options: ResMut<CurrentOptions>,
+
+		mut new_board: EventWriter<NewBoardCellOptions>,
+	) -> Bubble {
+		let (mat, point) = cells.get(event.target).unwrap();
+
+		let options = &current_options.current.options;
+		match options.get(point) {
+			Some(CellOption::Available) => {
+				// let material = materials.get_mut(mat).unwrap();
+				// material.base_color = CELL_DISABLED_COLOUR;
+
+				new_board.send(NewBoardCellOptions {
+					new: options.clone().set(point, CellOption::Unavailable),
+				})
+			}
+			Some(CellOption::Unavailable) => {
+				// let material = materials.get_mut(mat).unwrap();
+				// material.base_color = point.get_standard_colour();
+
+				new_board.send(NewBoardCellOptions {
+					new: options.clone().set(point, CellOption::Available),
+				})
+			}
+			None => (),
+		}
 		Bubble::Up
 	}
 
@@ -267,7 +321,6 @@ mod cells {
 
 	pub fn handle_new_board_event(
 		mut new_board: EventReader<NewBoardCellOptions>,
-		current_options: Res<CurrentOptions>,
 
 		vis: Query<Entity, With<VisualizationComponent>>,
 		cells: Query<Entity, With<ChessPoint>>,
@@ -276,9 +329,9 @@ mod cells {
 		mut meshes: ResMut<Assets<Mesh>>,
 		mut materials: ResMut<Assets<StandardMaterial>>,
 	) {
-		if let Some(new_board) = new_board.into_iter().next() {
+		if let Some(new_options) = new_board.into_iter().next() {
 			let new_options = Options {
-				options: new_board.new.clone(),
+				options: new_options.new.clone(),
 				selected_start: None,
 			};
 			commands.insert_resource(CurrentOptions {
@@ -313,6 +366,11 @@ mod visualization {
 		materials: &mut ResMut<Assets<StandardMaterial>>,
 	) {
 		if let Some(start) = options.selected_start {
+			if options.options.get_unavailable_points().contains(&start) {
+				// debug!("Start point is disabled!");
+				return;
+			}
+
 			let mut board = Board::from_options(options.options.clone());
 			let piece = StandardKnight {};
 

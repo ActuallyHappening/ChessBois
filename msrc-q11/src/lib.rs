@@ -209,12 +209,21 @@ impl BoardOptions {
 		}
 	}
 
-	fn get(&self, point: &ChessPoint) -> Option<CellOption> {
+	pub fn get(&self, point: &ChessPoint) -> Option<CellOption> {
 		if !self.validate_point(point) {
 			return None;
 		}
 
 		Some(self.options[point.row as usize - 1][point.column as usize - 1])
+	}
+
+	// pub fn set(&mut self, point: &ChessPoint, state: CellOption) {
+		// self.options[point.row as usize - 1][point.column as usize - 1] = state;
+	// }
+	pub fn set(self, point: &ChessPoint, state: CellOption) -> Self {
+		let mut options = self.options;
+		options[point.row as usize - 1][point.column as usize - 1] = state;
+		Self { options }
 	}
 
 	/// 1 indexed
@@ -286,6 +295,16 @@ impl BoardOptions {
 		}
 		points
 	}
+
+	pub fn get_all_points(&self) -> Vec<ChessPoint> {
+		let mut points = Vec::new();
+		for row in 1..=self.height() {
+			for column in 1..=self.width() {
+				points.push(ChessPoint::new(row, column));
+			}
+		}
+		points
+	}
 }
 
 impl From<BoardOptions> for CellStates {
@@ -300,7 +319,7 @@ impl From<BoardOptions> for CellStates {
 
 impl Display for BoardOptions {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		for row in self.options.iter() {
+		for row in self.options.iter().rev() {
 			for cell in row.iter() {
 				match cell {
 					CellOption::Available => write!(f, " ✅ ")?,
