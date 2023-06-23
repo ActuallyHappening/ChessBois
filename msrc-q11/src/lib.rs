@@ -493,7 +493,14 @@ pub fn piece_tour_no_repeat(
 	let mut moves = Vec::new();
 	let mut current = start;
 
-	for _ in 1..board.options().width() * board.options().height() {
+	let num_available_cells = board
+		.options()
+		.get_all_points()
+		.iter()
+		.filter(|p| board.get_availability_no_repeat(p) == Some(true))
+		.count();
+
+	for _ in 1..num_available_cells {
 		if !board.options().validate_point(&current) {
 			return None;
 		}

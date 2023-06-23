@@ -6,9 +6,8 @@ edition = "2021"
 # [lib]
 # crate-type = ["rlib"]
 
-
-
-# [features]
+[features]
+dev = ["bevy/dynamic_linking"]
 # default = ["bevy/dynamic_linking", "editor"]
 # editor = ["dep:bevy_editor_pls"]
 
