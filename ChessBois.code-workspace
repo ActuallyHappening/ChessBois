@@ -1,14 +1,12 @@
 {
 	"folders": [
 		{
-			"path": "solver-ui"
+			"path": "."
 		},
 		{
 			"path": "msrc-q11"
 		},
-		{
-			"path": "."
-		},
+		
 		// {
 		// 	"path": "/Users/calebyates/.env"
 		// },
