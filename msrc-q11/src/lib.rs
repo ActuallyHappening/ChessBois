@@ -87,7 +87,7 @@ impl From<(u8, u8)> for ChessPoint {
 
 impl Display for ChessPoint {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		write!(f, "({}, {})", self.row, self.column)
+		write!(f, "({}, {})", self.column, self.row)
 	}
 }
 

@@ -11,14 +11,13 @@ impl Plugin for BoardPlugin {
 		app
 			.add_event::<NewCellSelected>()
 			.add_startup_system(spawn_initial_board)
-			// picker plugins
-			// .add_plugins(DefaultPickingPlugins)
 			.add_plugins(
 				DefaultPickingPlugins
 					.build()
 					.disable::<DefaultHighlightingPlugin>()
 					.disable::<DebugPickingPlugin>(),
-			);
+			)
+			.add_system(handle_new_cell_selected_event);
 	}
 }
 
@@ -46,10 +45,10 @@ mod coords {
 	/// Returns spacial coordinates of center of cell mesh
 	fn get_spacial_coord_normalized(board: &Board, chess_position: ChessPoint) -> Vec2 {
 		let ChessPoint { row: y, column: x } = chess_position;
-		let x = x as f32;
-		let y = y as f32;
 		let width = board.width() as f32;
 		let height = board.height() as f32;
+		let x = x as f32;
+		let y = y as f32;
 
 		// normalized: (column, row) = (x, y)
 		// Adjusted = ((x - 1) -X Delta, (y - 1) - Y Delta)
@@ -64,7 +63,7 @@ mod coords {
 	pub fn get_spacial_coord(board: &Board, chess_position: ChessPoint) -> Vec3 {
 		let normalized = get_spacial_coord_normalized(board, chess_position) * CELL_SIZE;
 
-		Vec3::new(normalized.x, CELL_HEIGHT, normalized.y)
+		Vec3::new(normalized.x, CELL_HEIGHT, -normalized.y)
 	}
 
 	#[cfg(test)]
@@ -79,10 +78,17 @@ mod coords {
 		}
 
 		#[test]
-		fn test_coords_bl() {
+		fn test_coords_bl_2() {
 			let coords = get_spacial_coord_normalized(&Board::new(2, 2), ChessPoint::new(1, 1));
 
 			assert_eq!(coords, Vec2::new(-0.5, -0.5));
+		}
+
+		#[test]
+		fn test_coords_bl_5() {
+			let coords = get_spacial_coord_normalized(&Board::new(5, 5), ChessPoint::new(1, 1));
+
+			assert_eq!(coords, Vec2::new(-2., -2.));
 		}
 	}
 }
@@ -206,5 +212,6 @@ fn handle_new_cell_selected_event(
 		});
 
 		// TODO: Show visualization here!
+		info!("New starting point: {}", new_starting_point.new);
 	}
 }
