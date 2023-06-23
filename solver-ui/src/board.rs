@@ -40,7 +40,7 @@ pub struct CurrentOptions {
 	current: Options,
 }
 
-use coords::get_spacial_coord;
+use coords::*;
 mod coords {
 	use super::*;
 
@@ -66,6 +66,12 @@ mod coords {
 		let normalized = get_spacial_coord_normalized(board, chess_position) * CELL_SIZE;
 
 		Vec3::new(normalized.x, CELL_HEIGHT, -normalized.y)
+	}
+
+	pub fn get_spacial_coord_2d(board: &Board, chess_position: ChessPoint) -> Vec2 {
+		let normalized = get_spacial_coord_normalized(board, chess_position) * CELL_SIZE;
+
+		Vec2::new(normalized.x, -normalized.y)
 	}
 
 	#[cfg(test)]
@@ -264,18 +270,27 @@ mod visualization {
 	) {
 		let mut board = Board::from_options(options.options.clone());
 		let start = options.selected_start;
-		let piece = StandardKnight {};
+		// let piece = StandardKnight {};
 
-		match piece_tour_no_repeat(&piece, &mut board, start) {
-			Some(moves) => {
-				for Move { from, to } in moves.iter() {
-					spawn_path_line(commands, meshes, materials, from, to, &board)
-				}
-			},
-			None => {
-				info!("No solution found!");
-			},
-		}
+		// match piece_tour_no_repeat(&piece, &mut board, start) {
+		// 	Some(moves) => {
+		// 		for Move { from, to } in moves.iter() {
+		// 			spawn_path_line(commands, meshes, materials, from, to, &board)
+		// 		}
+		// 	},
+		// 	None => {
+		// 		info!("No solution found!");
+		// 	},
+		// }
+
+		spawn_path_line(
+			commands,
+			meshes,
+			materials,
+			&start,
+			&(start + ChessPoint::new(1, 1)),
+			&board,
+		)
 	}
 
 	pub fn despawn_visualization(
@@ -295,14 +310,17 @@ mod visualization {
 		to: &ChessPoint,
 		board: &Board,
 	) {
-		let from_pos = get_spacial_coord(board, *from);
-		let to_pos = get_spacial_coord(board, *to);
+		let from_pos = get_spacial_coord_2d(board, *from);
+		let to_pos = get_spacial_coord_2d(board, *to);
 
-		let center = (from_pos + to_pos) / 2.;
-		let length = (from_pos - to_pos).length();
-		let angle: f32 = (to_pos.y - from_pos.y).atan2(to_pos.x - from_pos.x);
+		let center = (from_pos + to_pos) / 2.; // ✅
+		let length = (from_pos - to_pos).length(); // ✅
+		let angle: f32 = (from_pos.y - to_pos.y).atan2(from_pos.x - to_pos.x) - TAU / 4.;
 
-		let transform = Transform::from_translation(center + Vec3::new(0., VISUALIZATION_HEIGHT, 0.))
+		// assert_eq!(angle, TAU / 8., "Drawing from {from} [{from:?}] [{from_pos}] to {to} [{to:?}] [{to_pos}], Angle: {angle}, 𝚫y: {}, 𝚫x: {}", (to_pos.y - from_pos.y), (to_pos.x - from_pos.x));
+		info!("Angle: {angle}, {}", angle.to_degrees());
+
+		let transform = Transform::from_translation(Vec3::new(center.x, VISUALIZATION_HEIGHT, center.y))
 			.with_rotation(Quat::from_rotation_y(angle));
 
 		// info!("Transform: {:?}", transform);

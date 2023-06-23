@@ -91,6 +91,18 @@ impl Display for ChessPoint {
 	}
 }
 
+// add two chesspoints
+impl std::ops::Add for ChessPoint {
+	type Output = Self;
+
+	fn add(self, other: Self) -> Self {
+		Self {
+			row: self.row + other.row,
+			column: self.column + other.column,
+		}
+	}
+}
+
 /// Represents move from one point to another
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Move {
