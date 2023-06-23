@@ -252,7 +252,6 @@ mod cells {
 				current: new_options.clone(),
 			});
 
-			// TODO: Show visualization here!
 			// info!("New starting point: {}", new_starting_point.new);
 			despawn_visualization(&mut commands, vis);
 			spawn_visualization_from_options(&new_options, &mut commands, &mut meshes, &mut materials);
@@ -400,7 +399,6 @@ mod ui {
 	use bevy_egui::*;
 
 	pub fn spawn_left_sidebar_ui(
-		mut commands: Commands,
 		mut contexts: EguiContexts,
 
 		current_options: ResMut<CurrentOptions>,
@@ -408,7 +406,8 @@ mod ui {
 		mut new_board_event: EventWriter<NewBoardCellOptions>,
 	) {
 		egui::SidePanel::left("general_controls_panel").show(contexts.ctx_mut(), |ui| {
-			// ui.label("world");
+			let old_options = current_options.current.options.clone();
+
 			ui.heading("Controls");
 
 			ui.label(format!(
@@ -419,11 +418,23 @@ mod ui {
 			// ui.add(egui::Slider::new(&mut my_f32, 3.0..=10.).text("My value"));
 
 			// ui.add(egui::Slider::new(&mut ui_state.value, 0.0..=10.0).text("value"));
-			if ui.button("Increment").clicked() {
-				// ui_state.value += 1.0;
-				let old_options = current_options.current.options.clone();
+			if ui.button("Wider +1").clicked() {
 				let new_options = old_options.clone().update_width(old_options.width() + 1);
+				new_board_event.send(NewBoardCellOptions { new: new_options });
+			}
 
+			if ui.button("Thinner -1").clicked() {
+				let new_options = old_options.clone().update_width(old_options.width() - 1);
+				new_board_event.send(NewBoardCellOptions { new: new_options });
+			}
+
+			if ui.button("Taller +1").clicked() {
+				let new_options = old_options.clone().update_height(old_options.height() + 1);
+				new_board_event.send(NewBoardCellOptions { new: new_options });
+			}
+
+			if ui.button("Shorter -1").clicked() {
+				let new_options = old_options.clone().update_height(old_options.height() - 1);
 				new_board_event.send(NewBoardCellOptions { new: new_options });
 			}
 		});

@@ -258,6 +258,21 @@ impl BoardOptions {
 		}
 		Self { options }
 	}
+
+	/// Increases/decreases the height of the options,
+	/// defaulting to Available for new cells
+	pub fn update_height(self, new_height: u8) -> Self {
+		let width = self.width() as usize;
+		let mut options = self.options;
+		if options.len() < new_height as usize {
+			options.resize_with(new_height as usize, || {
+				vec![CellOption::Available; width]
+			});
+		} else {
+			options.truncate(new_height as usize);
+		}
+		Self { options }
+	}
 }
 
 impl From<BoardOptions> for CellStates {
