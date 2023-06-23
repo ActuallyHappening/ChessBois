@@ -9,7 +9,7 @@ pub struct BoardPlugin;
 impl Plugin for BoardPlugin {
 	fn build(&self, app: &mut App) {
 		app
-			.add_event::<UpdateSelectedCell>()
+			.add_event::<NewCellSelected>()
 			.add_startup_system(spawn_initial_board)
 			// picker plugins
 			// .add_plugins(DefaultPickingPlugins)
@@ -30,7 +30,7 @@ struct Options {
 }
 
 #[derive(Debug, Clone)]
-pub struct UpdateSelectedCell {
+pub struct NewCellSelected {
 	new: ChessPoint,
 }
 
@@ -154,8 +154,57 @@ fn spawn_cell(
 		PickableBundle::default(),    // Makes the entity pickable
 		RaycastPickTarget::default(), // Marker for the `bevy_picking_raycast` backend
 		// OnPointer::<Move>::run_callback(),
-		OnPointer::<Click>::target_component_mut::<ChessPoint>(|_, point| {
-			info!("Clicked on {:?}", point);
-		}),
+		OnPointer::<Over>::run_callback(cell_selected),
 	));
+}
+
+fn cell_selected(
+	// The first parameter is always the `ListenedEvent`, passed in by the event listening system.
+	In(event): In<ListenedEvent<Over>>,
+
+	mut materials: ResMut<Assets<StandardMaterial>>,
+
+	square: Query<(&Handle<StandardMaterial>, &ChessPoint)>,
+	current_options: ResMut<CurrentOptions>,
+
+	mut new_cell_selected: EventWriter<NewCellSelected>,
+) -> Bubble {
+	let (mat, point) = square.get(event.target).unwrap();
+
+	let options = &current_options.current;
+	if options.selected_start == *point {
+		Bubble::Up
+	} else {
+		// sets colour to selected
+		let material = materials.get_mut(mat).unwrap();
+		material.base_color = CELL_SELECTED;
+
+		// send event
+		new_cell_selected.send(NewCellSelected { new: *point });
+
+		Bubble::Up
+	}
+}
+
+/// Handles re-constructing visual solution
+fn handle_new_cell_selected_event(
+	mut new_starting_point: EventReader<NewCellSelected>,
+	current_options: ResMut<CurrentOptions>,
+
+	mut commands: Commands,
+	mut meshes: ResMut<Assets<Mesh>>,
+	mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+	let current_options = &current_options.current;
+	if let Some(new_starting_point) = new_starting_point.into_iter().next() {
+		let new_options = Options {
+			options: current_options.options.clone(),
+			selected_start: new_starting_point.new,
+		};
+		commands.insert_resource(CurrentOptions {
+			current: new_options,
+		});
+
+		// TODO: Show visualization here!
+	}
 }
