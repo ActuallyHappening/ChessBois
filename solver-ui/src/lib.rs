@@ -23,6 +23,9 @@ const CELL_HEIGHT: f32 = 1.;
 const CELL_DEPTH: f32 = 2.;
 const CELL_SELECTED: Color = Color::PURPLE;
 
+const VISUALIZATION_HEIGHT: f32 = 3.;
+const VISUALIZATION_COLOUR: Color = Color::GREEN;
+
 pub fn setup(
 	mut commands: Commands,
 	mut meshes: ResMut<Assets<Mesh>>,
