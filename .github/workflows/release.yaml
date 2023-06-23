@@ -7,7 +7,7 @@ on:
 
 env:
   # update with the name of the main binary
-  binary: bevy_github_ci_template
+  binary: solver_ui
   add_binaries_to_github_release: true
   #itch_target: <itch.io-username>/<game-name>
 
@@ -28,11 +28,6 @@ jobs:
       - name: install wasm-bindgen-cli
         run: |
           cargo install wasm-bindgen-cli
-
-      - name: Change dir into "solver-ui" for rest of workflow
-        run: |
-          cd solver-ui
-            
 
       - name: Build
         run: |
