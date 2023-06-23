@@ -270,27 +270,27 @@ mod visualization {
 	) {
 		let mut board = Board::from_options(options.options.clone());
 		let start = options.selected_start;
-		// let piece = StandardKnight {};
+		let piece = StandardKnight {};
 
-		// match piece_tour_no_repeat(&piece, &mut board, start) {
-		// 	Some(moves) => {
-		// 		for Move { from, to } in moves.iter() {
-		// 			spawn_path_line(commands, meshes, materials, from, to, &board)
-		// 		}
-		// 	},
-		// 	None => {
-		// 		info!("No solution found!");
-		// 	},
-		// }
+		match piece_tour_no_repeat(&piece, &mut board, start) {
+			Some(moves) => {
+				for Move { from, to } in moves.iter() {
+					spawn_path_line(commands, meshes, materials, from, to, &board)
+				}
+			},
+			None => {
+				info!("No solution found!");
+			},
+		}
 
-		spawn_path_line(
-			commands,
-			meshes,
-			materials,
-			&start,
-			&(start + ChessPoint::new(1, 1)),
-			&board,
-		)
+		// spawn_path_line(
+		// 	commands,
+		// 	meshes,
+		// 	materials,
+		// 	&start,
+		// 	&ChessPoint::new(4, 4),
+		// 	&board,
+		// )
 	}
 
 	pub fn despawn_visualization(
@@ -310,12 +310,12 @@ mod visualization {
 		to: &ChessPoint,
 		board: &Board,
 	) {
-		let from_pos = get_spacial_coord_2d(board, *from);
-		let to_pos = get_spacial_coord_2d(board, *to);
+		let start_pos = get_spacial_coord_2d(board, *from);
+		let end_pos = get_spacial_coord_2d(board, *to);
 
-		let center = (from_pos + to_pos) / 2.; // ✅
-		let length = (from_pos - to_pos).length(); // ✅
-		let angle: f32 = (from_pos.y - to_pos.y).atan2(from_pos.x - to_pos.x) - TAU / 4.;
+		let center = (start_pos + end_pos) / 2.; // ✅
+		let length = (start_pos - end_pos).length(); // ✅
+		let angle: f32 = -(start_pos.y - end_pos.y).atan2(start_pos.x - end_pos.x);
 
 		// assert_eq!(angle, TAU / 8., "Drawing from {from} [{from:?}] [{from_pos}] to {to} [{to:?}] [{to_pos}], Angle: {angle}, 𝚫y: {}, 𝚫x: {}", (to_pos.y - from_pos.y), (to_pos.x - from_pos.x));
 		info!("Angle: {angle}, {}", angle.to_degrees());
