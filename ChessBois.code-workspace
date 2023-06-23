@@ -6,20 +6,14 @@
 		{
 			"path": "msrc-q11"
 		},
-		
-		// {
-		// 	"path": "/Users/calebyates/.env"
-		// },
-		// {
-		// 	"path": "bevy"
-		// },
-		// {
-		// 	"path": "bevy_mod_picking"
-		// }
+		{
+			"path": "bevy_egui"
+		}
 	],
 	"settings": {
 		"cSpell.words": [
 			"denormalized",
+			"Egui",
 			"Fullscreen",
 			"Pickable",
 			"Raycast"

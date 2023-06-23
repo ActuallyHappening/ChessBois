@@ -63,7 +63,7 @@ impl ChessPoint {
 	}
 
 	pub fn new_checked(row: u8, column: u8, board: &Board) -> Option<Self> {
-		if board.validate_point(&Self { row, column }) {
+		if board.options().validate_point(&Self { row, column }) {
 			Some(Self { row, column })
 		} else {
 			None
@@ -115,7 +115,7 @@ impl Move {
 		Self { from, to }
 	}
 
-	pub fn new_checked(from: ChessPoint, to: ChessPoint, board: &Board) -> Option<Self> {
+	pub fn new_checked(from: ChessPoint, to: ChessPoint, board: &BoardOptions) -> Option<Self> {
 		if board.validate_point(&from) && board.validate_point(&to) {
 			Some(Self { from, to })
 		} else {
@@ -194,31 +194,100 @@ impl CellOption {
 
 pub type CellStates = Vec<Vec<CellState>>;
 
+/// Necessary information to make custom board.
+/// Does NOT hold actual state, to solve use [Board]
 #[derive(Debug, Clone)]
-pub struct CellOptions(Vec<Vec<CellOption>>);
+pub struct BoardOptions {
+	options: Vec<Vec<CellOption>>,
+}
 
-impl CellOptions {
+impl BoardOptions {
 	/// Creates square board with given dimensions and all cells available
 	pub fn new(rows: u8, columns: u8) -> Self {
-		Self(vec![
-			vec![CellOption::Available; columns as usize];
-			rows as usize
-		])
+		Self {
+			options: vec![vec![CellOption::Available; columns as usize]; rows as usize],
+		}
+	}
+
+	fn get(&self, point: &ChessPoint) -> Option<CellOption> {
+		if !self.validate_point(point) {
+			return None;
+		}
+
+		Some(self.options[point.row as usize - 1][point.column as usize - 1])
+	}
+
+	/// 1 indexed
+	pub fn width(&self) -> u8 {
+		self.options[0].len() as u8
+	}
+
+	/// 1 indexed
+	pub fn height(&self) -> u8 {
+		self.options.len() as u8
+	}
+
+	pub fn validate_point(&self, p: &ChessPoint) -> bool {
+		let bounds_check =
+			1 <= p.row && p.row <= self.height() && 1 <= p.column && p.column <= self.width();
+		if !bounds_check {
+			return false;
+		}
+
+		let get_check = self
+			.options
+			.get(p.row as usize - 1)
+			.and_then(|row| row.get(p.column as usize - 1));
+		get_check.is_some()
+	}
+
+	pub fn validate_point_or_panic(&self, p: &ChessPoint) {
+		if !self.validate_point(p) {
+			panic!("Invalid point: {:?}", p);
+		}
+	}
+
+	pub fn update_width(self, new_width: u8) -> Self {
+		let mut options = self.options;
+		for row in options.iter_mut() {
+			if row.len() < new_width as usize {
+				row.resize(new_width as usize, CellOption::Available);
+			} else {
+				row.truncate(new_width as usize);
+			}
+		}
+		Self { options }
 	}
 }
 
-impl From<CellOptions> for CellStates {
-	fn from(options: CellOptions) -> Self {
+impl From<BoardOptions> for CellStates {
+	fn from(options: BoardOptions) -> Self {
 		options
-			.0
+			.options
 			.into_iter()
 			.map(|row| row.into_iter().map(|cell| cell.into()).collect())
 			.collect()
 	}
 }
 
+impl Display for BoardOptions {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		for row in self.options.iter() {
+			for cell in row.iter() {
+				match cell {
+					CellOption::Available => write!(f, " ✅ ")?,
+					CellOption::Unavailable => write!(f, " ❌ ")?,
+				}
+			}
+			writeln!(f)?;
+		}
+		Ok(())
+	}
+}
+
 pub struct Board {
 	cell_states: CellStates,
+	options: BoardOptions,
 }
 
 impl Default for Board {
@@ -243,60 +312,38 @@ impl Display for Board {
 	}
 }
 
-pub trait ChessPiece {
-	fn relative_moves(&self) -> &[(i8, i8)];
-}
-pub struct StandardKnight;
-impl ChessPiece for StandardKnight {
-	fn relative_moves(&self) -> &[(i8, i8)] {
-		&[
-			(2, 1),
-			(1, 2),
-			(-1, 2),
-			(-2, 1),
-			(-2, -1),
-			(-1, -2),
-			(1, -2),
-			(2, -1),
-		]
-	}
-}
-
 impl Board {
 	/// Creates square board with given dimensions and all cells available
 	pub fn new(rows: u8, columns: u8) -> Self {
+		let options = BoardOptions::new(rows, columns);
 		Self {
-			cell_states: CellOptions::new(rows, columns).into(),
+			options: options.clone(),
+			cell_states: options.into(),
 		}
 	}
 
-	pub fn from_options(cell_options: CellOptions) -> Self {
+	pub fn from_options(cell_options: BoardOptions) -> Self {
 		let cell_states = cell_options
-			.0
+			.clone()
+			.options
 			.into_iter()
 			.map(|row| row.into_iter().map(|cell| cell.into()).collect())
 			.collect();
-		Self { cell_states }
-	}
-
-	pub fn validate_point(&self, p: &ChessPoint) -> bool {
-		// 1 <= p.row
-		// 	&& p.row <= self.cell_states.len() as u8
-		// 	&& 1 <= p.column
-		// 	&& p.column <= self.cell_states[0].len() as u8
-		1 <= p.row && p.row <= self.height() && 1 <= p.column && p.column <= self.width()
-	}
-
-	pub fn validate_point_or_panic(&self, p: &ChessPoint) {
-		if !self.validate_point(p) {
-			panic!("Invalid point: {:?}", p);
+		Self {
+			cell_states,
+			options: cell_options,
 		}
 	}
 
-	fn get(&self, p: &ChessPoint) -> CellState {
-		self.validate_point_or_panic(p);
+	pub fn options(&self) -> &BoardOptions {
+		&self.options
+	}
 
-		self.cell_states[p.row as usize - 1][p.column as usize - 1]
+	fn get(&self, p: &ChessPoint) -> Option<CellState> {
+		if !self.options.validate_point(p) {
+			return None;
+		}
+		Some(self.cell_states[p.row as usize - 1][p.column as usize - 1])
 	}
 
 	fn set(&mut self, p: ChessPoint, state: CellState) {
@@ -306,11 +353,11 @@ impl Board {
 	/// Returns true if point is NeverOccupied.
 	/// Returns None if point is invalid
 	fn get_availability_no_repeat(&self, p: &ChessPoint) -> Option<bool> {
-		if !self.validate_point(p) {
-			return None;
+		match self.get(p) {
+			Some(CellState::NeverOccupied) => Some(true),
+			Some(CellState::HasBeenOccupied(_)) | Some(CellState::Unavailable) => Some(false),
+			None => None,
 		}
-
-		Some(matches!(self.get(p), CellState::NeverOccupied))
 	}
 
 	/// Returns bool if point is NeverOccupied or HasBeenOccupied
@@ -324,7 +371,7 @@ impl Board {
 	// }
 
 	fn get_degree_no_repeat(&self, start: ChessPoint, moves: &impl ChessPiece) -> u16 {
-		self.validate_point_or_panic(&start);
+		self.options().validate_point_or_panic(&start);
 
 		let mut degree = 0;
 		for &(dx, dy) in moves.relative_moves() {
@@ -349,20 +396,10 @@ impl Board {
 	// 	degree
 	// }
 
-	/// 1 indexed
-	pub fn width(&self) -> u8 {
-		self.cell_states[0].len() as u8
-	}
-
-	/// 1 indexed
-	pub fn height(&self) -> u8 {
-		self.cell_states.len() as u8
-	}
-
 	pub fn all_unvisited_available_points(&self) -> Vec<ChessPoint> {
 		let mut points = Vec::new();
-		for row in 1..=self.height() {
-			for column in 1..=self.width() {
+		for row in 1..=self.options().height() {
+			for column in 1..=self.options().width() {
 				let p = ChessPoint::new(row, column);
 				if self.get_availability_no_repeat(&p) == Some(true) {
 					points.push(p);
@@ -370,6 +407,33 @@ impl Board {
 			}
 		}
 		points
+	}
+}
+
+impl Deref for Board {
+	type Target = CellStates;
+
+	fn deref(&self) -> &Self::Target {
+		&self.cell_states
+	}
+}
+
+pub trait ChessPiece {
+	fn relative_moves(&self) -> &[(i8, i8)];
+}
+pub struct StandardKnight;
+impl ChessPiece for StandardKnight {
+	fn relative_moves(&self) -> &[(i8, i8)] {
+		&[
+			(2, 1),
+			(1, 2),
+			(-1, 2),
+			(-2, 1),
+			(-2, -1),
+			(-1, -2),
+			(1, -2),
+			(2, -1),
+		]
 	}
 }
 
@@ -382,8 +446,8 @@ pub fn piece_tour_no_repeat(
 	let mut moves = Vec::new();
 	let mut current = start;
 
-	for _ in 1..board.width() * board.height() {
-		if !board.validate_point(&current) {
+	for _ in 1..board.options().width() * board.options().height() {
+		if !board.options().validate_point(&current) {
 			return None;
 		}
 
@@ -405,7 +469,9 @@ pub fn piece_tour_no_repeat(
 		}
 
 		if let Some(next) = next {
-			moves.push(Move::new_checked(current, next, board).expect("moves generated to be valid"));
+			moves.push(
+				Move::new_checked(current, next, board.options()).expect("moves generated to be valid"),
+			);
 			current = next;
 		} else {
 			return None;

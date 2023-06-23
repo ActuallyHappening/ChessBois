@@ -1025,6 +1025,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy_editor_pls",
+ "bevy_egui",
  "bevy_mod_picking",
  "console_error_panic_hook",
  "getrandom",

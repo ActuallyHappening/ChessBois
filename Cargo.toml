@@ -25,6 +25,7 @@ opt-level = 3
 [dependencies]
 bevy = { version = "0.10" }
 bevy_editor_pls = { version = "0.4.0", optional = false }
+bevy_egui = "0.20.3"
 bevy_mod_picking = "0.13.0"
 rand = "0.8.5"
 serde = { version = "1.0.163", features = ["derive"] }

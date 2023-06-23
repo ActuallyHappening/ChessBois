@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
-use msrc_q11::{Board, CellOptions, ChessPoint};
+use msrc_q11::{Board, BoardOptions, ChessPoint};
 use std::f32::consts::TAU;
 
 use crate::{
@@ -12,27 +12,36 @@ impl Plugin for BoardPlugin {
 	fn build(&self, app: &mut App) {
 		app
 			.add_event::<NewCellSelected>()
-			.add_startup_system(spawn_initial_board)
+			.add_event::<NewBoardCellOptions>()
+			.add_startup_system(spawn_initial)
+			.add_system(spawn_left_sidebar_ui)
 			.add_plugins(
 				DefaultPickingPlugins
 					.build()
 					.disable::<DefaultHighlightingPlugin>()
 					.disable::<DebugPickingPlugin>(),
 			)
-			.add_system(handle_new_cell_selected_event);
+			.add_system(handle_new_cell_selected_event)
+			.add_system(handle_new_board_event);
 	}
 }
 
 /// Represents information required to display cells + visual solutions
 #[derive(Debug, Clone)]
 pub struct Options {
-	options: CellOptions,
+	options: BoardOptions,
 	selected_start: ChessPoint,
 }
 
 #[derive(Debug, Clone)]
 pub struct NewCellSelected {
 	new: ChessPoint,
+}
+
+/// Event representing when the board has changed size/shape/<options>, NOT start location!
+#[derive(Debug, Clone)]
+pub struct NewBoardCellOptions {
+	new: BoardOptions,
 }
 
 #[derive(Resource, Debug, Clone)]
@@ -47,8 +56,8 @@ mod coords {
 	/// Returns spacial coordinates of center of cell mesh
 	fn get_spacial_coord_normalized(board: &Board, chess_position: ChessPoint) -> Vec2 {
 		let ChessPoint { row: y, column: x } = chess_position;
-		let width = board.width() as f32;
-		let height = board.height() as f32;
+		let width = board.options().width() as f32;
+		let height = board.options().height() as f32;
 		let x = x as f32;
 		let y = y as f32;
 
@@ -101,14 +110,14 @@ mod coords {
 	}
 }
 
-fn spawn_initial_board(
+fn spawn_initial(
 	mut commands: Commands,
 	mut meshes: ResMut<Assets<Mesh>>,
 	mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
 	let options = Options {
-		options: CellOptions::new(8, 8),
-		selected_start: ChessPoint::new(1, 1),
+		options: BoardOptions::new(8, 8),
+		selected_start: ChessPoint::new(9, 9),
 	};
 	let current_options = CurrentOptions {
 		current: options.clone(),
@@ -117,7 +126,9 @@ fn spawn_initial_board(
 	commands.insert_resource(current_options);
 
 	spawn_cells(&mut commands, &options, &mut meshes, &mut materials);
-	spawn_visualization_from_options(&options, &mut commands, &mut meshes, &mut materials);
+	// spawn_visualization_from_options(&options, &mut commands, &mut meshes, &mut materials);
+
+	// spawn_left_sidebar_ui(&mut commands);
 }
 
 use cells::*;
@@ -247,6 +258,45 @@ mod cells {
 			spawn_visualization_from_options(&new_options, &mut commands, &mut meshes, &mut materials);
 		}
 	}
+
+	pub fn handle_new_board_event(
+		mut new_board: EventReader<NewBoardCellOptions>,
+		current_options: Res<CurrentOptions>,
+
+		vis: Query<Entity, With<VisualizationComponent>>,
+		cells: Query<Entity, With<ChessPoint>>,
+
+		mut commands: Commands,
+		mut meshes: ResMut<Assets<Mesh>>,
+		mut materials: ResMut<Assets<StandardMaterial>>,
+	) {
+		if let Some(new_board) = new_board.into_iter().next() {
+			let new_options = &new_board.new;
+
+			let mut start_pos = current_options.current.selected_start;
+			if !new_options.validate_point(&start_pos) {
+				start_pos = ChessPoint::new(1, 1);
+
+				assert!(
+					new_options.validate_point(&start_pos),
+					"(1, 1) is not a valid chess point, um, don't chose too small chess board sizes!"
+				);
+			}
+
+			let new_options = Options {
+				options: new_board.new.clone(),
+				selected_start: start_pos,
+			};
+			commands.insert_resource(CurrentOptions {
+				current: new_options.clone(),
+			});
+
+			despawn_visualization(&mut commands, vis);
+			despawn_cells(&mut commands, cells);
+
+			spawn_cells(&mut commands, &new_options, &mut meshes, &mut materials);
+		}
+	}
 }
 
 use visualization::*;
@@ -277,10 +327,10 @@ mod visualization {
 				for Move { from, to } in moves.iter() {
 					spawn_path_line(commands, meshes, materials, from, to, &board)
 				}
-			},
+			}
 			None => {
 				info!("No solution found!");
-			},
+			}
 		}
 
 		// spawn_path_line(
@@ -318,10 +368,11 @@ mod visualization {
 		let angle: f32 = -(start_pos.y - end_pos.y).atan2(start_pos.x - end_pos.x);
 
 		// assert_eq!(angle, TAU / 8., "Drawing from {from} [{from:?}] [{from_pos}] to {to} [{to:?}] [{to_pos}], Angle: {angle}, 𝚫y: {}, 𝚫x: {}", (to_pos.y - from_pos.y), (to_pos.x - from_pos.x));
-		info!("Angle: {angle}, {}", angle.to_degrees());
+		// info!("Angle: {angle}, {}", angle.to_degrees());
 
-		let transform = Transform::from_translation(Vec3::new(center.x, VISUALIZATION_HEIGHT, center.y))
-			.with_rotation(Quat::from_rotation_y(angle));
+		let transform =
+			Transform::from_translation(Vec3::new(center.x, VISUALIZATION_HEIGHT, center.y))
+				.with_rotation(Quat::from_rotation_y(angle));
 
 		// info!("Transform: {:?}", transform);
 		// info!("Angle: {:?}, Length: {:?}", angle, length);
@@ -341,4 +392,177 @@ mod visualization {
 			},
 		));
 	}
+}
+
+use ui::*;
+mod ui {
+	use super::*;
+	use bevy_egui::*;
+
+	pub fn spawn_left_sidebar_ui(
+		mut commands: Commands,
+		mut contexts: EguiContexts,
+
+		current_options: ResMut<CurrentOptions>,
+
+		mut new_board_event: EventWriter<NewBoardCellOptions>,
+	) {
+		egui::SidePanel::left("general_controls_panel").show(contexts.ctx_mut(), |ui| {
+			// ui.label("world");
+			ui.heading("Controls");
+
+			ui.label(format!(
+				"Current Options: \n{}",
+				current_options.current.options
+			));
+
+			// ui.add(egui::Slider::new(&mut my_f32, 3.0..=10.).text("My value"));
+
+			// ui.add(egui::Slider::new(&mut ui_state.value, 0.0..=10.0).text("value"));
+			if ui.button("Increment").clicked() {
+				// ui_state.value += 1.0;
+				let old_options = current_options.current.options.clone();
+				let new_options = old_options.clone().update_width(old_options.width() + 1);
+
+				new_board_event.send(NewBoardCellOptions { new: new_options });
+			}
+		});
+	}
+
+	// fn ui_example_system(
+	// 	mut ui_state: ResMut<UiState>,
+	// 	// You are not required to store Egui texture ids in systems. We store this one here just to
+	// 	// demonstrate that rendering by using a texture id of a removed image is handled without
+	// 	// making bevy_egui panic.
+	// 	mut rendered_texture_id: Local<egui::TextureId>,
+	// 	mut is_initialized: Local<bool>,
+	// 	// If you need to access the ids from multiple systems, you can also initialize the `Images`
+	// 	// resource while building the app and use `Res<Images>` instead.
+	// 	images: Local<Images>,
+	// 	mut contexts: EguiContexts,
+	// ) {
+	// 	let egui_texture_handle = ui_state
+	// 		.egui_texture_handle
+	// 		.get_or_insert_with(|| {
+	// 			contexts.ctx_mut().load_texture(
+	// 				"example-image",
+	// 				egui::ColorImage::example(),
+	// 				Default::default(),
+	// 			)
+	// 		})
+	// 		.clone();
+
+	// 	let mut load = false;
+	// 	let mut remove = false;
+	// 	let mut invert = false;
+
+	// 	if !*is_initialized {
+	// 		*is_initialized = true;
+	// 		*rendered_texture_id = contexts.add_image(images.bevy_icon.clone_weak());
+	// 	}
+
+	// 	let ctx = contexts.ctx_mut();
+
+	// 	egui::SidePanel::left("side_panel")
+	// 		.default_width(200.0)
+	// 		.show(ctx, |ui| {
+	// 			ui.heading("Side Panel");
+
+	// 			ui.horizontal(|ui| {
+	// 				ui.label("Write something: ");
+	// 				ui.text_edit_singleline(&mut ui_state.label);
+	// 			});
+
+	// 			ui.add(egui::widgets::Image::new(
+	// 				egui_texture_handle.id(),
+	// 				egui_texture_handle.size_vec2(),
+	// 			));
+
+	// 			ui.add(egui::Slider::new(&mut ui_state.value, 0.0..=10.0).text("value"));
+	// 			if ui.button("Increment").clicked() {
+	// 				ui_state.value += 1.0;
+	// 			}
+
+	// 			ui.allocate_space(egui::Vec2::new(1.0, 100.0));
+	// 			ui.horizontal(|ui| {
+	// 				load = ui.button("Load").clicked();
+	// 				invert = ui.button("Invert").clicked();
+	// 				remove = ui.button("Remove").clicked();
+	// 			});
+
+	// 			ui.add(egui::widgets::Image::new(
+	// 				*rendered_texture_id,
+	// 				[256.0, 256.0],
+	// 			));
+
+	// 			ui.allocate_space(egui::Vec2::new(1.0, 10.0));
+	// 			ui.checkbox(&mut ui_state.is_window_open, "Window Is Open");
+
+	// 			ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
+	// 				ui.add(egui::Hyperlink::from_label_and_url(
+	// 					"powered by egui",
+	// 					"https://github.com/emilk/egui/",
+	// 				));
+	// 			});
+	// 		});
+
+	// 	egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+	// 		// The top panel is often a good place for a menu bar:
+	// 		egui::menu::bar(ui, |ui| {
+	// 			egui::menu::menu_button(ui, "File", |ui| {
+	// 				if ui.button("Quit").clicked() {
+	// 					std::process::exit(0);
+	// 				}
+	// 			});
+	// 		});
+	// 	});
+
+	// 	egui::CentralPanel::default().show(ctx, |ui| {
+	// 		ui.heading("Egui Template");
+	// 		ui.hyperlink("https://github.com/emilk/egui_template");
+	// 		ui.add(egui::github_link_file_line!(
+	// 			"https://github.com/mvlabat/bevy_egui/blob/main/",
+	// 			"Direct link to source code."
+	// 		));
+	// 		egui::warn_if_debug_build(ui);
+
+	// 		ui.separator();
+
+	// 		ui.heading("Central Panel");
+	// 		ui.label("The central panel the region left after adding TopPanel's and SidePanel's");
+	// 		ui.label("It is often a great place for big things, like drawings:");
+
+	// 		ui.heading("Draw with your mouse to paint:");
+	// 		ui_state.painting.ui_control(ui);
+	// 		egui::Frame::dark_canvas(ui.style()).show(ui, |ui| {
+	// 			ui_state.painting.ui_content(ui);
+	// 		});
+	// 	});
+
+	// 	egui::Window::new("Window")
+	// 		.vscroll(true)
+	// 		.open(&mut ui_state.is_window_open)
+	// 		.show(ctx, |ui| {
+	// 			ui.label("Windows can be moved by dragging them.");
+	// 			ui.label("They are automatically sized based on contents.");
+	// 			ui.label("You can turn on resizing and scrolling if you like.");
+	// 			ui.label("You would normally chose either panels OR windows.");
+	// 		});
+
+	// 	if invert {
+	// 		ui_state.inverted = !ui_state.inverted;
+	// 	}
+	// 	if load || invert {
+	// 		// If an image is already added to the context, it'll return an existing texture id.
+	// 		if ui_state.inverted {
+	// 			*rendered_texture_id = contexts.add_image(images.bevy_icon_inverted.clone_weak());
+	// 		} else {
+	// 			*rendered_texture_id = contexts.add_image(images.bevy_icon.clone_weak());
+	// 		};
+	// 	}
+	// 	if remove {
+	// 		contexts.remove_image(&images.bevy_icon);
+	// 		contexts.remove_image(&images.bevy_icon_inverted);
+	// 	}
+	// }
 }
