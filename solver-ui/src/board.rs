@@ -161,6 +161,7 @@ fn spawn_cell(
 		RaycastPickTarget::default(), // Marker for the `bevy_picking_raycast` backend
 		// OnPointer::<Move>::run_callback(),
 		OnPointer::<Over>::run_callback(cell_selected),
+		OnPointer::<Out>::run_callback(cell_deselected),
 	));
 }
 
@@ -190,6 +191,20 @@ fn cell_selected(
 
 		Bubble::Up
 	}
+}
+
+fn cell_deselected(
+	In(event): In<ListenedEvent<Out>>,
+	mut materials: ResMut<Assets<StandardMaterial>>,
+	square: Query<(&Handle<StandardMaterial>, &ChessPoint)>,
+) -> Bubble {
+	let (mat, point) = square.get(event.target).unwrap();
+
+	// sets colour to selected
+	let material = materials.get_mut(mat).unwrap();
+	material.base_color = point.get_standard_colour();
+
+	Bubble::Up
 }
 
 /// Handles re-constructing visual solution
