@@ -410,11 +410,6 @@ mod ui {
 
 			ui.heading("Controls");
 
-			ui.label(format!(
-				"Current Options: \n{}",
-				current_options.current.options
-			));
-
 			// ui.add(egui::Slider::new(&mut my_f32, 3.0..=10.).text("My value"));
 
 			// ui.add(egui::Slider::new(&mut ui_state.value, 0.0..=10.0).text("value"));
@@ -437,6 +432,11 @@ mod ui {
 				let new_options = old_options.clone().update_height(old_options.height() - 1);
 				new_board_event.send(NewBoardCellOptions { new: new_options });
 			}
+
+			ui.label(format!(
+				"Current Options: \n{}",
+				current_options.current.options
+			));
 		});
 	}
 
