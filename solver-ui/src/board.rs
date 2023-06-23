@@ -111,6 +111,7 @@ fn spawn_initial_board(
 	commands.insert_resource(current_options);
 
 	spawn_cells(&mut commands, &options, &mut meshes, &mut materials);
+	spawn_visualization_from_options(&options, &mut commands, &mut meshes, &mut materials);
 }
 
 use cells::*;
@@ -218,6 +219,8 @@ mod cells {
 		mut new_starting_point: EventReader<NewCellSelected>,
 		current_options: ResMut<CurrentOptions>,
 
+		vis: Query<Entity, With<VisualizationComponent>>,
+
 		mut commands: Commands,
 		mut meshes: ResMut<Assets<Mesh>>,
 		mut materials: ResMut<Assets<StandardMaterial>>,
@@ -229,11 +232,13 @@ mod cells {
 				selected_start: new_starting_point.new,
 			};
 			commands.insert_resource(CurrentOptions {
-				current: new_options,
+				current: new_options.clone(),
 			});
 
 			// TODO: Show visualization here!
 			// info!("New starting point: {}", new_starting_point.new);
+			despawn_visualization(&mut commands, vis);
+			spawn_visualization_from_options(&new_options, &mut commands, &mut meshes, &mut materials);
 		}
 	}
 }
@@ -243,7 +248,14 @@ mod visualization {
 	use super::*;
 	use msrc_q11::{piece_tour_no_repeat, Move, StandardKnight};
 
-	fn spawn_visualization_from_options(
+	#[allow(dead_code)]
+	#[derive(Component, Debug, Clone)]
+	pub struct VisualizationComponent {
+		from: ChessPoint,
+		to: ChessPoint,
+	}
+
+	pub fn spawn_visualization_from_options(
 		options: &Options,
 
 		commands: &mut Commands,
@@ -254,9 +266,24 @@ mod visualization {
 		let start = options.selected_start;
 		let piece = StandardKnight {};
 
-		let moves = piece_tour_no_repeat(&piece, &mut board, start).expect("tour to be possible");
-		for Move { from, to } in moves.iter() {
-			spawn_path_line(commands, meshes, materials, from, to, &board)
+		match piece_tour_no_repeat(&piece, &mut board, start) {
+			Some(moves) => {
+				for Move { from, to } in moves.iter() {
+					spawn_path_line(commands, meshes, materials, from, to, &board)
+				}
+			},
+			None => {
+				info!("No solution found!");
+			},
+		}
+	}
+
+	pub fn despawn_visualization(
+		commands: &mut Commands,
+		visualization: Query<Entity, With<VisualizationComponent>>,
+	) {
+		for entity in visualization.iter() {
+			commands.entity(entity).despawn_recursive();
 		}
 	}
 
@@ -268,29 +295,32 @@ mod visualization {
 		to: &ChessPoint,
 		board: &Board,
 	) {
-		let from = get_spacial_coord(board, *from);
-		let to = get_spacial_coord(board, *to);
+		let from_pos = get_spacial_coord(board, *from);
+		let to_pos = get_spacial_coord(board, *to);
 
-		let center = (from + to) / 2.;
-		let length = (from - to).length();
-		let angle: f32 = (to.y - from.y).atan2(to.x - from.x);
+		let center = (from_pos + to_pos) / 2.;
+		let length = (from_pos - to_pos).length();
+		let angle: f32 = (to_pos.y - from_pos.y).atan2(to_pos.x - from_pos.x);
 
 		let transform = Transform::from_translation(center + Vec3::new(0., VISUALIZATION_HEIGHT, 0.))
-	// .looking_at(to, Vec3::Y)
-	.with_rotation(Quat::from_rotation_y(angle))
-	// -
-	;
+			.with_rotation(Quat::from_rotation_y(angle));
 
 		// info!("Transform: {:?}", transform);
 		// info!("Angle: {:?}, Length: {:?}", angle, length);
 
 		let mesh_thin_rectangle = meshes.add(shape::Box::new(length, 1., 1.).into());
 
-		commands.spawn(PbrBundle {
-			mesh: mesh_thin_rectangle,
-			material: materials.add(VISUALIZATION_COLOUR.into()),
-			transform,
-			..default()
-		});
+		commands.spawn((
+			PbrBundle {
+				mesh: mesh_thin_rectangle,
+				material: materials.add(VISUALIZATION_COLOUR.into()),
+				transform,
+				..default()
+			},
+			VisualizationComponent {
+				from: *from,
+				to: *to,
+			},
+		));
 	}
 }
