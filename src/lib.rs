@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_egui::egui::Color32;
+use bevy_egui::egui::{Color32, Rgba};
 use bevy_mod_picking::prelude::RaycastPickCamera;
 use std::f32::consts::PI;
 mod board;
@@ -26,7 +26,8 @@ const CELL_SELECTED_COLOUR: Color = Color::PURPLE;
 const CELL_DISABLED_COLOUR: Color = Color::RED;
 
 const VISUALIZATION_HEIGHT: f32 = 3.;
-const VISUALIZATION_COLOUR: Color = Color::GREEN;
+const VISUALIZATION_SELECTED_COLOUR: Color = Color::GREEN;
+const VISUALIZATION_ALL_BASE_COLOUR: Color = Color::Rgba { red: 0., green: 1., blue: 0.1, alpha: 0.5 };
 
 const UI_ALG_ENABLED_COLOUR: Color32 = Color32::GREEN;
 
@@ -39,7 +40,7 @@ pub fn setup(
 	commands.spawn((
 		Camera3dBundle {
 			transform: Transform::from_xyz(0., CAMERA_HEIGHT, 0.)
-				.with_rotation(Quat::from_rotation_x(-PI / 2.)),
+				.with_rotation(Quat::from_rotation_x(-90_f32.to_radians())),
 			..default()
 		},
 		RaycastPickCamera::default(),

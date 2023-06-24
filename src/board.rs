@@ -54,14 +54,14 @@ pub enum Algorithm {
 	#[default]
 	Warnsdorf,
 
-	BruteForce,
+	BruteRecursive,
 }
 
 impl Algorithm {
 	fn to_impl<P: ChessPiece>(&self, piece: P) -> ImplementedAlgorithms<P> {
 		match self {
 			Algorithm::Warnsdorf => ImplementedAlgorithms::Warnsdorf(piece),
-			Algorithm::BruteForce => ImplementedAlgorithms::BruteForce(piece),
+			Algorithm::BruteRecursive => ImplementedAlgorithms::BruteRecursive(piece),
 		}
 	}
 }
@@ -328,7 +328,7 @@ mod cells {
 
 			// info!("New starting point: {}", new_starting_point.new);
 			despawn_visualization(&mut commands, vis);
-			spawn_visualization_from_options(
+			spawn_visualizations_from_options(
 				&new_options,
 				algs,
 				&mut commands,
@@ -377,7 +377,7 @@ mod visualization {
 		to: ChessPoint,
 	}
 
-	pub fn spawn_visualization_from_options(
+	pub fn spawn_visualizations_from_options(
 		options: &Options,
 		alg: Res<Algorithm>,
 
@@ -398,7 +398,7 @@ mod visualization {
 			match algs.tour_no_repeat(options.clone(), start) {
 				Some(moves) => {
 					for Move { from, to } in moves.iter() {
-						spawn_path_line(commands, meshes, materials, from, to, &options)
+						spawn_path_line(from, to, &options, VISUALIZATION_SELECTED_COLOUR, commands, meshes, materials)
 					}
 				}
 				None => {
@@ -427,12 +427,14 @@ mod visualization {
 	}
 
 	fn spawn_path_line(
-		commands: &mut Commands,
-		meshes: &mut ResMut<Assets<Mesh>>,
-		materials: &mut ResMut<Assets<StandardMaterial>>,
 		from: &ChessPoint,
 		to: &ChessPoint,
 		options: &BoardOptions,
+		colour: Color,
+
+		commands: &mut Commands,
+		meshes: &mut ResMut<Assets<Mesh>>,
+		materials: &mut ResMut<Assets<StandardMaterial>>,
 	) {
 		let start_pos = get_spacial_coord_2d(options, *from);
 		let end_pos = get_spacial_coord_2d(options, *to);
@@ -456,7 +458,7 @@ mod visualization {
 		commands.spawn((
 			PbrBundle {
 				mesh: mesh_thin_rectangle,
-				material: materials.add(VISUALIZATION_COLOUR.into()),
+				material: materials.add(colour.into()),
 				transform,
 				..default()
 			},

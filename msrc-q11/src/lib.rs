@@ -1,3 +1,5 @@
+#![feature(test)]
+
 #[cfg(target_arch = "wasm32")]
 pub fn init_debug_tools() {
 	use tracing_subscriber::fmt::format::Pretty;
@@ -236,6 +238,13 @@ impl BoardOptions {
 		let mut options = self.options;
 		options[point.row as usize - 1][point.column as usize - 1] = state;
 		Self { options }
+	}
+
+	pub(crate) fn rm(&mut self, p: (u8, u8)) {
+		self.options[p.0 as usize - 1][p.1 as usize - 1] = CellOption::Unavailable;
+	}
+	pub(crate) fn add(&mut self, p: (u8, u8)) {
+		self.options[p.0 as usize - 1][p.1 as usize - 1] = CellOption::Available;
 	}
 
 	/// 1 indexed

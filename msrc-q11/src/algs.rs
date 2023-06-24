@@ -6,22 +6,20 @@ use cached::proc_macro::cached;
 pub enum ImplementedAlgorithms<P: ChessPiece + 'static> {
 	Warnsdorf(P),
 
-	BruteForce(P),
+	BruteRecursive(P),
 }
 
 impl<P: ChessPiece> ImplementedAlgorithms<P> {
 	pub fn tour_no_repeat(&self, board_options: BoardOptions, start: ChessPoint) -> Option<Moves> {
 		match self {
 			Self::Warnsdorf(piece) => warnsdorf_tour_repeatless(piece, board_options, start),
-			Self::BruteForce(piece) => {
-				brute_force_tour_repeatless(piece, board_options, start)
-			}
+			Self::BruteRecursive(piece) => brute_recursive_tour_repeatless(piece, board_options, start),
 		}
 	}
 }
 
-use brute_force::brute_force_tour_repeatless;
-mod brute_force {
+use brute_force_recursive::brute_recursive_tour_repeatless;
+mod brute_force_recursive {
 	use super::*;
 	impl ChessPoint {
 		fn displace(&self, dx: u8, dy: u8) -> Self {
@@ -47,15 +45,15 @@ mod brute_force {
 		fn set(&mut self, p: ChessPoint, state: CellState) {
 			self.cell_states.insert(p, state);
 		}
+
 		fn from_options(options: BoardOptions) -> Self {
-			let mut cell_states = HashMap::new();
-			for row in 1..=options.height() {
-				for column in 1..=options.width() {
-					let p = ChessPoint::new(row, column);
-					cell_states.insert(p, CellState::NeverOccupied);
-				}
+			Board {
+				cell_states: options
+					.get_available_points()
+					.into_iter()
+					.map(|p| (p, CellState::NeverOccupied))
+					.collect(),
 			}
-			Self { cell_states }
 		}
 
 		fn get_available_moves_from(&self, p: &ChessPoint, piece: &impl ChessPiece) -> Vec<ChessPoint> {
@@ -80,7 +78,7 @@ mod brute_force {
 		}
 	}
 
-	pub fn brute_force_tour_repeatless<P: ChessPiece>(
+	pub fn brute_recursive_tour_repeatless<P: ChessPiece>(
 		piece: &P,
 		options: BoardOptions,
 		start: ChessPoint,
@@ -91,11 +89,11 @@ mod brute_force {
 		let board = Board::from_options(options);
 		try_move_recursive(num_moves_required, piece, board, start)
 			// .map(|moves| moves.into_iter().rev().collect())
-    .map(|moves| {
-			let mut moves = moves.into_iter().rev().collect::<Vec<Move>>();
-			moves.push(Move::new(start, start));
-			moves.into()
-		})
+			.map(|moves| {
+				let mut moves = moves.into_iter().rev().collect::<Vec<Move>>();
+				moves.push(Move::new(start, start));
+				moves.into()
+			})
 	}
 
 	fn try_move_recursive(
@@ -210,7 +208,10 @@ mod brute_force {
 			];
 
 			let result = try_move_recursive(2, &piece, board, (1, 1).into());
-			assert_eq!(result, Some(Moves::new(expected.into_iter().rev().collect())));
+			assert_eq!(
+				result,
+				Some(Moves::new(expected.into_iter().rev().collect()))
+			);
 		}
 
 		// #[test]
@@ -235,6 +236,69 @@ mod brute_force {
 		// 	// let result = result.unwrap();
 		// 	// assert_eq!(result.len(), 63);
 		// }
+	}
+
+	#[cfg(test)]
+	mod benchmarks {
+		use crate::pieces::StandardKnight;
+
+		use super::*;
+
+		extern crate test;
+		use test::Bencher;
+
+		#[bench]
+		fn normal_square_4x4_removed(b: &mut Bencher) {
+
+			let mut options = BoardOptions::new(8, 8);
+
+			for y in 3..=6 {
+				for x in 3..=6 {
+					options.rm((x, y));
+				}
+			}
+
+			let start = ChessPoint::new(1, 1);
+			let piece = StandardKnight {};
+
+			b.iter(move || ImplementedAlgorithms::BruteRecursive(piece.clone()).tour_no_repeat(options.clone(), start));
+		}
+
+		#[bench]
+		fn normal_4x4_removed_minus_2(b: &mut Bencher) {
+
+			let mut options = BoardOptions::new(8, 8);
+
+			for y in 3..=6 {
+				for x in 3..=6 {
+					options.rm((x, y));
+				}
+			}
+			options.add((4, 5));
+			options.add((5, 4));
+
+			let start = ChessPoint::new(1, 1);
+			let piece = StandardKnight {};
+
+			b.iter(move || ImplementedAlgorithms::BruteRecursive(piece.clone()).tour_no_repeat(options.clone(), start));
+		}
+
+		#[bench]
+		fn normal_square_2x2_removed(b: &mut Bencher) {
+
+			let mut options = BoardOptions::new(8, 8);
+
+			for y in 4..=5 {
+				for x in 4..=5 {
+					options.rm((x, y));
+				}
+			}
+
+			let start = ChessPoint::new(1, 1);
+			let piece = StandardKnight {};
+
+			b.iter(move || ImplementedAlgorithms::BruteRecursive(piece.clone()).tour_no_repeat(options.clone(), start));
+		}
 	}
 }
 
