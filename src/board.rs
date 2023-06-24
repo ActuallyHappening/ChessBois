@@ -2,8 +2,8 @@ use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 use msrc_q11::{algs::ImplementedAlgorithms, pieces::ChessPiece, BoardOptions, ChessPoint};
 use std::f32::consts::TAU;
-use strum::{EnumIter, EnumString, EnumVariantNames, IntoStaticStr};
 use strum::IntoEnumIterator;
+use strum::{EnumIter, EnumString, EnumVariantNames, IntoStaticStr};
 
 use crate::*;
 
@@ -473,7 +473,10 @@ mod ui {
 	use std::str::FromStr;
 
 	use super::*;
-	use bevy_egui::{*, egui::{RichText, Color32}};
+	use bevy_egui::{
+		egui::{Color32, RichText},
+		*,
+	};
 	use strum::VariantNames;
 
 	pub fn spawn_left_sidebar_ui(
@@ -492,25 +495,30 @@ mod ui {
 			// ui.add(egui::Slider::new(&mut my_f32, 3.0..=10.).text("My value"));
 
 			// ui.add(egui::Slider::new(&mut ui_state.value, 0.0..=10.0).text("value"));
-			if ui.button("Wider +1").clicked() {
-				let new_options = old_options.clone().update_width(old_options.width() + 1);
-				new_board_event.send(NewBoardCellOptions { new: new_options });
-			}
 
-			if ui.button("Thinner -1").clicked() {
-				let new_options = old_options.clone().update_width(old_options.width() - 1);
-				new_board_event.send(NewBoardCellOptions { new: new_options });
-			}
+			ui.horizontal(|ui| {
+				if ui.button("Wider +1").clicked() {
+					let new_options = old_options.clone().update_width(old_options.width() + 1);
+					new_board_event.send(NewBoardCellOptions { new: new_options });
+				}
 
-			if ui.button("Taller +1").clicked() {
-				let new_options = old_options.clone().update_height(old_options.height() + 1);
-				new_board_event.send(NewBoardCellOptions { new: new_options });
-			}
+				if ui.button("Thinner -1").clicked() {
+					let new_options = old_options.clone().update_width(old_options.width() - 1);
+					new_board_event.send(NewBoardCellOptions { new: new_options });
+				}
+			});
 
-			if ui.button("Shorter -1").clicked() {
-				let new_options = old_options.clone().update_height(old_options.height() - 1);
-				new_board_event.send(NewBoardCellOptions { new: new_options });
-			}
+			ui.horizontal(|ui| {
+				if ui.button("Taller +1").clicked() {
+					let new_options = old_options.clone().update_height(old_options.height() + 1);
+					new_board_event.send(NewBoardCellOptions { new: new_options });
+				}
+
+				if ui.button("Shorter -1").clicked() {
+					let new_options = old_options.clone().update_height(old_options.height() - 1);
+					new_board_event.send(NewBoardCellOptions { new: new_options });
+				}
+			});
 
 			ui.label("Select algorithm:");
 			ui.horizontal(|ui| {
