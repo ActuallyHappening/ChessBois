@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
-use msrc_q11::{BoardOptions, ChessPoint, SolverAlgorithm};
+use msrc_q11::{BoardOptions, ChessPoint, algs::ImplementedAlgorithms, pieces::ChessPiece};
 use std::f32::consts::TAU;
 
 use crate::*;
@@ -48,9 +48,20 @@ pub struct CurrentOptions {
 }
 
 #[derive(Resource, Debug, Default)]
-pub enum Algorithm {
+pub enum ChosenAlgorithm {
 	#[default]
 	Warnsdorf,
+
+	BruteForce,
+}
+
+impl ChosenAlgorithm {
+	fn into_alg<P: ChessPiece>(&self, piece: P) -> ImplementedAlgorithms<P> {
+			match self {
+				ChosenAlgorithm::Warnsdorf => ImplementedAlgorithms::Warnsdorf(piece),
+				ChosenAlgorithm::BruteForce => ImplementedAlgorithms::BruteForce(piece),
+			}
+	}
 }
 
 use coords::*;
@@ -128,7 +139,7 @@ fn setup(
 	};
 
 	commands.insert_resource(current_options);
-	commands.init_resource::<Algorithm>();
+	commands.init_resource::<ChosenAlgorithm>();
 
 	spawn_cells(&mut commands, &options, &mut meshes, &mut materials);
 	// spawn_visualization_from_options(&options, &mut commands, &mut meshes, &mut materials);
@@ -301,7 +312,7 @@ mod cells {
 		current_options: ResMut<CurrentOptions>,
 
 		vis: Query<Entity, With<VisualizationComponent>>,
-		algs: Res<Algorithm>,
+		algs: Res<ChosenAlgorithm>,
 
 		mut commands: Commands,
 		mut meshes: ResMut<Assets<Mesh>>,
@@ -353,7 +364,7 @@ mod cells {
 use visualization::*;
 mod visualization {
 	use super::*;
-	use msrc_q11::{Move, StandardKnight, SolverAlgorithm};
+	use msrc_q11::{Move, pieces::StandardKnight, algs::ImplementedAlgorithms};
 
 	#[allow(dead_code)]
 	#[derive(Component, Debug, Clone)]
@@ -364,7 +375,7 @@ mod visualization {
 
 	pub fn spawn_visualization_from_options(
 		options: &Options,
-		alg: Res<Algorithm>,
+		alg: Res<ChosenAlgorithm>,
 
 		commands: &mut Commands,
 		meshes: &mut ResMut<Assets<Mesh>>,
@@ -378,8 +389,9 @@ mod visualization {
 
 			let options = options.options.clone();
 			let piece = StandardKnight {};
+			let algs = alg.into_alg(piece);
 
-			match piece.try_piece_tour_warnsdorf(options.clone(), start) {
+			match algs.tour_no_repeat(options.clone(), start) {
 				Some(moves) => {
 					for Move { from, to } in moves.iter() {
 						spawn_path_line(commands, meshes, materials, from, to, &options)

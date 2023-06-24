@@ -39,6 +39,7 @@ use bevy::prelude::*;
 
 pub mod old;
 pub mod algs;
+pub mod pieces;
 use algs::*;
 
 // 1 indexed
@@ -335,32 +336,6 @@ impl Display for BoardOptions {
 	}
 }
 
-pub trait ChessPiece {
-	fn relative_moves(&self) -> &[(i8, i8)];
-}
-pub struct StandardKnight;
-impl ChessPiece for StandardKnight {
-	fn relative_moves(&self) -> &[(i8, i8)] {
-		&[
-			(2, 1),
-			(1, 2),
-			(-1, 2),
-			(-2, 1),
-			(-2, -1),
-			(-1, -2),
-			(1, -2),
-			(2, -1),
-		]
-	}
-}
 
-pub trait SolverAlgorithm {
-	fn try_piece_tour_warnsdorf(&self, options: BoardOptions, start: ChessPoint) -> Option<Moves>;
-}
 
-impl SolverAlgorithm for StandardKnight {
-	fn try_piece_tour_warnsdorf(&self, options: BoardOptions, start: ChessPoint) -> Option<Moves> {
-		warnsdorf_piece_tour_no_repeat(self, options, start)
-	}
-}
 

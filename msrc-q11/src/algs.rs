@@ -1,4 +1,4 @@
-use crate::*;
+use crate::{*, pieces::ChessPiece};
 
 pub enum ImplementedAlgorithms<P: ChessPiece> {
 	Warnsdorf(P),
@@ -18,7 +18,7 @@ impl<P: ChessPiece> ImplementedAlgorithms<P> {
 	}
 }
 
-pub fn warnsdorf_piece_tour_no_repeat(
+fn warnsdorf_piece_tour_no_repeat(
 	piece: &impl ChessPiece,
 	options: BoardOptions,
 	start: ChessPoint,
