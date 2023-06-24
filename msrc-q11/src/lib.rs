@@ -37,9 +37,9 @@ use std::{
 };
 use bevy::prelude::*;
 
-pub mod old;
 pub mod algs;
 pub mod pieces;
+
 use algs::*;
 
 // 1 indexed

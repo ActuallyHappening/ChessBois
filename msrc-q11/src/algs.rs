@@ -14,12 +14,13 @@ impl<P: ChessPiece> ImplementedAlgorithms<P> {
 		match self {
 			Self::Warnsdorf(piece) => warnsdorf_tour_repeatless(piece, board_options, start),
 			Self::BruteForce(piece) => {
-				brute_force::brute_force_tour_repeatless(piece, board_options, start)
+				brute_force_tour_repeatless(piece, board_options, start)
 			}
 		}
 	}
 }
 
+use brute_force::brute_force_tour_repeatless;
 mod brute_force {
 	use super::*;
 	impl ChessPoint {
