@@ -1,6 +1,22 @@
 use crate::*;
 
+pub enum ImplementedAlgorithms<P: ChessPiece> {
+	Warnsdorf(P),
+	BruteForce(P),
+}
 
+impl<P: ChessPiece> ImplementedAlgorithms<P> {
+	pub fn tour_no_repeat(&self, board_options: BoardOptions, start: ChessPoint) -> Option<Moves> {
+		match self {
+			Self::Warnsdorf(piece) => {
+				warnsdorf_piece_tour_no_repeat(piece, board_options, start)
+			}
+			Self::BruteForce(piece) => {
+				kinda_brute_force(piece, board_options, start)
+			}
+		}
+	}
+}
 
 pub fn warnsdorf_piece_tour_no_repeat(
 	piece: &impl ChessPiece,

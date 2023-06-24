@@ -354,7 +354,7 @@ impl ChessPiece for StandardKnight {
 	}
 }
 
-pub trait SolverAlgorithm: ChessPiece {
+pub trait SolverAlgorithm {
 	fn try_piece_tour_warnsdorf(&self, options: BoardOptions, start: ChessPoint) -> Option<Moves>;
 }
 
