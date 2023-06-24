@@ -1,161 +1,209 @@
+use std::collections::HashMap;
+
 use crate::{pieces::ChessPiece, *};
 use cached::proc_macro::cached;
 
 pub enum ImplementedAlgorithms<P: ChessPiece + 'static> {
 	Warnsdorf(P),
 
-	/// This variant stores known board_options already solves, and re-arranges the moves
-	/// to start at the expected start location instead of re-applying the Warnsdorf ImplementedAlgorithms
-	/// again.
-	WarnsdorfCached(P),
+	BruteForce(P),
 }
 
 impl<P: ChessPiece> ImplementedAlgorithms<P> {
 	pub fn tour_no_repeat(&self, board_options: BoardOptions, start: ChessPoint) -> Option<Moves> {
 		match self {
 			Self::Warnsdorf(piece) => warnsdorf_tour_repeatless(piece, board_options, start),
-			Self::WarnsdorfCached(piece) => warnsdorf_tour_repeatless_cached(piece, board_options, start),
+			Self::BruteForce(piece) => {
+				brute_force::brute_force_tour_repeatless(piece, board_options, start)
+			}
 		}
 	}
 }
 
-
-fn warnsdorf_tour_repeatless_cached<P: ChessPiece + 'static>(
-	piece: &P,
-	options: BoardOptions,
-	start: ChessPoint,
-) -> Option<Moves> {
-	if let Some(cached_cycle) = try_get_cached_cycle::<P>(&options) {
-		cached_cycle.generate_moves_starting_at(start)
-	} else {
-		let moves = warnsdorf_tour_repeatless(piece, options.clone(), start);
-		if let Some(moves) = moves {
-			add_cycle_to_cache::<P>(options, moves.clone());
-			Some(moves)
-		} else {
-			None
+mod brute_force {
+	use super::*;
+	impl ChessPoint {
+		fn displace(&self, dx: u8, dy: u8) -> Self {
+			Self::new(self.row + dy, self.column + dx)
 		}
 	}
-}
 
-use cache::*;
-mod cache {
-	use crate::{pieces::ChessPiece, BoardOptions, ChessPoint, Move, Moves};
-	use lru::LruCache;
-	use once_cell::sync::Lazy;
-use tracing::info;
-	use std::num::NonZeroUsize;
-	use std::ops::{Deref, DerefMut};
-	use std::{any::TypeId, collections::HashMap, sync::Mutex};
-
-	static CYCLE_CACHE: Lazy<Mutex<HashMap<TypeId, LruCache<BoardOptions, Cycle>>>> =
-		Lazy::new(|| Mutex::new(HashMap::new()));
-
-	#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-	pub struct Cycle {
-		// options:
-		original_moves: Moves,
+	#[derive(Debug, Clone, PartialEq)]
+	enum CellState {
+		NeverOccupied,
+		PreviouslyOccupied,
 	}
 
-	impl Cycle {
-		pub fn new(original_moves: Moves) -> Self {
-			Self { original_moves }
+	#[derive(Debug, Clone)]
+	struct Board {
+		cell_states: HashMap<ChessPoint, CellState>,
+	}
+
+	impl Board {
+		fn get(&self, p: &ChessPoint) -> Option<CellState> {
+			self.cell_states.get(p).cloned()
+		}
+		fn set(&mut self, p: ChessPoint, state: CellState) {
+			self.cell_states.insert(p, state);
+		}
+		fn from_options(options: BoardOptions) -> Self {
+			let mut cell_states = HashMap::new();
+			for row in 1..=options.height() {
+				for column in 1..=options.width() {
+					let p = ChessPoint::new(row, column);
+					cell_states.insert(p, CellState::NeverOccupied);
+				}
+			}
+			Self { cell_states }
 		}
 
-		pub fn generate_moves_starting_at(self, start: ChessPoint) -> Option<Moves> {
-			let mut moves = self.original_moves;
-
-			// find index of start
-			let start_index = moves.iter().position(|m| m.from == start)?;
-
-			// reorder moves so that start is first, and wrap around
-			let moves: &mut Vec<Move> = moves.deref_mut();
-
-			moves.rotate_left(start_index);
-			// moves.push(moves[0]);
-			// moves.rotate_left(1);
-
-			let moves = moves.deref().clone();
-
-			Some(moves.into())
+		fn get_available_moves_from(&self, p: &ChessPoint, piece: &impl ChessPiece) -> Vec<ChessPoint> {
+			let mut moves = Vec::new();
+			for &(dx, dy) in piece.relative_moves() {
+				let p = p.mov(&(dx, dy));
+				if self.get(&p) == Some(CellState::NeverOccupied) {
+					moves.push(p);
+				}
+			}
+			moves
 		}
+		fn get_degree(&self, p: &ChessPoint, piece: &impl ChessPiece) -> u16 {
+			let mut degree = 0;
+			for &(dx, dy) in piece.relative_moves() {
+				let p = p.mov(&(dx, dy));
+				if self.get(&p) == Some(CellState::NeverOccupied) {
+					degree += 1;
+				}
+			}
+			degree
+		}
+	}
+
+	pub fn brute_force_tour_repeatless<P: ChessPiece>(
+		piece: &P,
+		options: BoardOptions,
+		start: ChessPoint,
+	) -> Option<Moves> {
+		let all_available_points = options.get_all_points();
+		let num_moves_required = all_available_points.len() as u8 - 1;
+
+		let board = Board::from_options(options);
+		try_move_recursive(num_moves_required, piece, board, start)
+	}
+
+	fn try_move_recursive(
+		num_moves_required: u8,
+		piece: &impl ChessPiece,
+		attempting_board: Board,
+		current_pos: ChessPoint,
+	) -> Option<Moves> {
+		if num_moves_required == 0 {
+			println!("Found solution!");
+			return Some(Vec::new().into());
+		}
+
+		let mut available_moves = attempting_board.get_available_moves_from(&current_pos, piece);
+		if available_moves.is_empty() {
+			println!("No moves available");
+			return None;
+		}
+		// sort by degree
+		available_moves.sort_by_cached_key(|p| attempting_board.get_degree(p, piece));
+		println!("Available moves: {:?}", available_moves);
+
+		let mut moves = None;
+
+		for potential_next_move in available_moves {
+			let mut board_with_potential_move = attempting_board.clone();
+
+			board_with_potential_move.set(current_pos, CellState::PreviouslyOccupied);
+
+			let result = try_move_recursive(
+				num_moves_required - 1,
+				piece,
+				board_with_potential_move,
+				potential_next_move,
+			);
+
+			match result {
+				None => {}
+				Some(mut working_moves) => {
+					// initially, working_moves will be empty
+					// first iteration must add move from current_pos to potential_next_move
+					// this repeats
+					working_moves.push(Move::new(current_pos, potential_next_move));
+					// return Some(working_moves);
+					moves = Some(working_moves);
+					break;
+				}
+			};
+		}
+
+		moves
 	}
 
 	#[cfg(test)]
 	mod tests {
+		use crate::pieces::StandardKnight;
+
 		use super::*;
 
 		#[test]
-		fn test_gen_moves_from_cycle() {
-			let initial = Moves::new(vec![
-				Move::new(ChessPoint::new(1, 1), ChessPoint::new(2, 2)),
-				Move::new(ChessPoint::new(2, 2), ChessPoint::new(3, 3)),
-				Move::new(ChessPoint::new(3, 3), ChessPoint::new(4, 4)),
-				Move::new(ChessPoint::new(4, 4), ChessPoint::new(1, 1)),
-			]);
-			let new_start_pos = ChessPoint::new(3, 3);
-			let expected = Moves::new(vec![
-				Move::new(ChessPoint::new(3, 3), ChessPoint::new(4, 4)),
-				Move::new(ChessPoint::new(4, 4), ChessPoint::new(1, 1)),
-				Move::new(ChessPoint::new(1, 1), ChessPoint::new(2, 2)),
-				Move::new(ChessPoint::new(2, 2), ChessPoint::new(3, 3)),
-			]);
+		fn single_recursion_test() {
+			let piece = StandardKnight {};
+			let mut states: HashMap<ChessPoint, CellState> = HashMap::new();
 
-			let cycle = Cycle::new(initial);
-			let actual = cycle.generate_moves_starting_at(new_start_pos).unwrap();
+			states.insert((1, 1).into(), CellState::NeverOccupied);
 
-			println!("Expected: \n{expected}, got: \n{actual}");
+			let board = Board {
+				cell_states: states,
+			};
 
-			assert_eq!(actual, expected)
+			let result = try_move_recursive(0, &piece, board, (1, 1).into());
+
+			assert_eq!(result, Some(Moves::new(vec![])));
 		}
+
+		#[test]
+		fn double_recursion_test() {
+			let piece = StandardKnight {};
+			let mut states: HashMap<ChessPoint, CellState> = HashMap::new();
+
+			states.insert((1, 1).into(), CellState::NeverOccupied);
+			states.insert((2, 3).into(), CellState::NeverOccupied);
+
+			let board = Board {
+				cell_states: states,
+			};
+
+			let result = try_move_recursive(1, &piece, board, (1, 1).into());
+
+			assert_eq!(result, Some(Moves::new(vec![Move::new((1, 1).into(), (2, 3).into())])));
+		}
+
+		// #[test]
+		// fn test_brute_force() {
+		// 	let options = BoardOptions::new(5, 5);
+		// 	let start = ChessPoint::new(1, 1);
+		// 	let piece = StandardKnight {};
+
+		// 	let expected = ImplementedAlgorithms::Warnsdorf(piece.clone())
+		// 		.tour_no_repeat(options.clone(), start)
+		// 		.unwrap();
+
+		// 	let result = ImplementedAlgorithms::BruteForce(piece.clone())
+		// 		.tour_no_repeat(options.clone(), start)
+		// 		.unwrap();
+
+		// 	println!("Expected:\n {expected}, \nResult: {result}");
+
+		// 	assert_eq!(result, expected);
+
+		// 	// assert!(result.is_some());
+		// 	// let result = result.unwrap();
+		// 	// assert_eq!(result.len(), 63);
+		// }
 	}
-
-	pub fn try_get_cached_cycle<P: ChessPiece + 'static>(options: &BoardOptions) -> Option<Cycle> {
-		let mut caches = CYCLE_CACHE.lock().unwrap();
-		let id = TypeId::of::<P>();
-
-		let cache = match caches.get_mut(&id) {
-			Some(cache) => cache,
-			None => {
-				let cache = LruCache::new(NonZeroUsize::new(100).unwrap());
-				caches.insert(id, cache);
-				caches.get_mut(&id).unwrap()
-			}
-		};
-
-		cache.get(options).cloned()
-	}
-
-	pub fn add_cycle_to_cache<P: ChessPiece + 'static>(options: BoardOptions, moves: Moves) {
-		let mut caches = CYCLE_CACHE.lock().unwrap();
-		let id = TypeId::of::<P>();
-
-		let cache = match caches.get_mut(&id) {
-			Some(cache) => cache,
-			None => {
-				let cache = LruCache::new(NonZeroUsize::new(100).unwrap());
-				caches.insert(id, cache);
-				caches.get_mut(&id).unwrap()
-			}
-		};
-
-		info!("Putting a solution in the cache");
-		cache.put(options, Cycle::new(moves));
-	}
-}
-
-#[cfg(test)]
-mod tests {
-	#[test]
-	fn test_caching() {}
-}
-
-fn brute_force_tour_repeatless(
-	piece: &impl ChessPiece,
-	options: BoardOptions,
-	start: ChessPoint,
-) -> Option<Moves> {
-	unimplemented!()
 }
 
 fn warnsdorf_tour_repeatless(
@@ -205,7 +253,12 @@ fn warnsdorf_tour_repeatless(
 				.clone()
 				.options
 				.into_iter()
-				.map(|row| row.into_iter().map(|cell| cell.into()).collect())
+				.map(|row| {
+					row
+						.into_iter()
+						.map(|cell| cell.into())
+						.collect::<Vec<CellState>>()
+				})
 				.collect();
 			Self {
 				cell_states,
@@ -295,6 +348,41 @@ fn warnsdorf_tour_repeatless(
 			&self.cell_states
 		}
 	}
+
+	/// State of active board
+	#[derive(Copy, Clone, Debug, PartialEq)]
+	pub enum CellState {
+		/// Can be moved to but never has
+		NeverOccupied,
+
+		/// Has been occupied already
+		/// (number indicates at what step)
+		HasBeenOccupied(u8),
+
+		/// Can't be moved to
+		Unavailable,
+	}
+
+	impl From<CellOption> for CellState {
+		fn from(o: CellOption) -> Self {
+			match o {
+				CellOption::Available => CellState::NeverOccupied,
+				CellOption::Unavailable => CellState::Unavailable,
+			}
+		}
+	}
+
+	impl From<BoardOptions> for CellStates {
+		fn from(options: BoardOptions) -> Self {
+			options
+				.options
+				.into_iter()
+				.map(|row| row.into_iter().map(|cell| cell.into()).collect())
+				.collect()
+		}
+	}
+
+	pub type CellStates = Vec<Vec<CellState>>;
 
 	let mut board = Board::from_options(options);
 	let mut moves = Vec::new();

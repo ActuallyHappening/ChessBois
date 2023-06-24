@@ -168,21 +168,7 @@ impl Moves {
 	}
 }
 
-/// State of active board
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub enum CellState {
-	/// Can be moved to but never has
-	NeverOccupied,
 
-	/// Has been occupied but can be moved to again.
-	/// number represents the order in which it was occupied
-	///
-	/// TODO: add number of crosses as well
-	HasBeenOccupied(u8),
-
-	/// Can't be moved to
-	Unavailable,
-}
 
 #[derive(Debug, Copy, Hash, Clone, PartialEq)]
 pub enum CellOption {
@@ -190,14 +176,6 @@ pub enum CellOption {
 	Unavailable,
 }
 
-impl From<CellOption> for CellState {
-	fn from(o: CellOption) -> Self {
-		match o {
-			CellOption::Available => CellState::NeverOccupied,
-			CellOption::Unavailable => CellState::Unavailable,
-		}
-	}
-}
 
 impl CellOption {
 	fn is_available(&self) -> bool {
@@ -208,7 +186,6 @@ impl CellOption {
 	}
 }
 
-pub type CellStates = Vec<Vec<CellState>>;
 
 /// Necessary information to make custom board.
 /// Does NOT hold actual state, to solve use [Board]
@@ -326,15 +303,7 @@ impl BoardOptions {
 	}
 }
 
-impl From<BoardOptions> for CellStates {
-	fn from(options: BoardOptions) -> Self {
-		options
-			.options
-			.into_iter()
-			.map(|row| row.into_iter().map(|cell| cell.into()).collect())
-			.collect()
-	}
-}
+
 
 impl Display for BoardOptions {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
