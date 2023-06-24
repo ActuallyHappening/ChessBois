@@ -33,7 +33,7 @@ pub fn init_debug_tools() {
 
 use std::{
 	fmt::{self, Display},
-	ops::Deref,
+	ops::{Deref, DerefMut},
 };
 use bevy::prelude::*;
 
@@ -43,7 +43,7 @@ pub mod pieces;
 use algs::*;
 
 // 1 indexed
-#[derive(Copy, Component, Reflect, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Component, Reflect, Hash, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct ChessPoint {
 	// Between 1 and COLUMN_SIZE.
 	/// Corresponds to x axis
@@ -108,7 +108,7 @@ impl std::ops::Add for ChessPoint {
 }
 
 /// Represents move from one point to another
-#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Hash)]
 pub struct Move {
 	pub from: ChessPoint,
 	pub to: ChessPoint,
@@ -128,7 +128,7 @@ impl Move {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Moves {
 	moves: Vec<Move>,
 }
@@ -156,11 +156,17 @@ impl Deref for Moves {
 	}
 }
 
-
-pub struct Cycle {
-	// options:
+impl DerefMut for Moves {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.moves
+	}
 }
 
+impl Moves {
+	pub(crate) fn new(moves: Vec<Move>) -> Self {
+		Self { moves }
+	}
+}
 
 /// State of active board
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -178,7 +184,7 @@ pub enum CellState {
 	Unavailable,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Hash, Clone, PartialEq)]
 pub enum CellOption {
 	Available,
 	Unavailable,
@@ -206,10 +212,13 @@ pub type CellStates = Vec<Vec<CellState>>;
 
 /// Necessary information to make custom board.
 /// Does NOT hold actual state, to solve use [Board]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, PartialEq)]
 pub struct BoardOptions {
 	options: Vec<Vec<CellOption>>,
 }
+// This is technically dangerous, however I don't want to refactor into a better data representation so ehh
+impl Eq for BoardOptions {}
+
 
 impl BoardOptions {
 	/// Creates square board with given dimensions and all cells available

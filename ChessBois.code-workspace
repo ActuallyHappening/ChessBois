@@ -6,9 +6,9 @@
 		{
 			"path": "msrc-q11"
 		},
-		{
-			"path": "bevy_egui"
-		}
+		// {
+		// 	"path": "bevy_egui"
+		// }
 	],
 	"settings": {
 		"cSpell.words": [

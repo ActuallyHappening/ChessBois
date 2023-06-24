@@ -1,7 +1,7 @@
 use crate::{pieces::ChessPiece, *};
 use cached::proc_macro::cached;
 
-pub enum ImplementedAlgorithms<P: ChessPiece> {
+pub enum ImplementedAlgorithms<P: ChessPiece + 'static> {
 	Warnsdorf(P),
 
 	/// This variant stores known board_options already solves, and re-arranges the moves
@@ -14,9 +14,148 @@ impl<P: ChessPiece> ImplementedAlgorithms<P> {
 	pub fn tour_no_repeat(&self, board_options: BoardOptions, start: ChessPoint) -> Option<Moves> {
 		match self {
 			Self::Warnsdorf(piece) => warnsdorf_tour_repeatless(piece, board_options, start),
-			Self::WarnsdorfCached(piece) => brute_force_tour_repeatless(piece, board_options, start),
+			Self::WarnsdorfCached(piece) => warnsdorf_tour_repeatless_cached(piece, board_options, start),
 		}
 	}
+}
+
+
+fn warnsdorf_tour_repeatless_cached<P: ChessPiece + 'static>(
+	piece: &P,
+	options: BoardOptions,
+	start: ChessPoint,
+) -> Option<Moves> {
+	if let Some(cached_cycle) = try_get_cached_cycle::<P>(&options) {
+		cached_cycle.generate_moves_starting_at(start)
+	} else {
+		let moves = warnsdorf_tour_repeatless(piece, options.clone(), start);
+		if let Some(moves) = moves {
+			add_cycle_to_cache::<P>(options, moves.clone());
+			Some(moves)
+		} else {
+			None
+		}
+	}
+}
+
+use cache::*;
+mod cache {
+	use crate::{pieces::ChessPiece, BoardOptions, ChessPoint, Move, Moves};
+	use lru::LruCache;
+	use once_cell::sync::Lazy;
+use tracing::info;
+	use std::num::NonZeroUsize;
+	use std::ops::{Deref, DerefMut};
+	use std::{any::TypeId, collections::HashMap, sync::Mutex};
+
+	static CYCLE_CACHE: Lazy<Mutex<HashMap<TypeId, LruCache<BoardOptions, Cycle>>>> =
+		Lazy::new(|| Mutex::new(HashMap::new()));
+
+	#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+	pub struct Cycle {
+		// options:
+		original_moves: Moves,
+	}
+
+	impl Cycle {
+		pub fn new(original_moves: Moves) -> Self {
+			Self { original_moves }
+		}
+
+		pub fn generate_moves_starting_at(self, start: ChessPoint) -> Option<Moves> {
+			let mut moves = self.original_moves;
+
+			// find index of start
+			let start_index = moves.iter().position(|m| m.from == start)?;
+
+			// reorder moves so that start is first, and wrap around
+			let moves: &mut Vec<Move> = moves.deref_mut();
+
+			moves.rotate_left(start_index);
+			// moves.push(moves[0]);
+			// moves.rotate_left(1);
+
+			let moves = moves.deref().clone();
+
+			Some(moves.into())
+		}
+	}
+
+	#[cfg(test)]
+	mod tests {
+		use super::*;
+
+		#[test]
+		fn test_gen_moves_from_cycle() {
+			let initial = Moves::new(vec![
+				Move::new(ChessPoint::new(1, 1), ChessPoint::new(2, 2)),
+				Move::new(ChessPoint::new(2, 2), ChessPoint::new(3, 3)),
+				Move::new(ChessPoint::new(3, 3), ChessPoint::new(4, 4)),
+				Move::new(ChessPoint::new(4, 4), ChessPoint::new(1, 1)),
+			]);
+			let new_start_pos = ChessPoint::new(3, 3);
+			let expected = Moves::new(vec![
+				Move::new(ChessPoint::new(3, 3), ChessPoint::new(4, 4)),
+				Move::new(ChessPoint::new(4, 4), ChessPoint::new(1, 1)),
+				Move::new(ChessPoint::new(1, 1), ChessPoint::new(2, 2)),
+				Move::new(ChessPoint::new(2, 2), ChessPoint::new(3, 3)),
+			]);
+
+			let cycle = Cycle::new(initial);
+			let actual = cycle.generate_moves_starting_at(new_start_pos).unwrap();
+
+			println!("Expected: \n{expected}, got: \n{actual}");
+
+			assert_eq!(actual, expected)
+		}
+	}
+
+	pub fn try_get_cached_cycle<P: ChessPiece + 'static>(options: &BoardOptions) -> Option<Cycle> {
+		let mut caches = CYCLE_CACHE.lock().unwrap();
+		let id = TypeId::of::<P>();
+
+		let cache = match caches.get_mut(&id) {
+			Some(cache) => cache,
+			None => {
+				let cache = LruCache::new(NonZeroUsize::new(100).unwrap());
+				caches.insert(id, cache);
+				caches.get_mut(&id).unwrap()
+			}
+		};
+
+		cache.get(options).cloned()
+	}
+
+	pub fn add_cycle_to_cache<P: ChessPiece + 'static>(options: BoardOptions, moves: Moves) {
+		let mut caches = CYCLE_CACHE.lock().unwrap();
+		let id = TypeId::of::<P>();
+
+		let cache = match caches.get_mut(&id) {
+			Some(cache) => cache,
+			None => {
+				let cache = LruCache::new(NonZeroUsize::new(100).unwrap());
+				caches.insert(id, cache);
+				caches.get_mut(&id).unwrap()
+			}
+		};
+
+		info!("Putting a solution in the cache");
+		cache.put(options, Cycle::new(moves));
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	#[test]
+	fn test_caching() {}
+}
+
+fn brute_force_tour_repeatless(
+	piece: &impl ChessPiece,
+	options: BoardOptions,
+	start: ChessPoint,
+) -> Option<Moves> {
+	unimplemented!()
 }
 
 fn warnsdorf_tour_repeatless(
@@ -201,29 +340,4 @@ fn warnsdorf_tour_repeatless(
 	}
 
 	Some(moves.into())
-}
-
-fn warnsdorf_tour_repeatless_cached(
-	piece: &impl ChessPiece,
-	options: BoardOptions,
-	start: ChessPoint,
-) -> Option<Moves> {
-
-	unimplemented!()
-}
-
-
-
-#[cfg(test)]
-mod tests {
-	#[test]
-	fn test_caching() {}
-}
-
-fn brute_force_tour_repeatless(
-	piece: &impl ChessPiece,
-	options: BoardOptions,
-	start: ChessPoint,
-) -> Option<Moves> {
-	unimplemented!()
 }
