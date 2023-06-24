@@ -168,6 +168,22 @@ impl Moves {
 	}
 }
 
+impl IntoIterator for Moves {
+	type Item = Move;
+	type IntoIter = std::vec::IntoIter<Self::Item>;
+
+	fn into_iter(self) -> Self::IntoIter {
+		self.moves.into_iter()
+	}
+}
+
+impl std::iter::FromIterator<Move> for Moves {
+	fn from_iter<T: IntoIterator<Item = Move>>(iter: T) -> Self {
+		Self {
+			moves: iter.into_iter().collect(),
+		}
+	}
+}
 
 
 #[derive(Debug, Copy, Hash, Clone, PartialEq)]
@@ -301,9 +317,20 @@ impl BoardOptions {
 		}
 		points
 	}
+
+	pub fn get_available_points(&self) -> Vec<ChessPoint> {
+		let mut points = Vec::new();
+		for row in 1..=self.height() {
+			for column in 1..=self.width() {
+				let p = ChessPoint::new(row, column);
+				if self.get(&p) == Some(CellOption::Available) {
+					points.push(p);
+				}
+			}
+		}
+		points
+	}
 }
-
-
 
 impl Display for BoardOptions {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -319,7 +346,4 @@ impl Display for BoardOptions {
 		Ok(())
 	}
 }
-
-
-
 

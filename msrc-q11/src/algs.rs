@@ -84,11 +84,17 @@ mod brute_force {
 		options: BoardOptions,
 		start: ChessPoint,
 	) -> Option<Moves> {
-		let all_available_points = options.get_all_points();
+		let all_available_points = options.get_available_points();
 		let num_moves_required = all_available_points.len() as u8 - 1;
 
 		let board = Board::from_options(options);
 		try_move_recursive(num_moves_required, piece, board, start)
+			// .map(|moves| moves.into_iter().rev().collect())
+    .map(|moves| {
+			let mut moves = moves.into_iter().rev().collect::<Vec<Move>>();
+			moves.push(Move::new(start, start));
+			moves.into()
+		})
 	}
 
 	fn try_move_recursive(
@@ -98,18 +104,18 @@ mod brute_force {
 		current_pos: ChessPoint,
 	) -> Option<Moves> {
 		if num_moves_required == 0 {
-			println!("Found solution!");
+			// println!("Found solution!");
 			return Some(Vec::new().into());
 		}
 
 		let mut available_moves = attempting_board.get_available_moves_from(&current_pos, piece);
 		if available_moves.is_empty() {
-			println!("No moves available");
+			// println!("No moves available");
 			return None;
 		}
 		// sort by degree
 		available_moves.sort_by_cached_key(|p| attempting_board.get_degree(p, piece));
-		println!("Available moves: {:?}", available_moves);
+		// println!("Available moves: {:?}", available_moves);
 
 		let mut moves = None;
 
@@ -178,7 +184,32 @@ mod brute_force {
 
 			let result = try_move_recursive(1, &piece, board, (1, 1).into());
 
-			assert_eq!(result, Some(Moves::new(vec![Move::new((1, 1).into(), (2, 3).into())])));
+			assert_eq!(
+				result,
+				Some(Moves::new(vec![Move::new((1, 1).into(), (2, 3).into())]))
+			);
+		}
+
+		#[test]
+		fn triple_recursion_test() {
+			let piece = StandardKnight {};
+			let mut states: HashMap<ChessPoint, CellState> = HashMap::new();
+
+			states.insert((1, 1).into(), CellState::NeverOccupied);
+			states.insert((2, 3).into(), CellState::NeverOccupied);
+			states.insert((3, 1).into(), CellState::NeverOccupied);
+
+			let board = Board {
+				cell_states: states,
+			};
+			// actually reversed
+			let expected = vec![
+				Move::new((1, 1).into(), (2, 3).into()),
+				Move::new((2, 3).into(), (3, 1).into()),
+			];
+
+			let result = try_move_recursive(2, &piece, board, (1, 1).into());
+			assert_eq!(result, Some(Moves::new(expected.into_iter().rev().collect())));
 		}
 
 		// #[test]
