@@ -1,12 +1,9 @@
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
-use msrc_q11::{Board, BoardOptions, ChessPoint};
+use msrc_q11::{BoardOptions, ChessPoint, SolverAlgorithm};
 use std::f32::consts::TAU;
 
-use crate::{
-	CELL_DEPTH, CELL_HEIGHT, CELL_SELECTED_COLOUR, CELL_SIZE, VISUALIZATION_COLOUR,
-	VISUALIZATION_HEIGHT,
-};
+use crate::*;
 
 pub struct BoardPlugin;
 impl Plugin for BoardPlugin {
@@ -14,7 +11,7 @@ impl Plugin for BoardPlugin {
 		app
 			.add_event::<NewCellSelected>()
 			.add_event::<NewBoardCellOptions>()
-			.add_startup_system(spawn_initial)
+			.add_startup_system(setup)
 			.add_system(spawn_left_sidebar_ui)
 			.add_plugins(
 				DefaultPickingPlugins
@@ -50,15 +47,21 @@ pub struct CurrentOptions {
 	current: Options,
 }
 
+#[derive(Resource, Debug, Default)]
+pub enum Algorithm {
+	#[default]
+	Warnsdorf,
+}
+
 use coords::*;
 mod coords {
 	use super::*;
 
 	/// Returns spacial coordinates of center of cell mesh
-	fn get_spacial_coord_normalized(board: &Board, chess_position: ChessPoint) -> Vec2 {
+	fn get_spacial_coord_normalized(board: &BoardOptions, chess_position: ChessPoint) -> Vec2 {
 		let ChessPoint { row: y, column: x } = chess_position;
-		let width = board.options().width() as f32;
-		let height = board.options().height() as f32;
+		let width = board.width() as f32;
+		let height = board.height() as f32;
 		let x = x as f32;
 		let y = y as f32;
 
@@ -72,13 +75,13 @@ mod coords {
 		Vec2::new(x_adjusted, y_adjusted)
 	}
 
-	pub fn get_spacial_coord(board: &Board, chess_position: ChessPoint) -> Vec3 {
+	pub fn get_spacial_coord(board: &BoardOptions, chess_position: ChessPoint) -> Vec3 {
 		let normalized = get_spacial_coord_normalized(board, chess_position) * CELL_SIZE;
 
 		Vec3::new(normalized.x, CELL_HEIGHT, -normalized.y)
 	}
 
-	pub fn get_spacial_coord_2d(board: &Board, chess_position: ChessPoint) -> Vec2 {
+	pub fn get_spacial_coord_2d(board: &BoardOptions, chess_position: ChessPoint) -> Vec2 {
 		let normalized = get_spacial_coord_normalized(board, chess_position) * CELL_SIZE;
 
 		Vec2::new(normalized.x, -normalized.y)
@@ -90,28 +93,28 @@ mod coords {
 
 		#[test]
 		fn test_coords_center() {
-			let coords = get_spacial_coord_normalized(&Board::new(3, 3), ChessPoint::new(2, 2));
+			let coords = get_spacial_coord_normalized(&BoardOptions::new(3, 3), ChessPoint::new(2, 2));
 
 			assert_eq!(coords, Vec2::new(0., 0.));
 		}
 
 		#[test]
 		fn test_coords_bl_2() {
-			let coords = get_spacial_coord_normalized(&Board::new(2, 2), ChessPoint::new(1, 1));
+			let coords = get_spacial_coord_normalized(&BoardOptions::new(2, 2), ChessPoint::new(1, 1));
 
 			assert_eq!(coords, Vec2::new(-0.5, -0.5));
 		}
 
 		#[test]
 		fn test_coords_bl_5() {
-			let coords = get_spacial_coord_normalized(&Board::new(5, 5), ChessPoint::new(1, 1));
+			let coords = get_spacial_coord_normalized(&BoardOptions::new(5, 5), ChessPoint::new(1, 1));
 
 			assert_eq!(coords, Vec2::new(-2., -2.));
 		}
 	}
 }
 
-fn spawn_initial(
+fn setup(
 	mut commands: Commands,
 	mut meshes: ResMut<Assets<Mesh>>,
 	mut materials: ResMut<Assets<StandardMaterial>>,
@@ -125,6 +128,7 @@ fn spawn_initial(
 	};
 
 	commands.insert_resource(current_options);
+	commands.init_resource::<Algorithm>();
 
 	spawn_cells(&mut commands, &options, &mut meshes, &mut materials);
 	// spawn_visualization_from_options(&options, &mut commands, &mut meshes, &mut materials);
@@ -145,13 +149,12 @@ mod cells {
 		meshes: &mut ResMut<Assets<Mesh>>,
 		materials: &mut ResMut<Assets<StandardMaterial>>,
 	) {
-		let board = Board::from_options(options.options.clone());
 		let start = options.selected_start;
 		let options = options.options.clone();
 
 		for point in options.get_all_points() {
 			let colour = compute_colour(&point, Some(&options), start);
-			spawn_cell(point, &board, colour, commands, meshes, materials);
+			spawn_cell(point, &options, colour, commands, meshes, materials);
 		}
 	}
 
@@ -182,13 +185,13 @@ mod cells {
 
 	fn spawn_cell(
 		at: ChessPoint,
-		board: &Board,
+		options: &BoardOptions,
 		colour: Color,
 		commands: &mut Commands,
 		meshes: &mut ResMut<Assets<Mesh>>,
 		materials: &mut ResMut<Assets<StandardMaterial>>,
 	) {
-		let transform = Transform::from_translation(get_spacial_coord(board, at))
+		let transform = Transform::from_translation(get_spacial_coord(options, at))
 			.with_rotation(Quat::from_rotation_x(-TAU / 4.));
 		let mesh = meshes.add(shape::Box::new(CELL_SIZE, CELL_SIZE, CELL_DEPTH).into());
 
@@ -298,6 +301,7 @@ mod cells {
 		current_options: ResMut<CurrentOptions>,
 
 		vis: Query<Entity, With<VisualizationComponent>>,
+		algs: Res<Algorithm>,
 
 		mut commands: Commands,
 		mut meshes: ResMut<Assets<Mesh>>,
@@ -315,7 +319,7 @@ mod cells {
 
 			// info!("New starting point: {}", new_starting_point.new);
 			despawn_visualization(&mut commands, vis);
-			spawn_visualization_from_options(&new_options, &mut commands, &mut meshes, &mut materials);
+			spawn_visualization_from_options(&new_options, algs, &mut commands, &mut meshes, &mut materials);
 		}
 	}
 
@@ -349,7 +353,7 @@ mod cells {
 use visualization::*;
 mod visualization {
 	use super::*;
-	use msrc_q11::{piece_tour_no_repeat, Move, StandardKnight};
+	use msrc_q11::{Move, StandardKnight, SolverAlgorithm};
 
 	#[allow(dead_code)]
 	#[derive(Component, Debug, Clone)]
@@ -360,6 +364,7 @@ mod visualization {
 
 	pub fn spawn_visualization_from_options(
 		options: &Options,
+		alg: Res<Algorithm>,
 
 		commands: &mut Commands,
 		meshes: &mut ResMut<Assets<Mesh>>,
@@ -371,13 +376,13 @@ mod visualization {
 				return;
 			}
 
-			let mut board = Board::from_options(options.options.clone());
+			let options = options.options.clone();
 			let piece = StandardKnight {};
 
-			match piece_tour_no_repeat(&piece, &mut board, start) {
+			match piece.try_piece_tour_warnsdorf(options.clone(), start) {
 				Some(moves) => {
 					for Move { from, to } in moves.iter() {
-						spawn_path_line(commands, meshes, materials, from, to, &board)
+						spawn_path_line(commands, meshes, materials, from, to, &options)
 					}
 				}
 				None => {
@@ -411,10 +416,10 @@ mod visualization {
 		materials: &mut ResMut<Assets<StandardMaterial>>,
 		from: &ChessPoint,
 		to: &ChessPoint,
-		board: &Board,
+		options: &BoardOptions,
 	) {
-		let start_pos = get_spacial_coord_2d(board, *from);
-		let end_pos = get_spacial_coord_2d(board, *to);
+		let start_pos = get_spacial_coord_2d(options, *from);
+		let end_pos = get_spacial_coord_2d(options, *to);
 
 		let center = (start_pos + end_pos) / 2.; // ✅
 		let length = (start_pos - end_pos).length(); // ✅
@@ -493,141 +498,4 @@ mod ui {
 			));
 		});
 	}
-
-	// fn ui_example_system(
-	// 	mut ui_state: ResMut<UiState>,
-	// 	// You are not required to store Egui texture ids in systems. We store this one here just to
-	// 	// demonstrate that rendering by using a texture id of a removed image is handled without
-	// 	// making bevy_egui panic.
-	// 	mut rendered_texture_id: Local<egui::TextureId>,
-	// 	mut is_initialized: Local<bool>,
-	// 	// If you need to access the ids from multiple systems, you can also initialize the `Images`
-	// 	// resource while building the app and use `Res<Images>` instead.
-	// 	images: Local<Images>,
-	// 	mut contexts: EguiContexts,
-	// ) {
-	// 	let egui_texture_handle = ui_state
-	// 		.egui_texture_handle
-	// 		.get_or_insert_with(|| {
-	// 			contexts.ctx_mut().load_texture(
-	// 				"example-image",
-	// 				egui::ColorImage::example(),
-	// 				Default::default(),
-	// 			)
-	// 		})
-	// 		.clone();
-
-	// 	let mut load = false;
-	// 	let mut remove = false;
-	// 	let mut invert = false;
-
-	// 	if !*is_initialized {
-	// 		*is_initialized = true;
-	// 		*rendered_texture_id = contexts.add_image(images.bevy_icon.clone_weak());
-	// 	}
-
-	// 	let ctx = contexts.ctx_mut();
-
-	// 	egui::SidePanel::left("side_panel")
-	// 		.default_width(200.0)
-	// 		.show(ctx, |ui| {
-	// 			ui.heading("Side Panel");
-
-	// 			ui.horizontal(|ui| {
-	// 				ui.label("Write something: ");
-	// 				ui.text_edit_singleline(&mut ui_state.label);
-	// 			});
-
-	// 			ui.add(egui::widgets::Image::new(
-	// 				egui_texture_handle.id(),
-	// 				egui_texture_handle.size_vec2(),
-	// 			));
-
-	// 			ui.add(egui::Slider::new(&mut ui_state.value, 0.0..=10.0).text("value"));
-	// 			if ui.button("Increment").clicked() {
-	// 				ui_state.value += 1.0;
-	// 			}
-
-	// 			ui.allocate_space(egui::Vec2::new(1.0, 100.0));
-	// 			ui.horizontal(|ui| {
-	// 				load = ui.button("Load").clicked();
-	// 				invert = ui.button("Invert").clicked();
-	// 				remove = ui.button("Remove").clicked();
-	// 			});
-
-	// 			ui.add(egui::widgets::Image::new(
-	// 				*rendered_texture_id,
-	// 				[256.0, 256.0],
-	// 			));
-
-	// 			ui.allocate_space(egui::Vec2::new(1.0, 10.0));
-	// 			ui.checkbox(&mut ui_state.is_window_open, "Window Is Open");
-
-	// 			ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
-	// 				ui.add(egui::Hyperlink::from_label_and_url(
-	// 					"powered by egui",
-	// 					"https://github.com/emilk/egui/",
-	// 				));
-	// 			});
-	// 		});
-
-	// 	egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-	// 		// The top panel is often a good place for a menu bar:
-	// 		egui::menu::bar(ui, |ui| {
-	// 			egui::menu::menu_button(ui, "File", |ui| {
-	// 				if ui.button("Quit").clicked() {
-	// 					std::process::exit(0);
-	// 				}
-	// 			});
-	// 		});
-	// 	});
-
-	// 	egui::CentralPanel::default().show(ctx, |ui| {
-	// 		ui.heading("Egui Template");
-	// 		ui.hyperlink("https://github.com/emilk/egui_template");
-	// 		ui.add(egui::github_link_file_line!(
-	// 			"https://github.com/mvlabat/bevy_egui/blob/main/",
-	// 			"Direct link to source code."
-	// 		));
-	// 		egui::warn_if_debug_build(ui);
-
-	// 		ui.separator();
-
-	// 		ui.heading("Central Panel");
-	// 		ui.label("The central panel the region left after adding TopPanel's and SidePanel's");
-	// 		ui.label("It is often a great place for big things, like drawings:");
-
-	// 		ui.heading("Draw with your mouse to paint:");
-	// 		ui_state.painting.ui_control(ui);
-	// 		egui::Frame::dark_canvas(ui.style()).show(ui, |ui| {
-	// 			ui_state.painting.ui_content(ui);
-	// 		});
-	// 	});
-
-	// 	egui::Window::new("Window")
-	// 		.vscroll(true)
-	// 		.open(&mut ui_state.is_window_open)
-	// 		.show(ctx, |ui| {
-	// 			ui.label("Windows can be moved by dragging them.");
-	// 			ui.label("They are automatically sized based on contents.");
-	// 			ui.label("You can turn on resizing and scrolling if you like.");
-	// 			ui.label("You would normally chose either panels OR windows.");
-	// 		});
-
-	// 	if invert {
-	// 		ui_state.inverted = !ui_state.inverted;
-	// 	}
-	// 	if load || invert {
-	// 		// If an image is already added to the context, it'll return an existing texture id.
-	// 		if ui_state.inverted {
-	// 			*rendered_texture_id = contexts.add_image(images.bevy_icon_inverted.clone_weak());
-	// 		} else {
-	// 			*rendered_texture_id = contexts.add_image(images.bevy_icon.clone_weak());
-	// 		};
-	// 	}
-	// 	if remove {
-	// 		contexts.remove_image(&images.bevy_icon);
-	// 		contexts.remove_image(&images.bevy_icon_inverted);
-	// 	}
-	// }
 }

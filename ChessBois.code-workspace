@@ -12,11 +12,13 @@
 	],
 	"settings": {
 		"cSpell.words": [
+			"algs",
 			"denormalized",
 			"Egui",
 			"Fullscreen",
 			"Pickable",
-			"Raycast"
+			"Raycast",
+			"warnsdorf"
 		]
 	}
 }

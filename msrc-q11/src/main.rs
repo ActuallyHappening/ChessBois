@@ -7,10 +7,10 @@ fn main() {
 	let start: ChessPoint = (1, 1).into();
 	let (width, height) = (8, 8);
 	info!("Board size: {}x{}", width, height);
-	let piece = StandardKnight {};
+	let board = BoardOptions::new(8, 8);
+	let knight = StandardKnight{};
 
-	let mut board = Board::new(width, height);
-	let moves = piece_tour_no_repeat(&piece, &mut board, start).expect("tour to be possible");
+	let moves = knight.try_piece_tour_warnsdorf(board.clone(), start).expect("tour to be possible");
 
 	info!("Board: \n{}", board);
 	info!("Moves: {}", moves);
