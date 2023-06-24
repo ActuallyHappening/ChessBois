@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_egui::egui::Color32;
 use bevy_mod_picking::prelude::RaycastPickCamera;
 use std::f32::consts::PI;
 mod board;
@@ -26,6 +27,8 @@ const CELL_DISABLED_COLOUR: Color = Color::RED;
 
 const VISUALIZATION_HEIGHT: f32 = 3.;
 const VISUALIZATION_COLOUR: Color = Color::GREEN;
+
+const UI_ALG_ENABLED_COLOUR: Color32 = Color32::GREEN;
 
 pub fn setup(
 	mut commands: Commands,

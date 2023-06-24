@@ -1,7 +1,9 @@
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
-use msrc_q11::{BoardOptions, ChessPoint, algs::ImplementedAlgorithms, pieces::ChessPiece};
+use msrc_q11::{algs::ImplementedAlgorithms, pieces::ChessPiece, BoardOptions, ChessPoint};
 use std::f32::consts::TAU;
+use strum::{EnumIter, EnumString, EnumVariantNames, IntoStaticStr};
+use strum::IntoEnumIterator;
 
 use crate::*;
 
@@ -47,20 +49,20 @@ pub struct CurrentOptions {
 	current: Options,
 }
 
-#[derive(Resource, Debug, Default)]
-pub enum ChosenAlgorithm {
+#[derive(Resource, Debug, Clone, Default, PartialEq, EnumIter, IntoStaticStr)]
+pub enum Algorithm {
 	#[default]
 	Warnsdorf,
 
 	BruteForce,
 }
 
-impl ChosenAlgorithm {
-	fn into_alg<P: ChessPiece>(&self, piece: P) -> ImplementedAlgorithms<P> {
-			match self {
-				ChosenAlgorithm::Warnsdorf => ImplementedAlgorithms::Warnsdorf(piece),
-				ChosenAlgorithm::BruteForce => ImplementedAlgorithms::BruteForce(piece),
-			}
+impl Algorithm {
+	fn to_impl<P: ChessPiece>(&self, piece: P) -> ImplementedAlgorithms<P> {
+		match self {
+			Algorithm::Warnsdorf => ImplementedAlgorithms::Warnsdorf(piece),
+			Algorithm::BruteForce => ImplementedAlgorithms::BruteForce(piece),
+		}
 	}
 }
 
@@ -139,7 +141,7 @@ fn setup(
 	};
 
 	commands.insert_resource(current_options);
-	commands.init_resource::<ChosenAlgorithm>();
+	commands.init_resource::<Algorithm>();
 
 	spawn_cells(&mut commands, &options, &mut meshes, &mut materials);
 	// spawn_visualization_from_options(&options, &mut commands, &mut meshes, &mut materials);
@@ -176,7 +178,7 @@ mod cells {
 	}
 
 	/// Takes as much information as it can get and returns the colour the cell should be.
-	/// 
+	///
 	/// - Pass None to options to skip checking if cell is disabled
 	/// - Pass None to start to skip checking if cell is selected
 	fn compute_colour(
@@ -264,11 +266,7 @@ mod cells {
 
 		// sets colour to selected
 		let material = materials.get_mut(mat).unwrap();
-		material.base_color = compute_colour(
-			point,
-			Some(&options.current.options),
-			None,
-		);
+		material.base_color = compute_colour(point, Some(&options.current.options), None);
 
 		Bubble::Up
 	}
@@ -312,7 +310,7 @@ mod cells {
 		current_options: ResMut<CurrentOptions>,
 
 		vis: Query<Entity, With<VisualizationComponent>>,
-		algs: Res<ChosenAlgorithm>,
+		algs: Res<Algorithm>,
 
 		mut commands: Commands,
 		mut meshes: ResMut<Assets<Mesh>>,
@@ -330,7 +328,13 @@ mod cells {
 
 			// info!("New starting point: {}", new_starting_point.new);
 			despawn_visualization(&mut commands, vis);
-			spawn_visualization_from_options(&new_options, algs, &mut commands, &mut meshes, &mut materials);
+			spawn_visualization_from_options(
+				&new_options,
+				algs,
+				&mut commands,
+				&mut meshes,
+				&mut materials,
+			);
 		}
 	}
 
@@ -364,7 +368,7 @@ mod cells {
 use visualization::*;
 mod visualization {
 	use super::*;
-	use msrc_q11::{Move, pieces::StandardKnight, algs::ImplementedAlgorithms};
+	use msrc_q11::{algs::ImplementedAlgorithms, pieces::StandardKnight, Move};
 
 	#[allow(dead_code)]
 	#[derive(Component, Debug, Clone)]
@@ -375,7 +379,7 @@ mod visualization {
 
 	pub fn spawn_visualization_from_options(
 		options: &Options,
-		alg: Res<ChosenAlgorithm>,
+		alg: Res<Algorithm>,
 
 		commands: &mut Commands,
 		meshes: &mut ResMut<Assets<Mesh>>,
@@ -389,7 +393,7 @@ mod visualization {
 
 			let options = options.options.clone();
 			let piece = StandardKnight {};
-			let algs = alg.into_alg(piece);
+			let algs = alg.to_impl(piece);
 
 			match algs.tour_no_repeat(options.clone(), start) {
 				Some(moves) => {
@@ -466,14 +470,18 @@ mod visualization {
 
 use ui::*;
 mod ui {
+	use std::str::FromStr;
+
 	use super::*;
-	use bevy_egui::*;
+	use bevy_egui::{*, egui::{RichText, Color32}};
+	use strum::VariantNames;
 
 	pub fn spawn_left_sidebar_ui(
+		mut commands: Commands,
 		mut contexts: EguiContexts,
 
+		current_alg: Res<Algorithm>,
 		current_options: ResMut<CurrentOptions>,
-
 		mut new_board_event: EventWriter<NewBoardCellOptions>,
 	) {
 		egui::SidePanel::left("general_controls_panel").show(contexts.ctx_mut(), |ui| {
@@ -503,6 +511,29 @@ mod ui {
 				let new_options = old_options.clone().update_height(old_options.height() - 1);
 				new_board_event.send(NewBoardCellOptions { new: new_options });
 			}
+
+			ui.label("Select algorithm:");
+			ui.horizontal(|ui| {
+				// let alg_names = Algorithm::VARIANTS;
+				// for name in alg_names {
+				// 	let mut btn = ui.button(*name);
+				// 	if current_alg ==
+				// 	if btn.clicked() {
+				// 		commands.insert_resource(Algorithm::from_str(name).unwrap())
+				// 	}
+				// }
+				let current_alg = current_alg.into_inner();
+				for alg in Algorithm::iter() {
+					let str: &'static str = alg.clone().into();
+					let mut text = RichText::new(str);
+					if &alg == current_alg {
+						text = text.color(UI_ALG_ENABLED_COLOUR);
+					}
+					if ui.button(text).clicked() {
+						commands.insert_resource(alg);
+					}
+				}
+			});
 
 			ui.label(format!(
 				"Current Options: \n{}",
