@@ -1,24 +1,25 @@
-use crate::{*, pieces::ChessPiece};
+use crate::{pieces::ChessPiece, *};
+use cached::proc_macro::cached;
 
 pub enum ImplementedAlgorithms<P: ChessPiece> {
 	Warnsdorf(P),
-	BruteForce(P),
+
+	/// This variant stores known board_options already solves, and re-arranges the moves
+	/// to start at the expected start location instead of re-applying the Warnsdorf ImplementedAlgorithms
+	/// again.
+	WarnsdorfCached(P),
 }
 
 impl<P: ChessPiece> ImplementedAlgorithms<P> {
 	pub fn tour_no_repeat(&self, board_options: BoardOptions, start: ChessPoint) -> Option<Moves> {
 		match self {
-			Self::Warnsdorf(piece) => {
-				warnsdorf_piece_tour_no_repeat(piece, board_options, start)
-			}
-			Self::BruteForce(piece) => {
-				kinda_brute_force(piece, board_options, start)
-			}
+			Self::Warnsdorf(piece) => warnsdorf_tour_repeatless(piece, board_options, start),
+			Self::WarnsdorfCached(piece) => brute_force_tour_repeatless(piece, board_options, start),
 		}
 	}
 }
 
-fn warnsdorf_piece_tour_no_repeat(
+fn warnsdorf_tour_repeatless(
 	piece: &impl ChessPiece,
 	options: BoardOptions,
 	start: ChessPoint,
@@ -202,11 +203,27 @@ fn warnsdorf_piece_tour_no_repeat(
 	Some(moves.into())
 }
 
-pub fn kinda_brute_force(
+fn warnsdorf_tour_repeatless_cached(
 	piece: &impl ChessPiece,
 	options: BoardOptions,
 	start: ChessPoint,
 ) -> Option<Moves> {
 
+	unimplemented!()
+}
+
+
+
+#[cfg(test)]
+mod tests {
+	#[test]
+	fn test_caching() {}
+}
+
+fn brute_force_tour_repeatless(
+	piece: &impl ChessPiece,
+	options: BoardOptions,
+	start: ChessPoint,
+) -> Option<Moves> {
 	unimplemented!()
 }

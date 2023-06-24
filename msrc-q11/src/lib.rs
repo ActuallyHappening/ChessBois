@@ -156,6 +156,12 @@ impl Deref for Moves {
 	}
 }
 
+
+pub struct Cycle {
+	// options:
+}
+
+
 /// State of active board
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum CellState {

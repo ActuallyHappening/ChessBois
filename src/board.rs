@@ -54,14 +54,14 @@ pub enum Algorithm {
 	#[default]
 	Warnsdorf,
 
-	BruteForce,
+	WarnsdorfCached,
 }
 
 impl Algorithm {
 	fn to_impl<P: ChessPiece>(&self, piece: P) -> ImplementedAlgorithms<P> {
 		match self {
 			Algorithm::Warnsdorf => ImplementedAlgorithms::Warnsdorf(piece),
-			Algorithm::BruteForce => ImplementedAlgorithms::BruteForce(piece),
+			Algorithm::WarnsdorfCached => ImplementedAlgorithms::WarnsdorfCached(piece),
 		}
 	}
 }
