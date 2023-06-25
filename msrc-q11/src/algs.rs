@@ -354,8 +354,8 @@ mod benchmarks {
 
 	use super::*;
 
-	extern crate test;
-	use test::Bencher;
+	// extern crate test;
+	// use test::Bencher;
 
 	// #[bench]
 	// fn normal_square_4x4_removed(b: &mut Bencher) {

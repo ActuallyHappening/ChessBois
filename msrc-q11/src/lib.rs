@@ -1,4 +1,4 @@
-#![feature(test)]
+// #![feature(test)]
 
 #[cfg(target_arch = "wasm32")]
 pub fn init_debug_tools() {

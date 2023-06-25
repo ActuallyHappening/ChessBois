@@ -1,4 +1,4 @@
-fail, please confirm cargo config
+# fail, please confirm cargo config
 
 cargo +stable build --release --target x86_64-apple-darwin
 

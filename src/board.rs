@@ -395,7 +395,19 @@ mod compute {
 	pub struct ComputationTask(Task<Computation>);
 
 	#[derive(Resource, Debug)]
-	pub struct ComputationResult(pub Computation);
+	pub struct ComputationResult(Computation);
+
+	// impl From<ComputationResult> for Computation {
+	// 	fn from(result: ComputationResult) -> Self {
+	// 		result.0
+	// 	}
+	// }
+
+	impl ComputationResult {
+		pub fn into_comp(&self) -> Computation {
+			self.0.clone()
+		}
+	}
 
 	pub fn begin_background_compute<P: ChessPiece + Send + Sync + 'static>(
 		alg: ImplementedAlgorithms<P>,
@@ -473,7 +485,7 @@ mod visualization {
 				return;
 			}
 
-			let solution = solution.into_inner().0.clone();
+			let solution: Computation = solution.into_comp();
 			match solution {
 				Computation::Successful {
 					solution: moves,
@@ -708,8 +720,7 @@ mod ui {
 	) {
 		let options = &options.current;
 
-		let mut solution = None;
-		if let Some(task) = computation {}
+		let solution = computation.map(|comp| comp.into_comp());
 
 		egui::SidePanel::right("right_sidebar").show(contexts.ctx_mut(), |ui| {
 			ui.heading("Results Panel");
@@ -720,16 +731,16 @@ mod ui {
 						explored_states: states,
 						..
 					} => {
-						ui.label(format!("Solution found in {} states", states));
+						ui.label(RichText::new(format!("Solution found in {} states considered", states)).color(Color32::GREEN));
 						// ui.label(format!("Solution: {:?}", moves));
 					}
 					Computation::Failed {
 						total_states: states,
 					} => {
-						ui.label(format!(
-							"No solution found, with {} states visited/considered",
+						ui.label(RichText::new(format!(
+							"No solution found, with {} states considered",
 							states
-						));
+						)).color(Color32::RED));
 					}
 				}
 			}
