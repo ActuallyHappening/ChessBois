@@ -7,26 +7,17 @@ use msrc_q11::CellOption;
 pub struct MarkerMarker;
 // marker for cells is [ChessPoint]
 
-pub fn spawn_cells(
-	options: &Options,
-
-	commands: &mut Commands,
-	mma: &mut ResSpawning,
-) {
+pub fn spawn_cells(options: &Options, commands: &mut Commands, mma: &mut ResSpawning) {
 	let start = options.selected_start;
 	let options = options.options.clone();
 
 	for point in options.get_all_points() {
 		let colour = compute_colour(&point, Some(&options), start);
-		spawn_cell(
-			point, &options, colour, commands, mma,
-		);
+		spawn_cell(point, &options, colour, commands, mma);
 	}
 }
 
-pub fn spawn_markers() {
-
-}
+pub fn spawn_markers() {}
 
 pub fn despawn_cells(commands: &mut Commands, cells: Query<Entity, With<ChessPoint>>) {
 	for cell in cells.iter() {
@@ -34,9 +25,7 @@ pub fn despawn_cells(commands: &mut Commands, cells: Query<Entity, With<ChessPoi
 	}
 }
 
-pub fn despawn_markers() {
-
-}
+pub fn despawn_markers() {}
 
 /// Takes as much information as it can get and returns the colour the cell should be.
 ///
@@ -92,62 +81,56 @@ fn spawn_cell(
 
 fn spawn_mark(
 	at: ChessPoint,
-	options: &BoardOptions,
+	options: &Options,
 	transform: Transform,
-	alg: Option<&Algorithm>,
 
 	commands: &mut Commands,
 	(meshes, materials, ass): &mut ResSpawning,
 ) {
-	if let Some(alg) = alg {
-		if let Some(mark) = cached_info::get(&at, options, alg) {
-			// if let Some(mark) = Some(CellMark::Succeeded) {
-			let quad = shape::Quad::new(Vec2::new(
-				CELL_SIZE,
-				CELL_SIZE,
-			) / 0.9);
-			let mesh = meshes.add(Mesh::from(quad));
+	if let Some(mark) = cached_info::get(&options) {
+		// if let Some(mark) = Some(CellMark::Succeeded) {
+		let quad = shape::Quad::new(Vec2::new(CELL_SIZE, CELL_SIZE) / 0.9);
+		let mesh = meshes.add(Mesh::from(quad));
 
-			let mut transform = transform;
-			transform.translation += Vec3::Y * CELL_DEPTH / 2.;
+		let mut transform = transform;
+		transform.translation += Vec3::Y * CELL_DEPTH / 2.;
 
-			match mark {
-				CellMark::Failed => {
-					let material_handle = materials.add(StandardMaterial {
-						base_color_texture: Some(ass.load("images/XMark.png")),
-						alpha_mode: AlphaMode::Blend,
+		match mark {
+			CellMark::Failed => {
+				let material_handle = materials.add(StandardMaterial {
+					base_color_texture: Some(ass.load("images/XMark.png")),
+					alpha_mode: AlphaMode::Blend,
+					..default()
+				});
+
+				commands.spawn((
+					PbrBundle {
+						mesh,
+						material: material_handle,
+						transform,
 						..default()
-					});
+					},
+					at,
+					MarkerMarker {},
+				));
+			}
+			CellMark::Succeeded => {
+				let material_handle = materials.add(StandardMaterial {
+					base_color_texture: Some(ass.load("images/TickMark.png")),
+					alpha_mode: AlphaMode::Blend,
+					..default()
+				});
 
-					commands.spawn((
-						PbrBundle {
-							mesh,
-							material: material_handle,
-							transform,
-							..default()
-						},
-						at,
-						MarkerMarker {},
-					));
-				}
-				CellMark::Succeeded => {
-					let material_handle = materials.add(StandardMaterial {
-						base_color_texture: Some(ass.load("images/TickMark.png")),
-						alpha_mode: AlphaMode::Blend,
+				commands.spawn((
+					PbrBundle {
+						mesh,
+						material: material_handle,
+						transform,
 						..default()
-					});
-
-					commands.spawn((
-						PbrBundle {
-							mesh,
-							material: material_handle,
-							transform,
-							..default()
-						},
-						at,
-						MarkerMarker {},
-					));
-				}
+					},
+					at,
+					MarkerMarker {},
+				));
 			}
 		}
 	}
@@ -161,7 +144,7 @@ pub fn mark_reload_cell(
 	options: &Options,
 
 	commands: &mut Commands,
-	mma: &mut ResSpawning
+	mma: &mut ResSpawning,
 ) {
 	info!("reloading cell {}", cell);
 
@@ -169,19 +152,11 @@ pub fn mark_reload_cell(
 	marks
 		.iter()
 		.filter(|(_, cp)| cp == &cell)
-		.inspect(|g| println!("G: {g:?}"))
 		.for_each(|(e, _)| commands.entity(e).despawn_recursive());
 
 	let colour = compute_colour(cell, Some(&options.options), options.selected_start);
 	let transform = cell_get_transform(*cell, &options.options);
-	spawn_mark(
-		*cell,
-		&options.options,
-		transform,
-		Some(alg),
-		commands,
-		mma
-	);
+	spawn_mark(*cell, options, transform, commands, mma);
 }
 
 /// Changes selected cell
@@ -196,7 +171,11 @@ fn cell_selected(
 ) -> Bubble {
 	let (mat, point) = cells.get(event.target).unwrap();
 
-	let is_disabled = options.as_options().options.get_unavailable_points().contains(point);
+	let is_disabled = options
+		.as_options()
+		.options
+		.get_unavailable_points()
+		.contains(point);
 	if !is_disabled {
 		// sets colour to selected
 		let material = materials.get_mut(mat).unwrap();

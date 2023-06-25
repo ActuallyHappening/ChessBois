@@ -18,6 +18,9 @@ impl Plugin for BoardPlugin {
 			.add_event::<ComputationResult>()
 			.add_startup_system(setup)
 			.add_system(handle_automatic_computation)
+			.add_system(update_cache_from_computation)
+			.add_system(handle_spawning_visualization)
+			.add_system(handle_new_options)
 			.add_system(spawn_left_sidebar_ui)
 			.add_system(right_sidebar_ui)
 			.add_plugins(
@@ -25,16 +28,14 @@ impl Plugin for BoardPlugin {
 					.build()
 					.disable::<DefaultHighlightingPlugin>()
 					.disable::<DebugPickingPlugin>(),
-			)
+			);
 			// .add_system(handle_new_cell_selected_event)
 			// .add_system(handle_new_board_event)
-			.add_system(handle_spawning_visualization)
-			.add_system(handle_new_options);
 	}
 }
 
 /// Represents information required to display cells + visual solutions
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct Options {
 	options: BoardOptions,
 	selected_start: Option<ChessPoint>,
@@ -53,7 +54,7 @@ pub struct NewOptions {
 	new: Options,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, EnumIter, IntoStaticStr, Hash)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, EnumIter, IntoStaticStr, Hash, PartialOrd, Ord)]
 pub enum Algorithm {
 	#[default]
 	#[strum(serialize = "Warnsdorf")]
@@ -278,10 +279,16 @@ mod compute {
 	use msrc_q11::algs::Computation;
 
 	#[derive(Resource, Debug)]
-	pub struct ComputationTask(Task<Computation>);
+	pub struct ComputationTask(Task<Computation>, Options);
 
-	#[derive(Resource, Debug)]
-	pub struct ComputationResult(Computation);
+	#[derive(Resource, Debug, Clone, PartialEq, Eq)]
+	pub struct ComputationResult(Computation, Options);
+
+	impl ComputationResult {
+		pub fn get(self) -> (Computation, Options) {
+			(self.0, self.1)
+		}
+	}
 
 	// impl From<ComputationResult> for Computation {
 	// 	fn from(result: ComputationResult) -> Self {
@@ -300,56 +307,64 @@ mod compute {
 		options: Options,
 		commands: &mut Commands,
 	) {
+		let state = options.clone();
 		if let (Some(start), options) = (options.selected_start, options.options) {
 			let thread_pool = AsyncComputeTaskPool::get();
 
 			commands.insert_resource(ComputationTask(
 				thread_pool.spawn(async move { alg.tour_computation(options.clone(), start).await }),
+				state,
 			));
 		}
 	}
 
-	/// adds [ComputationResult]; Polls [ComputationTask] and returns [Computation] if ready
+	/// adds [ComputationResult]; Polls [ComputationTask] and returns [Computation] if ready.
+	/// Theoretically non-blocking
 	fn get_computation(
 		commands: &mut Commands,
 		task: ResMut<ComputationTask>,
-		update_computation: EventWriter<ComputationResult>,
-	) -> Option<Computation> {
+	) -> Option<ComputationResult> {
 		let task = task.into_inner();
+		let state = task.1.clone();
 		let task = &mut task.0;
 
-		// TODO: use threading (web_worker on wasm)
-		let comp = futures::executor::block_on(task);
+		// TODO: use threading (+ web_worker on wasm)
+		fn execute_task(task: &mut Task<Computation>) -> Option<Computation> {
+			Some(futures::executor::block_on(task))
+		}
+
+		let comp = execute_task(task)?;
+		let res = ComputationResult(comp, state);
 
 		commands.remove_resource::<ComputationTask>();
-		commands.insert_resource(ComputationResult(comp.clone()));
-		update_computation.send();
 
-		Some(comp)
+		Some(res)
 	}
 
-	/// When / how to run [get_computation], + cached_info
-	/// + mark reloading
+	/// When / how to run [get_computation], sends [ComputationResult] event
+	/// Validates computation is valid for current Options
 	pub fn handle_automatic_computation(
 		mut commands: Commands,
 		task: Option<ResMut<ComputationTask>>,
 		options: Res<CurrentOptions>,
 
-		cells: Query<(Entity, &ChessPoint), With<MarkerMarker>>,
-		mut mma: ResSpawning,
+		mut update_computation: EventWriter<ComputationResult>,
 	) {
 		if let Some(task) = task {
-			let alg = &options.as_options().selected_algorithm;
 			// does the work of computing
-			let comp = get_computation(&mut commands, task).expect("TODO: impl retry");
+			if let Some(comp) = get_computation(&mut commands, task) {
+				let state = options.as_options();
+				if &comp.1 != state {
+					info!("Ignoring received computation as state has changed since");
+					return;
+				}
 
-			let options = &options.current;
-			cached_info::set(
-				&options.selected_start.unwrap(),
-				&options.options,
-				alg,
-				CellMark::from(comp),
-			);
+				// let message get out to everybody
+				update_computation.send(comp.clone());
+				commands.insert_resource(comp.clone());
+
+				// cached_info::set(state.clone(), CellMark::from(comp.0));
+			}
 		}
 	}
 }
@@ -362,7 +377,7 @@ mod cached_info {
 
 	use super::*;
 
-	static CACHE: Lazy<Mutex<LruCache<(BoardOptions, ChessPoint, Algorithm), CellMark>>> =
+	static CACHE: Lazy<Mutex<LruCache<Options, CellMark>>> =
 		Lazy::new(|| Mutex::new(LruCache::new(NonZeroUsize::new(10_000).unwrap())));
 
 	#[derive(Clone)]
@@ -380,13 +395,23 @@ mod cached_info {
 		}
 	}
 
-	pub fn get(point: &ChessPoint, options: &BoardOptions, alg: &Algorithm) -> Option<CellMark> {
+	pub fn get(options: &Options) -> Option<CellMark> {
 		let mut cache = CACHE.lock().unwrap();
-		cache.get(&(options.clone(), *point, alg.clone())).cloned()
+		cache.get(options).cloned()
 	}
-	pub fn set(point: &ChessPoint, options: &BoardOptions, alg: &Algorithm, mark: CellMark) {
+	fn set(options: Options, mark: CellMark) {
 		let mut cache = CACHE.lock().unwrap();
-		cache.put((options.clone(), *point, alg.clone()), mark);
+		cache.put(options, mark);
+	}
+
+	pub fn update_cache_from_computation(mut computations: EventReader<ComputationResult>) {
+		for comp in computations.iter() {
+			let (comp, options) = comp.clone().get();
+			let mark = CellMark::from(comp);
+
+			info!("Updating info cache");
+			set(options, mark);
+		}
 	}
 }
 
@@ -404,49 +429,16 @@ mod visualization {
 		to: ChessPoint,
 	}
 
-	/// Consumes [Res<ComputationResult>] and spawns visualization
+	/// Consumes [EventReader<ComputationResult>] and spawns visualization
 	pub fn handle_spawning_visualization(
 		mut commands: Commands,
 		options: Res<CurrentOptions>,
-		solution: Option<Res<ComputationResult>>,
+		solution: EventReader<ComputationResult>,
 
 		viz: Query<Entity, With<VisualizationComponent>>,
 
 		mut mma: ResSpawning,
 	) {
-		if let Some(solution) = solution {
-			if solution.is_changed() {
-				let solution: Computation = solution.into_comp();
-				match solution {
-					Computation::Successful {
-						solution: moves,
-						explored_states: states,
-					} => {
-						debug!(
-							"{} states visited, {} already exists",
-							states,
-							viz.iter().count()
-						);
-
-						if viz.iter().count() == 0 {
-							// despawn_visualization(&mut commands, viz);
-							spawn_visualization(
-								moves,
-								options.current.options.clone(),
-								&mut commands,
-								&mut mma,
-							)
-						}
-					}
-					Computation::Failed {
-						total_states: states,
-					} => {
-						// despawn_visualization(&mut commands, viz);
-						info!("{} but No solution found!", states);
-					}
-				}
-			}
-		}
 	}
 
 	/// Call to begin process of showing new solution
@@ -550,6 +542,7 @@ mod visualization {
 
 use ui::*;
 
+use self::cached_info::update_cache_from_computation;
 use self::compute::{begin_background_compute, handle_automatic_computation, ComputationResult};
 mod ui {
 	use super::{compute::ComputationResult, *};
