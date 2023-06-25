@@ -126,11 +126,9 @@ impl Board {
 		}
 		moves
 	}
-	fn get_degree(&self, p: &ChessPoint, piece: &impl ChessPiece, state_counter: &mut u128) -> u16 {
+	fn get_degree(&self, p: &ChessPoint, piece: &impl ChessPiece) -> u16 {
 		let mut degree = 0;
 		for &(dx, dy) in piece.relative_moves() {
-			*state_counter += 1;
-
 			let p = p.mov(&(dx, dy));
 			if self.get(&p) == Some(CellState::NeverOccupied) {
 				degree += 1;
@@ -165,10 +163,11 @@ pub fn warnsdorf_tour_repeatless<P: ChessPiece>(
 		let mut min_degree = u16::MAX;
 		for &(dx, dy) in piece.relative_moves() {
 			let p = current.mov(&(dx, dy));
-			state_counter += 1;
 
 			if board.get(&p) == Some(CellState::NeverOccupied) {
-				let degree = board.get_degree(&p, piece, &mut state_counter);
+				state_counter += 1;
+
+				let degree = board.get_degree(&p, piece);
 				if degree < min_degree {
 					min_degree = degree;
 					next = Some(p);
@@ -216,7 +215,7 @@ fn try_move_recursive(
 		return PartialComputation::Failed;
 	}
 	// sort by degree
-	available_moves.sort_by_cached_key(|p| attempting_board.get_degree(p, piece, state_counter));
+	available_moves.sort_by_cached_key(|p| attempting_board.get_degree(p, piece));
 	// println!("Available moves: {:?}", available_moves);
 
 	let mut moves = None;

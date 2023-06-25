@@ -567,8 +567,8 @@ mod visualization {
 	) {
 		for Move { from, to } in moves.iter() {
 			spawn_path_line(
-				&from,
-				&to,
+				from,
+				to,
 				&options,
 				VISUALIZATION_SELECTED_COLOUR,
 				commands,

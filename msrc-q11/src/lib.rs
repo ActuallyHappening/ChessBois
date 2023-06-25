@@ -187,13 +187,11 @@ impl std::iter::FromIterator<Move> for Moves {
 	}
 }
 
-
 #[derive(Debug, Copy, Hash, Clone, PartialEq)]
 pub enum CellOption {
 	Available,
 	Unavailable,
 }
-
 
 impl CellOption {
 	fn is_available(&self) -> bool {
@@ -204,16 +202,12 @@ impl CellOption {
 	}
 }
 
-
 /// Necessary information to make custom board.
 /// Does NOT hold actual state, to solve use [Board]
 #[derive(Debug, Clone, Hash, PartialEq)]
 pub struct BoardOptions {
 	options: Vec<Vec<CellOption>>,
 }
-// This is technically dangerous, however I don't want to refactor into a better data representation so ehh
-impl Eq for BoardOptions {}
-
 
 impl BoardOptions {
 	/// Creates square board with given dimensions and all cells available
@@ -240,10 +234,10 @@ impl BoardOptions {
 		Self { options }
 	}
 
-	pub(crate) fn rm(&mut self, p: (u8, u8)) {
+	pub fn rm(&mut self, p: (u8, u8)) {
 		self.options[p.0 as usize - 1][p.1 as usize - 1] = CellOption::Unavailable;
 	}
-	pub(crate) fn add(&mut self, p: (u8, u8)) {
+	pub fn add(&mut self, p: (u8, u8)) {
 		self.options[p.0 as usize - 1][p.1 as usize - 1] = CellOption::Available;
 	}
 

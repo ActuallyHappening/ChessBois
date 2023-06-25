@@ -12,4 +12,4 @@ hdiutil create -fs HFS+ -volname "$ENV_BINARY" -srcfolder $ENV_BINARY.app $ENV_B
 
 rm -rf $ENV_BINARY.app
 
-rn $ENV_BINARY "Caleb's MSRC Q11 Solver (CMQS - bad name)"
+# mv $ENV_BINARY "Caleb's MSRC Q11 Solver (CMQS - bad name)"
