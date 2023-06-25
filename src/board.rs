@@ -273,7 +273,7 @@ mod cells {
 		));
 
 		if let Some(mark) = cached_info::get(&at, options, &Algorithm::Warnsdorf) {
-		// if let Some(mark) = Some(CellMark::Succeeded) {
+			// if let Some(mark) = Some(CellMark::Succeeded) {
 			let quad = shape::Quad::new(Vec2::new(
 				// width
 				CELL_SIZE, // height
@@ -468,10 +468,12 @@ mod cells {
 }
 
 mod compute {
+	use super::cached_info::CellMark;
 	use super::*;
 	use bevy::tasks::Task;
 	use futures_lite::future;
 	use msrc_q11::algs::Computation;
+	use msrc_q11::Move;
 
 	#[derive(Resource, Debug)]
 	pub struct ComputationTask(Task<Computation>);
@@ -506,30 +508,51 @@ mod compute {
 		})));
 	}
 
-	fn get_computation(
-		commands: &mut Commands,
-		task: ResMut<ComputationTask>,
-	) -> Option<Computation> {
+	fn get_computation(commands: &mut Commands, task: ResMut<ComputationTask>) -> Computation {
 		let task = task.into_inner();
 		let task = &mut task.0;
 
-		let ret = futures::executor::block_on(task);
+		let comp = futures::executor::block_on(task);
 
 		commands.remove_resource::<ComputationTask>();
-		commands.insert_resource(ComputationResult(ret.clone()));
+		commands.insert_resource(ComputationResult(comp.clone()));
 
-		// panic!("Failed in get_computation");
-
-		Some(ret)
+		comp
 	}
 
-	/// When / how to run [get_computation]
+	/// When / how to run [get_computation], + cached_info
 	pub fn handle_automatic_computation(
 		mut commands: Commands,
 		task: Option<ResMut<ComputationTask>>,
+		alg: Res<Algorithm>,
+		options: Res<CurrentOptions>,
 	) {
 		if let Some(task) = task {
-			get_computation(&mut commands, task).expect("Task failed");
+			// does the work of computing
+			let comp = get_computation(&mut commands, task);
+
+			// adds to cache
+			match comp {
+				Computation::Successful { .. } => {
+					info!("Adding solution to cache");
+					let options = &options.current;
+					cached_info::set(
+						&options.selected_start.unwrap(),
+						&options.options,
+						alg.into_inner(),
+						CellMark::Succeeded,
+					);
+				}
+				Computation::Failed { .. } => {
+					let options = &options.current;
+					cached_info::set(
+						&options.selected_start.unwrap(),
+						&options.options,
+						alg.into_inner(),
+						CellMark::Failed,
+					);
+				}
+			}
 		}
 	}
 }
@@ -603,7 +626,7 @@ mod visualization {
 					solution: moves,
 					explored_states: states,
 				} => {
-					info!(
+					debug!(
 						"{} states visited, {} already exists",
 						states,
 						viz.iter().count()
