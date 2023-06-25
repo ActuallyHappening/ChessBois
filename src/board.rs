@@ -400,8 +400,6 @@ mod compute {
 		alg: ImplementedAlgorithms<P>,
 		options: Options,
 		commands: &mut Commands,
-		meshes: &mut ResMut<Assets<Mesh>>,
-		materials: &mut ResMut<Assets<StandardMaterial>>,
 	) {
 		let thread_pool = AsyncComputeTaskPool::get();
 		let (start, options) = (options.selected_start.unwrap(), options.options);
@@ -493,7 +491,7 @@ mod visualization {
 			let piece = StandardKnight {};
 			let solver = alg.to_impl(piece);
 
-			begin_background_compute(solver, options.clone(), commands, meshes, materials);
+			begin_background_compute(solver, options.clone(), commands);
 
 			// match algs.tour_no_repeat(options.clone(), start) {
 			// 	Some(moves) => {
@@ -597,12 +595,13 @@ mod visualization {
 
 use ui::*;
 mod ui {
-	use super::*;
+	use super::{*, compute::{ComputationResult, ComputationTask, get_computation}};
 	use bevy_egui::{
 		egui::{Color32, RichText},
 		*,
 	};
-	use strum::VariantNames;
+	use msrc_q11::algs::Computation;
+use strum::VariantNames;
 
 	pub fn spawn_left_sidebar_ui(
 		mut commands: Commands,
@@ -672,16 +671,51 @@ mod ui {
 		});
 	}
 
-	pub fn right_sidebar_ui(mut contexts: EguiContexts, options: Res<CurrentOptions>, alg: Res<Algorithm>) {
+	pub fn right_sidebar_ui(
+		options: Res<CurrentOptions>,
+		alg: Res<Algorithm>,
+		computation: Option<ResMut<ComputationTask>>,
+
+		mut commands: Commands,
+		mut contexts: EguiContexts,
+	) {
 		let options = &options.current;
+
+		let mut solution = None;
+		if let Some(task) = computation {
+			if let Some (computation) = get_computation(&mut commands, task) {
+				solution = Some(computation);
+			}
+		}
+
 		egui::SidePanel::right("right_sidebar").show(contexts.ctx_mut(), |ui| {
 			ui.heading("Results Panel");
 
-			if let Some(start) = &options.selected_start {
-				let alg_selected: &str = alg.into_inner().into();
-				ui.label(format!("Current info: Starting at {start} with {} algorithm {}", alg_selected, options.options.get_description()));
+			if let Some(solution) = solution {
+				match solution {
+					Computation::Successful {
+						explored_states: states,
+						..
+					} => {
+						ui.label(format!("Solution found in {} states", states));
+						// ui.label(format!("Solution: {:?}", moves));
+					}
+					Computation::Failed {
+						total_states: states,
+					} => {
+						ui.label(format!("No solution found, with {} states visited/considered", states));
+					}
+				}
 			}
 
+			if let Some(start) = &options.selected_start {
+				let alg_selected: &str = alg.into_inner().into();
+				ui.label(format!(
+					"Current info: Starting at {start} with {} algorithm {}",
+					alg_selected,
+					options.options.get_description()
+				));
+			}
 		});
 	}
 }
