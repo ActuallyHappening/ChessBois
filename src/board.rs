@@ -54,6 +54,7 @@ pub enum Algorithm {
 	#[default]
 	Warnsdorf,
 
+	#[strum(serialize = "Brute Force (uncached)")]
 	BruteRecursive,
 }
 
@@ -62,6 +63,21 @@ impl Algorithm {
 		match self {
 			Algorithm::Warnsdorf => ImplementedAlgorithms::Warnsdorf(piece),
 			Algorithm::BruteRecursive => ImplementedAlgorithms::BruteRecursive(piece),
+		}
+	}
+
+	fn get_description(&self) -> &'static str {
+		match self {
+			Algorithm::Warnsdorf => "This algorithm applies Warnsdorf's Rule, which tells you to always move to the square with the fewest available moves. \
+			This algorithm is always guaranteed to terminate in finite time, however it sometimes misses solutions e.g. 8x8 board @ (5, 3).\
+			Warnsdorf's Rule is very easy to implement and is very popular because of its simplicity. The implementation used is sub-optimal, but should suffice.
+			", 
+			Algorithm::BruteRecursive => "This algorithm is a recursive brute-force approach, which favours Warnsdorf's Rule first before backtracking.\
+			This algorithm is always guaranteed to terminate in finite time, but that time complexity is exponential compared with number of cells, so \
+			large boards with no solutions will take a long time to solve. In worst case scenario, since it is brute force, it will check every possible \
+			knights tour before exiting with no solution! However, if Warnsdorf's algorithm finds a solution, this program will find that solution first.
+			There is an optimization that can be applied, i.e. caching pre-computed results.
+			",
 		}
 	}
 }
@@ -398,7 +414,7 @@ mod visualization {
 			match algs.tour_no_repeat(options.clone(), start) {
 				Some(moves) => {
 					for Move { from, to } in moves.iter() {
-						spawn_path_line(from, to, &options, VISUALIZATION_SELECTED_COLOUR, commands, meshes, materials)
+						spawn_path_line(&from, &to, &options, VISUALIZATION_SELECTED_COLOUR, commands, meshes, materials)
 					}
 				}
 				None => {
@@ -472,8 +488,6 @@ mod visualization {
 
 use ui::*;
 mod ui {
-	use std::str::FromStr;
-
 	use super::*;
 	use bevy_egui::{
 		egui::{Color32, RichText},
@@ -490,14 +504,16 @@ mod ui {
 		mut new_board_event: EventWriter<NewBoardCellOptions>,
 	) {
 		egui::SidePanel::left("general_controls_panel").show(contexts.ctx_mut(), |ui| {
-			let old_options = current_options.current.options.clone();
+			let old_options: BoardOptions = current_options.current.options.clone();
+			let current_alg = current_alg.into_inner();
 
-			ui.heading("Controls");
+			ui.heading("Controls Panel");
+			ui.label("Instructions: Hover over cell to begin knight there. Click cell to toggle availability (red = unavailable). You can alter the dimensions of the board (below) and the algorithm used.");
 
 			// ui.add(egui::Slider::new(&mut my_f32, 3.0..=10.).text("My value"));
-
 			// ui.add(egui::Slider::new(&mut ui_state.value, 0.0..=10.0).text("value"));
 
+			ui.label("Change board dimensions:");
 			ui.horizontal(|ui| {
 				if ui.button("Wider +1").clicked() {
 					let new_options = old_options.clone().update_width(old_options.width() + 1);
@@ -532,7 +548,6 @@ mod ui {
 				// 		commands.insert_resource(Algorithm::from_str(name).unwrap())
 				// 	}
 				// }
-				let current_alg = current_alg.into_inner();
 				for alg in Algorithm::iter() {
 					let str: &'static str = alg.clone().into();
 					let mut text = RichText::new(str);
@@ -544,11 +559,13 @@ mod ui {
 					}
 				}
 			});
+			ui.label(current_alg.get_description());
 
-			ui.label(format!(
-				"Current Options: \n{}",
-				current_options.current.options
-			));
+			// ui.label(format!(
+			// 	"Current Options: \n{}",
+			// 	current_options.current.options
+			// ));
+			ui.label(format!("Options selected: {}", old_options.get_description()));
 		});
 	}
 }

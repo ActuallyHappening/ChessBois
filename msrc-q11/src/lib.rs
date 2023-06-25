@@ -339,6 +339,10 @@ impl BoardOptions {
 		}
 		points
 	}
+
+	pub fn get_description(&self) -> String {
+		format!("{}x{} board with {} cells available (and {} cells disabled)", self.height(), self.width(), self.get_available_points().len(), self.get_unavailable_points().len())
+	}
 }
 
 impl Display for BoardOptions {
