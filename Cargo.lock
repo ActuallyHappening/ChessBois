@@ -1050,7 +1050,6 @@ dependencies = [
  "bevy_mod_picking",
  "console_error_panic_hook",
  "futures",
- "futures-lite",
  "getrandom",
  "lru",
  "msrc-q11",
