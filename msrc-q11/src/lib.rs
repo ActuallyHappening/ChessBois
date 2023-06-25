@@ -187,7 +187,7 @@ impl std::iter::FromIterator<Move> for Moves {
 	}
 }
 
-#[derive(Debug, Copy, Hash, Clone, PartialEq)]
+#[derive(Debug, Copy, Hash, Clone, PartialEq, Eq)]
 pub enum CellOption {
 	Available,
 	Unavailable,
@@ -204,7 +204,7 @@ impl CellOption {
 
 /// Necessary information to make custom board.
 /// Does NOT hold actual state, to solve use [Board]
-#[derive(Debug, Clone, Hash, PartialEq)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct BoardOptions {
 	options: Vec<Vec<CellOption>>,
 }

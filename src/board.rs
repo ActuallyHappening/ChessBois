@@ -54,7 +54,7 @@ pub struct CurrentOptions {
 	current: Options,
 }
 
-#[derive(Resource, Debug, Clone, Default, PartialEq, EnumIter, IntoStaticStr)]
+#[derive(Resource, Debug, Clone, Default, PartialEq, Eq, EnumIter, IntoStaticStr, Hash)]
 pub enum Algorithm {
 	#[default]
 	Warnsdorf,
@@ -162,6 +162,8 @@ fn setup(
 	mut commands: Commands,
 	mut meshes: ResMut<Assets<Mesh>>,
 	mut materials: ResMut<Assets<StandardMaterial>>,
+	mut ass: ResMut<AssetServer>,
+	mut alg: Option<Res<Algorithm>>,
 ) {
 	let options = Options {
 		options: BoardOptions::new(8, 8),
@@ -174,7 +176,7 @@ fn setup(
 	commands.insert_resource(current_options);
 	commands.init_resource::<Algorithm>();
 
-	spawn_cells(&mut commands, &options, &mut meshes, &mut materials);
+	spawn_cells(&mut commands, &options, &mut meshes, &mut materials, &mut ass, alg);
 	// spawn_visualization_from_options(&options, &mut commands, &mut meshes, &mut materials);
 
 	// spawn_left_sidebar_ui(&mut commands);
@@ -184,7 +186,7 @@ use cells::*;
 mod cells {
 	use msrc_q11::CellOption;
 
-	use super::*;
+	use super::{*, cached_info::CellMark};
 	use crate::CELL_DISABLED_COLOUR;
 
 	pub fn spawn_cells(
@@ -192,13 +194,16 @@ mod cells {
 		options: &Options,
 		meshes: &mut ResMut<Assets<Mesh>>,
 		materials: &mut ResMut<Assets<StandardMaterial>>,
+		ass: &mut ResMut<AssetServer>,
+		alg: Option<Res<Algorithm>>,
 	) {
 		let start = options.selected_start;
 		let options = options.options.clone();
+		let alg = alg.map(|al| al.into_inner());
 
 		for point in options.get_all_points() {
 			let colour = compute_colour(&point, Some(&options), start);
-			spawn_cell(point, &options, colour, commands, meshes, materials);
+			spawn_cell(point, &options, colour, commands, meshes, materials, ass, alg);
 		}
 	}
 
@@ -227,6 +232,7 @@ mod cells {
 		}
 	}
 
+	#[allow(clippy::too_many_arguments)]
 	fn spawn_cell(
 		at: ChessPoint,
 		options: &BoardOptions,
@@ -234,6 +240,8 @@ mod cells {
 		commands: &mut Commands,
 		meshes: &mut ResMut<Assets<Mesh>>,
 		materials: &mut ResMut<Assets<StandardMaterial>>,
+		ass: &mut ResMut<AssetServer>,
+		alg: Option<&Algorithm>,
 	) {
 		let transform = Transform::from_translation(get_spacial_coord(options, at))
 			.with_rotation(Quat::from_rotation_x(-TAU / 4.));
@@ -242,7 +250,7 @@ mod cells {
 		commands.spawn((
 			PbrBundle {
 				mesh,
-				transform,
+				transform: transform.clone(),
 				material: materials.add(StandardMaterial::from(colour)),
 				..default()
 			},
@@ -250,11 +258,43 @@ mod cells {
 			at,
 			PickableBundle::default(),    // Makes the entity pickable
 			RaycastPickTarget::default(), // Marker for the `bevy_picking_raycast` backend
-			// OnPointer::<Move>::run_callback(),
 			OnPointer::<Over>::run_callback(cell_selected),
 			OnPointer::<Out>::run_callback(cell_deselected),
 			OnPointer::<Click>::run_callback(toggle_cell_availability),
 		));
+
+		// if let Some(mark) = cached_info::get(&at, options, &Algorithm::Warnsdorf) {
+		if let Some(mark) = Some(CellMark::Failed) {
+			match mark {
+				CellMark::Failed => {
+					let texture_handle = ass.load("images/XMark.png");
+					let material_handle = materials.add(StandardMaterial {
+						base_color_texture: Some(texture_handle),
+						..default()
+					});
+					
+					let quad = shape::Quad::new(Vec2::new(
+						// width
+						CELL_SIZE,
+						// height
+						CELL_SIZE,
+					));
+					let mesh = meshes.add(Mesh::from(quad));
+
+					let transform = transform;
+
+					commands.spawn(PbrBundle {
+						mesh,
+						material: material_handle,
+						transform,
+						..default()
+					});
+				}
+				CellMark::Succeeded => {
+
+				}
+			}
+		}
 	}
 
 	/// Changes selected cell
@@ -335,7 +375,7 @@ mod cells {
 		Bubble::Up
 	}
 
-	/// Handles re-constructing visual solution
+	/// When new cell is selected
 	pub fn handle_new_cell_selected_event(
 		mut new_starting_point: EventReader<NewCellSelected>,
 		current_options: ResMut<CurrentOptions>,
@@ -359,7 +399,7 @@ mod cells {
 
 			// info!("New starting point: {}", new_starting_point.new);
 			despawn_visualization(&mut commands, vis);
-			begin_showing_visualization(
+			begin_showing_new_visualization(
 				&new_options,
 				algs,
 				&mut commands,
@@ -369,6 +409,8 @@ mod cells {
 		}
 	}
 
+	/// When board dimensions change
+	#[allow(clippy::too_many_arguments)]
 	pub fn handle_new_board_event(
 		mut new_board: EventReader<NewBoardCellOptions>,
 
@@ -378,6 +420,8 @@ mod cells {
 		mut commands: Commands,
 		mut meshes: ResMut<Assets<Mesh>>,
 		mut materials: ResMut<Assets<StandardMaterial>>,
+		mut ass: ResMut<AssetServer>,
+		alg: Res<Algorithm>,
 	) {
 		if let Some(new_options) = new_board.into_iter().next() {
 			let new_options = Options {
@@ -391,7 +435,7 @@ mod cells {
 			despawn_visualization(&mut commands, vis);
 			despawn_cells(&mut commands, cells);
 
-			spawn_cells(&mut commands, &new_options, &mut meshes, &mut materials);
+			spawn_cells(&mut commands, &new_options, &mut meshes, &mut materials, &mut ass, Some(alg));
 		}
 	}
 }
@@ -452,6 +496,7 @@ mod compute {
 		Some(ret)
 	}
 
+	/// When / how to run [get_computation]
 	pub fn handle_automatic_computation(
 		mut commands: Commands,
 		task: Option<ResMut<ComputationTask>>,
@@ -459,6 +504,32 @@ mod compute {
 		if let Some(task) = task {
 			get_computation(&mut commands, task).expect("Task failed");
 		}
+	}
+}
+
+mod cached_info {
+	use lru::LruCache;
+	use once_cell::sync::Lazy;
+	use std::{num::NonZeroUsize, sync::Mutex};
+
+	use super::*;
+
+	static CACHE: Lazy<Mutex<LruCache<(BoardOptions, ChessPoint, Algorithm), CellMark>>> =
+		Lazy::new(|| Mutex::new(LruCache::new(NonZeroUsize::new(10_000).unwrap())));
+
+	#[derive(Clone)]
+	pub enum CellMark {
+		Failed,
+		Succeeded,
+	}
+
+	pub fn get(point: &ChessPoint, options: &BoardOptions, alg: &Algorithm) -> Option<CellMark> {
+		let mut cache = CACHE.lock().unwrap();
+		cache.get(&(options.clone(), *point, alg.clone())).cloned()
+	}
+	pub fn set(point: &ChessPoint, options: &BoardOptions, alg: &Algorithm, mark: CellMark) {
+		let mut cache = CACHE.lock().unwrap();
+		cache.put((options.clone(), *point, alg.clone()), mark);
 	}
 }
 
@@ -482,10 +553,13 @@ mod visualization {
 		to: ChessPoint,
 	}
 
+	/// Consumes [Res<ComputationResult>] and spawns visualization
 	pub fn handle_spawning_visualization(
 		mut commands: Commands,
 		options: Res<CurrentOptions>,
 		solution: Option<Res<ComputationResult>>,
+
+		viz: Query<Entity, With<VisualizationComponent>>,
 
 		mut meshes: ResMut<Assets<Mesh>>,
 		mut materials: ResMut<Assets<StandardMaterial>>,
@@ -502,25 +576,30 @@ mod visualization {
 					solution: moves,
 					explored_states: states,
 				} => {
-					info!("{} states visited", states);
+					info!("{} states visited, {} already exists", states, viz.iter().count());
+
+					if viz.iter().count() == 0 {
+						// despawn_visualization(&mut commands, viz);
 					spawn_visualization(
-						moves,
-						options.current.options.clone(),
-						&mut commands,
-						&mut meshes,
-						&mut materials,
-					)
+							moves,
+							options.current.options.clone(),
+							&mut commands,
+							&mut meshes,
+							&mut materials,
+						)
+					}
 				}
 				Computation::Failed {
 					total_states: states,
 				} => {
+					despawn_visualization(&mut commands, viz);
 					info!("{} but No solution found!", states);
 				}
 			}
 		}
 	}
 
-	pub fn begin_showing_visualization(
+	pub fn begin_showing_new_visualization(
 		options: &Options,
 		alg: Res<Algorithm>,
 		commands: &mut Commands,

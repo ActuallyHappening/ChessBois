@@ -33,6 +33,8 @@ bevy_egui = "0.20.3"
 bevy_mod_picking = "0.13.0"
 futures = "0.3.28"
 futures-lite = "1.13.0"
+lru = "0.10.0"
+once_cell = "1.18.0"
 rand = "0.8.5"
 serde = { version = "1.0.163", features = ["derive"] }
 strum = { version = "0.25.0", features = ["derive"] }
