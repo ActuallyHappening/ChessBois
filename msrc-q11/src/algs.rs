@@ -30,7 +30,9 @@ impl PartialComputation {
 				solution,
 				explored_states: count,
 			},
-			Self::Failed => Computation::Failed { total_states: count },
+			Self::Failed => Computation::Failed {
+				total_states: count,
+			},
 		}
 	}
 }
@@ -67,19 +69,13 @@ impl<P: ChessPiece> ImplementedAlgorithms<P> {
 	pub async fn tour_computation(&self, options: BoardOptions, start: ChessPoint) -> Computation {
 		match self {
 			Self::Warnsdorf(piece) => warnsdorf_tour_repeatless(piece, options, start),
-			_ => unimplemented!(),
+			// Self::BruteRecursive(piece) => brute_recursive_tour_repeatless_cached(piece, options, start).await,
+			_ => unimplemented!()
 		}
 	}
 }
 
 use std::collections::BTreeMap;
-
-use super::*;
-impl ChessPoint {
-	fn displace(&self, dx: u8, dy: u8) -> Self {
-		Self::new(self.row + dy, self.column + dx)
-	}
-}
 
 #[derive(Debug, Clone, PartialEq, Hash, Eq)]
 enum CellState {
@@ -124,7 +120,7 @@ impl Board {
 		let mut degree = 0;
 		for &(dx, dy) in piece.relative_moves() {
 			*state_counter += 1;
-			
+
 			let p = p.mov(&(dx, dy));
 			if self.get(&p) == Some(CellState::NeverOccupied) {
 				degree += 1;
@@ -229,8 +225,10 @@ fn try_move_recursive(
 		);
 
 		match result {
-			PartialComputation::Failed => {},
-			PartialComputation::Successful { solution: mut working_moves } => {
+			PartialComputation::Failed => {}
+			PartialComputation::Successful {
+				solution: mut working_moves,
+			} => {
 				// initially, working_moves will be empty
 				// first iteration must add move from current_pos to potential_next_move
 				// this repeats

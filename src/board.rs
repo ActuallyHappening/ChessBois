@@ -16,6 +16,7 @@ impl Plugin for BoardPlugin {
 			.add_event::<NewCellSelected>()
 			.add_event::<NewBoardCellOptions>()
 			.add_startup_system(setup)
+			.add_system(handle_automatic_computation)
 			.add_system(spawn_left_sidebar_ui)
 			.add_system(right_sidebar_ui)
 			.add_plugins(
@@ -394,7 +395,7 @@ mod compute {
 	pub struct ComputationTask(Task<Computation>);
 
 	#[derive(Resource, Debug)]
-	pub struct ComputationResult(Computation);
+	pub struct ComputationResult(pub Computation);
 
 	pub fn begin_background_compute<P: ChessPiece + Send + Sync + 'static>(
 		alg: ImplementedAlgorithms<P>,
@@ -404,29 +405,44 @@ mod compute {
 		let thread_pool = AsyncComputeTaskPool::get();
 		let (start, options) = (options.selected_start.unwrap(), options.options);
 
-		commands.insert_resource(ComputationTask(
-			thread_pool.spawn(async move { alg.tour_computation(options.clone(), start).await }),
-		));
+		commands.insert_resource(ComputationTask(thread_pool.spawn(async move {
+			let ret = alg.tour_computation(options.clone(), start).await;
+			// panic!("Failed here");
+			ret
+		})));
 	}
 
-	pub fn get_computation(
+	fn get_computation(
 		commands: &mut Commands,
 		task: ResMut<ComputationTask>,
 	) -> Option<Computation> {
 		let task = task.into_inner();
-		let ret = future::block_on(future::poll_once(&mut task.0)).unwrap();
+		let task = &mut task.0;
+
+		let ret = futures::executor::block_on(task);
 
 		commands.remove_resource::<ComputationTask>();
 		commands.insert_resource(ComputationResult(ret.clone()));
 
+		// panic!("Failed in get_computation");
+
 		Some(ret)
+	}
+
+	pub fn handle_automatic_computation(
+		mut commands: Commands,
+		task: Option<ResMut<ComputationTask>>,
+	) {
+		if let Some(task) = task {
+			get_computation(&mut commands, task).expect("Task failed");
+		}
 	}
 }
 
 use visualization::*;
 mod visualization {
 	use super::{
-		compute::{begin_background_compute, get_computation, ComputationTask},
+		compute::{begin_background_compute, ComputationResult, ComputationTask},
 		*,
 	};
 	use bevy::transform::commands;
@@ -446,12 +462,18 @@ mod visualization {
 	pub fn handle_spawning_visualization(
 		mut commands: Commands,
 		options: Res<CurrentOptions>,
-		task: Option<ResMut<ComputationTask>>,
+		solution: Option<Res<ComputationResult>>,
+
 		mut meshes: ResMut<Assets<Mesh>>,
 		mut materials: ResMut<Assets<StandardMaterial>>,
 	) {
-		if let Some(task) = task {
-			let solution = get_computation(&mut commands, task).unwrap();
+		if let Some(solution) = solution {
+			if !solution.is_changed() {
+				// not a new solution, don't do anything
+				return;
+			}
+
+			let solution = solution.into_inner().0.clone();
 			match solution {
 				Computation::Successful {
 					solution: moves,
@@ -594,14 +616,19 @@ mod visualization {
 }
 
 use ui::*;
+
+use self::compute::handle_automatic_computation;
 mod ui {
-	use super::{*, compute::{ComputationResult, ComputationTask, get_computation}};
+	use super::{
+		compute::{ComputationResult, ComputationTask},
+		*,
+	};
 	use bevy_egui::{
 		egui::{Color32, RichText},
 		*,
 	};
 	use msrc_q11::algs::Computation;
-use strum::VariantNames;
+	use strum::VariantNames;
 
 	pub fn spawn_left_sidebar_ui(
 		mut commands: Commands,
@@ -674,7 +701,7 @@ use strum::VariantNames;
 	pub fn right_sidebar_ui(
 		options: Res<CurrentOptions>,
 		alg: Res<Algorithm>,
-		computation: Option<ResMut<ComputationTask>>,
+		computation: Option<Res<ComputationResult>>,
 
 		mut commands: Commands,
 		mut contexts: EguiContexts,
@@ -682,11 +709,7 @@ use strum::VariantNames;
 		let options = &options.current;
 
 		let mut solution = None;
-		if let Some(task) = computation {
-			if let Some (computation) = get_computation(&mut commands, task) {
-				solution = Some(computation);
-			}
-		}
+		if let Some(task) = computation {}
 
 		egui::SidePanel::right("right_sidebar").show(contexts.ctx_mut(), |ui| {
 			ui.heading("Results Panel");
@@ -703,7 +726,10 @@ use strum::VariantNames;
 					Computation::Failed {
 						total_states: states,
 					} => {
-						ui.label(format!("No solution found, with {} states visited/considered", states));
+						ui.label(format!(
+							"No solution found, with {} states visited/considered",
+							states
+						));
 					}
 				}
 			}
