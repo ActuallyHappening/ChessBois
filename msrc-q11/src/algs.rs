@@ -40,7 +40,7 @@ impl<P: ChessPiece> ImplementedAlgorithms<P> {
 
 	pub async fn tour_computation(&self, options: BoardOptions, start: ChessPoint) -> Computation {
 		match self {
-			// Self::Warnsdorf(piece) => warnsdorf_tour_repeatless(piece, options, start),
+			Self::Warnsdorf(piece) => warnsdorf_tour_repeatless(piece, options, start),
 			_ => unimplemented!(),
 		}
 	}
@@ -107,7 +107,7 @@ impl Board {
 }
 
 pub fn warnsdorf_tour_repeatless<P: ChessPiece>(
-	piece: P,
+	piece: &P,
 	options: BoardOptions,
 	start: ChessPoint,
 ) -> Computation {
@@ -134,7 +134,7 @@ pub fn warnsdorf_tour_repeatless<P: ChessPiece>(
 			states_visited_counter += 1;
 
 			if board.get(&p) == Some(CellState::NeverOccupied) {
-				let degree = board.get_degree(&p, &piece);
+				let degree = board.get_degree(&p, piece);
 				if degree < min_degree {
 					min_degree = degree;
 					next = Some(p);

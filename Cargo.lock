@@ -1049,6 +1049,7 @@ dependencies = [
  "bevy_egui",
  "bevy_mod_picking",
  "console_error_panic_hook",
+ "futures-lite",
  "getrandom",
  "msrc-q11",
  "rand",

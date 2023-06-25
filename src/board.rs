@@ -25,7 +25,8 @@ impl Plugin for BoardPlugin {
 					.disable::<DebugPickingPlugin>(),
 			)
 			.add_system(handle_new_cell_selected_event)
-			.add_system(handle_new_board_event);
+			.add_system(handle_new_board_event)
+			.add_system(handle_spawning_visualization);
 	}
 }
 
@@ -346,7 +347,13 @@ mod cells {
 
 			// info!("New starting point: {}", new_starting_point.new);
 			despawn_visualization(&mut commands, vis);
-			begin_showing_visualizations(&new_options, algs, &mut commands, &mut meshes, &mut materials);
+			begin_showing_visualization(
+				&new_options,
+				algs,
+				&mut commands,
+				&mut meshes,
+				&mut materials,
+			);
 		}
 	}
 
@@ -380,6 +387,7 @@ mod cells {
 mod compute {
 	use super::*;
 	use bevy::tasks::Task;
+	use futures_lite::future;
 	use msrc_q11::algs::Computation;
 
 	#[derive(Resource, Debug)]
@@ -395,26 +403,36 @@ mod compute {
 		let thread_pool = AsyncComputeTaskPool::get();
 		let (start, options) = (options.selected_start.unwrap(), options.options);
 
-		commands.insert_resource(ComputationTask(thread_pool.spawn(async move {
-			alg
-				.tour_computation(options.clone(), start)
-				.await
-		})));
+		commands.insert_resource(ComputationTask(
+			thread_pool.spawn(async move { alg.tour_computation(options.clone(), start).await }),
+		));
 	}
 
-	#[tokio::main]
-	pub async fn get_computation(commands: &mut Commands, task: Res<ComputationTask>) -> Option<Computation> {
+	pub fn get_computation(
+		commands: &mut Commands,
+		task: ResMut<ComputationTask>,
+	) -> Option<Computation> {
 		let task = task.into_inner();
+		let ret = future::block_on(future::poll_once(&mut task.0)).unwrap();
 
+		commands.remove_resource::<ComputationTask>();
 
-		unimplemented!()
+		Some(ret)
 	}
 }
 
 use visualization::*;
 mod visualization {
-	use super::{compute::begin_background_compute, *};
-	use msrc_q11::{algs::ImplementedAlgorithms, pieces::StandardKnight, Move, Moves};
+	use super::{
+		compute::{begin_background_compute, get_computation, ComputationTask},
+		*,
+	};
+	use bevy::transform::commands;
+	use msrc_q11::{
+		algs::{Computation, ImplementedAlgorithms},
+		pieces::StandardKnight,
+		Move, Moves,
+	};
 
 	#[allow(dead_code)]
 	#[derive(Component, Debug, Clone)]
@@ -423,7 +441,31 @@ mod visualization {
 		to: ChessPoint,
 	}
 
-	pub fn begin_showing_visualizations(
+	pub fn handle_spawning_visualization(
+		mut commands: Commands,
+		options: Res<CurrentOptions>,
+		task: Option<ResMut<ComputationTask>>,
+		mut meshes: ResMut<Assets<Mesh>>,
+		mut materials: ResMut<Assets<StandardMaterial>>,
+	) {
+		if let Some(task) = task {
+			let solution = get_computation(&mut commands, task).unwrap();
+			match solution {
+				Computation::Successful { solution: moves, explored_states: states } => spawn_visualization(
+					moves,
+					options.current.options.clone(),
+					&mut commands,
+					&mut meshes,
+					&mut materials,
+				),
+				Computation::Failed { total_states: states } => {
+					info!("No solution found!");
+				}
+			}
+		}
+	}
+
+	pub fn begin_showing_visualization(
 		options: &Options,
 		alg: Res<Algorithm>,
 		commands: &mut Commands,
@@ -625,9 +667,9 @@ mod ui {
 	}
 
 	pub fn right_sidebar_ui(mut contexts: EguiContexts) {
-		egui::SidePanel::right("right_sidebar").show(contexts.ctx_mut(), |ui| {
-			ui.heading("Right Sidebar");
-			ui.label("This is the right sidebar");
-		});
+		// egui::SidePanel::right("right_sidebar").show(contexts.ctx_mut(), |ui| {
+		// 	ui.heading("Right Sidebar");
+		// 	ui.label("This is the right sidebar");
+		// });
 	}
 }

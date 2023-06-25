@@ -24,8 +24,6 @@ opt-level = 3
 [profile.release]
 codegen-units = 1
 lto = true
-# Add rustflags section
-
 
 
 [dependencies]
@@ -33,6 +31,7 @@ bevy = { version = "0.10" }
 bevy_editor_pls = { version = "0.4.0", optional = false }
 bevy_egui = "0.20.3"
 bevy_mod_picking = "0.13.0"
+futures-lite = "1.13.0"
 rand = "0.8.5"
 serde = { version = "1.0.163", features = ["derive"] }
 strum = { version = "0.25.0", features = ["derive"] }
