@@ -13,8 +13,7 @@ pub struct BoardPlugin;
 impl Plugin for BoardPlugin {
 	fn build(&self, app: &mut App) {
 		app
-			.add_event::<NewCellSelected>()
-			.add_event::<NewBoardCellOptions>()
+			.add_event::<NewOptions>()
 			.add_startup_system(setup)
 			.add_system(handle_automatic_computation)
 			.add_system(spawn_left_sidebar_ui)
@@ -25,9 +24,10 @@ impl Plugin for BoardPlugin {
 					.disable::<DefaultHighlightingPlugin>()
 					.disable::<DebugPickingPlugin>(),
 			)
-			.add_system(handle_new_cell_selected_event)
-			.add_system(handle_new_board_event)
-			.add_system(handle_spawning_visualization);
+			// .add_system(handle_new_cell_selected_event)
+			// .add_system(handle_new_board_event)
+			.add_system(handle_spawning_visualization)
+			.add_system(handle_new_options);
 	}
 }
 
@@ -36,17 +36,13 @@ impl Plugin for BoardPlugin {
 pub struct Options {
 	options: BoardOptions,
 	selected_start: Option<ChessPoint>,
+	selected_algorithm: Algorithm,
 }
 
-#[derive(Debug, Clone)]
-pub struct NewCellSelected {
-	new: ChessPoint,
-}
+trait OptionsWrapper {
+	fn into_options(self) -> Options;
 
-/// Event representing when the board has changed size/shape/<options>, NOT start location!
-#[derive(Debug, Clone)]
-pub struct NewBoardCellOptions {
-	new: BoardOptions,
+	fn from_options(options: Options) -> Self;
 }
 
 #[derive(Resource, Debug, Clone)]
@@ -54,9 +50,35 @@ pub struct CurrentOptions {
 	current: Options,
 }
 
-#[derive(Resource, Debug, Clone, Default, PartialEq, Eq, EnumIter, IntoStaticStr, Hash)]
+impl OptionsWrapper for CurrentOptions {
+	fn into_options(self) -> Options {
+		self.current
+	}
+
+	fn from_options(options: Options) -> Self {
+		CurrentOptions { current: options }
+	}
+}
+
+#[derive(Debug, Clone)]
+pub struct NewOptions {
+	new: Options,
+}
+
+impl OptionsWrapper for NewOptions {
+	fn into_options(self) -> Options {
+		self.new
+	}
+
+	fn from_options(options: Options) -> Self {
+		NewOptions { new: options }
+	}
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, EnumIter, IntoStaticStr, Hash)]
 pub enum Algorithm {
 	#[default]
+	#[strum(serialize = "Warnsdorf")]
 	Warnsdorf,
 
 	#[strum(serialize = "Brute Force")]
@@ -158,36 +180,27 @@ mod coords {
 	}
 }
 
-fn setup(
-	mut commands: Commands,
-	mut meshes: ResMut<Assets<Mesh>>,
-	mut materials: ResMut<Assets<StandardMaterial>>,
-	mut ass: ResMut<AssetServer>,
-	mut alg: Option<Res<Algorithm>>,
-) {
+type ResSpawning<'a> = (
+	ResMut<'a, Assets<Mesh>>,
+	ResMut<'a, Assets<StandardMaterial>>,
+	ResMut<'a, AssetServer>,
+);
+
+/// Sets up default resources + sends initial [NewOptions] event
+fn setup(mut commands: Commands, mut update_board: EventWriter<NewOptions>) {
 	let options = Options {
 		options: BoardOptions::new(8, 8),
-		selected_start: Some(ChessPoint::new(9, 9)),
+		selected_start: None,
+		selected_algorithm: Algorithm::default(),
 	};
-	let current_options = CurrentOptions {
-		current: options.clone(),
-	};
+	let current_options = CurrentOptions::from_options(options);
 
 	commands.insert_resource(current_options);
-	commands.init_resource::<Algorithm>();
 
-	spawn_cells(
-		&mut commands,
-		&options,
-		&mut meshes,
-		&mut materials,
-		&mut ass,
-		alg,
-	);
-	// spawn_visualization_from_options(&options, &mut commands, &mut meshes, &mut materials);
-
-	// spawn_left_sidebar_ui(&mut commands);
+	update_board.send(NewOptions::from_options(options));
 }
+
+fn handle_new_options() {}
 
 use cells::*;
 mod cells;
@@ -245,20 +258,16 @@ mod compute {
 
 	/// When / how to run [get_computation], + cached_info
 	/// + mark reloading
-	#[allow(clippy::too_many_arguments)]
 	pub fn handle_automatic_computation(
 		mut commands: Commands,
 		task: Option<ResMut<ComputationTask>>,
-		alg: Res<Algorithm>,
 		options: Res<CurrentOptions>,
 
 		cells: Query<(Entity, &ChessPoint), With<CellMarkMarker>>,
-		mut ass: ResMut<AssetServer>,
-		mut meshes: ResMut<Assets<Mesh>>,
-		mut materials: ResMut<Assets<StandardMaterial>>,
+		mut mma: ResSpawning,
 	) {
 		if let Some(task) = task {
-			let alg = alg.into_inner();
+			let alg = &options.into_options().selected_algorithm;
 			// does the work of computing
 			let comp = get_computation(&mut commands, task);
 
@@ -269,16 +278,6 @@ mod compute {
 				alg,
 				CellMark::from(comp),
 			);
-			mark_reload_cell(
-				&options.selected_start.unwrap(),
-				cells,
-				alg,
-				options,
-				&mut commands,
-				&mut meshes,
-				&mut materials,
-				&mut ass,
-			)
 		}
 	}
 }
@@ -322,17 +321,11 @@ mod cached_info {
 use visualization::*;
 mod visualization {
 	use super::{
-		compute::{begin_background_compute, ComputationResult, ComputationTask},
+		compute::{begin_background_compute, ComputationResult},
 		*,
 	};
-	use bevy::transform::commands;
-	use msrc_q11::{
-		algs::{Computation, ImplementedAlgorithms},
-		pieces::StandardKnight,
-		Move, Moves,
-	};
+	use msrc_q11::{algs::Computation, pieces::StandardKnight, Move, Moves};
 
-	#[allow(dead_code)]
 	#[derive(Component, Debug, Clone)]
 	pub struct VisualizationComponent {
 		from: ChessPoint,
@@ -347,54 +340,48 @@ mod visualization {
 
 		viz: Query<Entity, With<VisualizationComponent>>,
 
-		mut meshes: ResMut<Assets<Mesh>>,
-		mut materials: ResMut<Assets<StandardMaterial>>,
+		mut mma: ResSpawning,
 	) {
 		if let Some(solution) = solution {
-			if !solution.is_changed() {
-				// not a new solution, don't do anything
-				return;
-			}
+			if solution.is_changed() {
+				let solution: Computation = solution.into_comp();
+				match solution {
+					Computation::Successful {
+						solution: moves,
+						explored_states: states,
+					} => {
+						debug!(
+							"{} states visited, {} already exists",
+							states,
+							viz.iter().count()
+						);
 
-			let solution: Computation = solution.into_comp();
-			match solution {
-				Computation::Successful {
-					solution: moves,
-					explored_states: states,
-				} => {
-					debug!(
-						"{} states visited, {} already exists",
-						states,
-						viz.iter().count()
-					);
-
-					if viz.iter().count() == 0 {
-						// despawn_visualization(&mut commands, viz);
-						spawn_visualization(
-							moves,
-							options.current.options.clone(),
-							&mut commands,
-							&mut meshes,
-							&mut materials,
-						)
+						if viz.iter().count() == 0 {
+							// despawn_visualization(&mut commands, viz);
+							spawn_visualization(
+								moves,
+								options.current.options.clone(),
+								&mut commands,
+								&mut mma,
+							)
+						}
 					}
-				}
-				Computation::Failed {
-					total_states: states,
-				} => {
-					// despawn_visualization(&mut commands, viz);
-					info!("{} but No solution found!", states);
+					Computation::Failed {
+						total_states: states,
+					} => {
+						// despawn_visualization(&mut commands, viz);
+						info!("{} but No solution found!", states);
+					}
 				}
 			}
 		}
 	}
 
+	/// Call to begin process of showing new solution
 	pub fn begin_showing_new_visualization(
 		options: &Options,
-		alg: Res<Algorithm>,
 		commands: &mut Commands,
-		meshes: &mut ResMut<Assets<Mesh>>,
-		materials: &mut ResMut<Assets<StandardMaterial>>,
+		mma: &mut ResSpawning,
 	) {
 		if let Some(start) = options.selected_start {
 			if options.options.get_unavailable_points().contains(&start) {
@@ -403,36 +390,18 @@ mod visualization {
 			}
 
 			let piece = StandardKnight {};
-			let solver = alg.to_impl(piece);
+			let solver = options.selected_algorithm.to_impl(piece);
 
 			begin_background_compute(solver, options.clone(), commands);
-
-			// match algs.tour_no_repeat(options.clone(), start) {
-			// 	Some(moves) => {
-			// 		// spawn_visualization(moves, options, commands, meshes, materials)
-			// 	}
-			// 	None => {
-			// 		info!("No solution found!");
-			// 	}
-			// }
 		}
-
-		// spawn_path_line(
-		// 	commands,
-		// 	meshes,
-		// 	materials,
-		// 	&start,
-		// 	&ChessPoint::new(4, 4),
-		// 	&board,
-		// )
 	}
 
+	/// Actually spawn entities of new solution
 	pub fn spawn_visualization(
 		moves: Moves,
 		options: BoardOptions,
 		commands: &mut Commands,
-		meshes: &mut ResMut<Assets<Mesh>>,
-		materials: &mut ResMut<Assets<StandardMaterial>>,
+		mma: &mut ResSpawning,
 	) {
 		for Move { from, to } in moves.iter() {
 			spawn_path_line(
@@ -441,8 +410,7 @@ mod visualization {
 				&options,
 				VISUALIZATION_SELECTED_COLOUR,
 				commands,
-				meshes,
-				materials,
+				mma,
 			)
 		}
 	}
@@ -463,8 +431,9 @@ mod visualization {
 		colour: Color,
 
 		commands: &mut Commands,
-		meshes: &mut ResMut<Assets<Mesh>>,
-		materials: &mut ResMut<Assets<StandardMaterial>>,
+		// meshes: &mut ResMut<Assets<Mesh>>,
+		// materials: &mut ResMut<Assets<StandardMaterial>>,
+		mma: &mut ResSpawning,
 	) {
 		let start_pos = get_spacial_coord_2d(options, *from);
 		let end_pos = get_spacial_coord_2d(options, *to);
@@ -483,7 +452,7 @@ mod visualization {
 		// info!("Transform: {:?}", transform);
 		// info!("Angle: {:?}, Length: {:?}", angle, length);
 
-		let mesh_thin_rectangle = meshes.add(
+		let mesh_thin_rectangle = mma.0.add(
 			shape::Box::new(
 				length,
 				VISUALIZATION_DIMENSIONS.x,
@@ -495,7 +464,7 @@ mod visualization {
 		commands.spawn((
 			PbrBundle {
 				mesh: mesh_thin_rectangle,
-				material: materials.add(colour.into()),
+				material: mma.1.add(colour.into()),
 				transform,
 				..default()
 			},
@@ -512,7 +481,7 @@ use ui::*;
 use self::compute::handle_automatic_computation;
 mod ui {
 	use super::{
-		compute::{ComputationResult, ComputationTask},
+		compute::{ComputationResult},
 		*,
 	};
 	use bevy_egui::{
@@ -520,19 +489,17 @@ mod ui {
 		*,
 	};
 	use msrc_q11::algs::Computation;
-	use strum::VariantNames;
 
 	pub fn spawn_left_sidebar_ui(
 		mut commands: Commands,
 		mut contexts: EguiContexts,
 
-		current_alg: Res<Algorithm>,
-		current_options: ResMut<CurrentOptions>,
-		mut new_board_event: EventWriter<NewBoardCellOptions>,
+		options: ResMut<CurrentOptions>,
+		mut new_board_event: EventWriter<NewOptions>,
 	) {
 		egui::SidePanel::left("general_controls_panel").show(contexts.ctx_mut(), |ui| {
-			let old_options: BoardOptions = current_options.current.options.clone();
-			let current_alg = current_alg.into_inner();
+			let old_options: BoardOptions = options.current.options.clone();
+			let current_alg = &options.into_options().selected_algorithm;
 
 			ui.heading("Controls Panel");
 			ui.label("Instructions: Hover over cell to begin knight there. Click cell to toggle availability (red = unavailable). You can alter the dimensions of the board (below) and the algorithm used.");
@@ -544,24 +511,24 @@ mod ui {
 			ui.horizontal(|ui| {
 				if ui.button("Wider +1").clicked() {
 					let new_options = old_options.clone().update_width(old_options.width() + 1);
-					new_board_event.send(NewBoardCellOptions { new: new_options });
+					new_board_event.send(NewOptions::from_options(new_options));
 				}
 
 				if ui.button("Thinner -1").clicked() {
 					let new_options = old_options.clone().update_width(old_options.width() - 1);
-					new_board_event.send(NewBoardCellOptions { new: new_options });
+					new_board_event.send(NewOptions::from_options(new_options));
 				}
 			});
 
 			ui.horizontal(|ui| {
 				if ui.button("Taller +1").clicked() {
 					let new_options = old_options.clone().update_height(old_options.height() + 1);
-					new_board_event.send(NewBoardCellOptions { new: new_options });
+					new_board_event.send(NewOptions::from_options(new_options));
 				}
 
 				if ui.button("Shorter -1").clicked() {
 					let new_options = old_options.clone().update_height(old_options.height() - 1);
-					new_board_event.send(NewBoardCellOptions { new: new_options });
+					new_board_event.send(NewOptions::from_options(new_options));
 				}
 			});
 
@@ -592,7 +559,6 @@ mod ui {
 
 	pub fn right_sidebar_ui(
 		options: Res<CurrentOptions>,
-		alg: Res<Algorithm>,
 		computation: Option<Res<ComputationResult>>,
 
 		mut commands: Commands,
@@ -632,7 +598,7 @@ mod ui {
 			}
 
 			if let Some(start) = &options.selected_start {
-				let alg_selected: &str = alg.into_inner().into();
+				let alg_selected: &str = options.into_options().selected_algorithm.into();
 				ui.label(format!(
 					"Current info: Starting at {start} with {} algorithm {}",
 					alg_selected,

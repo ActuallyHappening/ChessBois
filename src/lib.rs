@@ -1,5 +1,3 @@
-#![allow(clippy::too_many_arguments)]
-
 use bevy::prelude::*;
 use bevy_egui::egui::{Color32};
 use bevy_mod_picking::prelude::RaycastPickCamera;

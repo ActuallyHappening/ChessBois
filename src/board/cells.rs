@@ -1,6 +1,5 @@
 use super::{cached_info::CellMark, *};
 use crate::CELL_DISABLED_COLOUR;
-use bevy::transform;
 use msrc_q11::CellOption;
 
 #[derive(Component)]
@@ -9,19 +8,16 @@ pub struct CellMarkMarker;
 pub fn spawn_cells(
 	commands: &mut Commands,
 	options: &Options,
-	meshes: &mut ResMut<Assets<Mesh>>,
-	materials: &mut ResMut<Assets<StandardMaterial>>,
-	ass: &mut ResMut<AssetServer>,
-	alg: Option<Res<Algorithm>>,
+	alg: Option<&Algorithm>,
+	mma: &mut ResSpawning,
 ) {
 	let start = options.selected_start;
 	let options = options.options.clone();
-	let alg = alg.map(|al| al.into_inner());
 
 	for point in options.get_all_points() {
 		let colour = compute_colour(&point, Some(&options), start);
 		spawn_cell(
-			point, &options, colour, commands, meshes, materials, ass, alg,
+			point, &options, colour, alg, commands, mma,
 		);
 	}
 }
@@ -60,11 +56,9 @@ fn spawn_cell(
 	at: ChessPoint,
 	options: &BoardOptions,
 	colour: Color,
-	commands: &mut Commands,
-	meshes: &mut ResMut<Assets<Mesh>>,
-	materials: &mut ResMut<Assets<StandardMaterial>>,
-	ass: &mut ResMut<AssetServer>,
 	alg: Option<&Algorithm>,
+	commands: &mut Commands,
+	(meshes, materials, ass): &mut ResSpawning,
 ) {
 	let transform = cell_get_transform(at, options);
 	let mesh = meshes.add(shape::Box::new(CELL_SIZE, CELL_SIZE, CELL_DEPTH).into());
@@ -86,30 +80,26 @@ fn spawn_cell(
 	));
 
 	spawn_mark(
-		at, options, transform, alg, commands, meshes, materials, ass,
+		at, options, transform, alg, commands, (meshes, materials, ass),
 	);
 }
 
 fn spawn_mark(
 	at: ChessPoint,
 	options: &BoardOptions,
-
 	transform: Transform,
-
 	alg: Option<&Algorithm>,
+
 	commands: &mut Commands,
-	meshes: &mut ResMut<Assets<Mesh>>,
-	materials: &mut ResMut<Assets<StandardMaterial>>,
-	ass: &mut ResMut<AssetServer>,
+	(meshes, materials, ass): &mut ResSpawning,
 ) {
 	if let Some(alg) = alg {
 		if let Some(mark) = cached_info::get(&at, options, alg) {
 			// if let Some(mark) = Some(CellMark::Succeeded) {
 			let quad = shape::Quad::new(Vec2::new(
-				// width
-				CELL_SIZE, // height
 				CELL_SIZE,
-			));
+				CELL_SIZE,
+			) / 0.9);
 			let mesh = meshes.add(Mesh::from(quad));
 
 			let mut transform = transform;
@@ -165,9 +155,7 @@ pub fn mark_reload_cell(
 	options: &Options,
 
 	commands: &mut Commands,
-	meshes: &mut ResMut<Assets<Mesh>>,
-	materials: &mut ResMut<Assets<StandardMaterial>>,
-	ass: &mut ResMut<AssetServer>,
+	mma: &mut ResSpawning
 ) {
 	info!("reloading cell {}", cell);
 
@@ -186,9 +174,7 @@ pub fn mark_reload_cell(
 		transform,
 		Some(alg),
 		commands,
-		meshes,
-		materials,
-		ass
+		mma
 	);
 }
 
@@ -196,26 +182,26 @@ pub fn mark_reload_cell(
 fn cell_selected(
 	// The first parameter is always the `ListenedEvent`, passed in by the event listening system.
 	In(event): In<ListenedEvent<Over>>,
+	options: Res<CurrentOptions>,
+	cells: Query<(&Handle<StandardMaterial>, &ChessPoint)>,
+	mut update_board: EventWriter<NewOptions>,
 
 	mut materials: ResMut<Assets<StandardMaterial>>,
-
-	cells: Query<(&Handle<StandardMaterial>, &ChessPoint)>,
-	current_options: ResMut<CurrentOptions>,
-
-	mut new_cell_selected: EventWriter<NewCellSelected>,
 ) -> Bubble {
 	let (mat, point) = cells.get(event.target).unwrap();
 
-	let options = &current_options.current.options;
-	let is_disabled = options.get_unavailable_points().contains(point);
+	let is_disabled = options.into_options().get_unavailable_points().contains(point);
 
 	if !is_disabled {
 		// sets colour to selected
-		let material = materials.get_mut(mat).unwrap();
-		material.base_color = CELL_SELECTED_COLOUR;
+		// let material = materials.get_mut(mat).unwrap();
+		// material.base_color = CELL_SELECTED_COLOUR;
+
+		let mut options = options.clone().into_options();
+		options.selected_start = Some(*point);
 
 		// send event
-		new_cell_selected.send(NewCellSelected { new: *point });
+		update_board.send(NewOptions::from_options(options));
 	}
 
 	Bubble::Up
@@ -224,9 +210,10 @@ fn cell_selected(
 /// Just undoes colour change to normal
 fn cell_deselected(
 	In(event): In<ListenedEvent<Out>>,
-	mut materials: ResMut<Assets<StandardMaterial>>,
-	square: Query<(&Handle<StandardMaterial>, &ChessPoint)>,
 	options: Res<CurrentOptions>,
+	square: Query<(&Handle<StandardMaterial>, &ChessPoint)>,
+
+	mut materials: ResMut<Assets<StandardMaterial>>,
 ) -> Bubble {
 	let (mat, point) = square.get(event.target).unwrap();
 
@@ -239,33 +226,30 @@ fn cell_deselected(
 
 fn toggle_cell_availability(
 	In(event): In<ListenedEvent<Click>>,
-	// mut materials: ResMut<Assets<StandardMaterial>>,
 	cells: Query<(&Handle<StandardMaterial>, &ChessPoint)>,
-	current_options: ResMut<CurrentOptions>,
+	options: ResMut<CurrentOptions>,
 
-	mut new_board: EventWriter<NewBoardCellOptions>,
+	mut update_board: EventWriter<NewOptions>,
 ) -> Bubble {
 	let (mat, point) = cells.get(event.target).unwrap();
 
-	let options = &current_options.current.options;
+	let mut options = options.current.clone();
 	match options.get(point) {
 		Some(CellOption::Available) => {
 			// let material = materials.get_mut(mat).unwrap();
 			// material.base_color = CELL_DISABLED_COLOUR;
 
-			new_board.send(NewBoardCellOptions {
-				new: options.clone().set(point, CellOption::Unavailable),
-			})
+			options.options.rm(*point);
+			update_board.send(NewOptions::from_options(options));
 		}
 		Some(CellOption::Unavailable) => {
 			// let material = materials.get_mut(mat).unwrap();
 			// material.base_color = point.get_standard_colour();
 
-			new_board.send(NewBoardCellOptions {
-				new: options.clone().set(point, CellOption::Available),
-			})
+			options.options.add(*point);
+			update_board.send(NewOptions::from_options(options));
 		}
-		None => (),
+		None => panic!("Tried to change availability of cell that doesn't exist"),
 	}
 	Bubble::Up
 }

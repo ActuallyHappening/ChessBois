@@ -234,11 +234,19 @@ impl BoardOptions {
 		Self { options }
 	}
 
-	pub fn rm(&mut self, p: (u8, u8)) {
-		self.options[p.0 as usize - 1][p.1 as usize - 1] = CellOption::Unavailable;
+	// pub fn rm(&mut self, p: (u8, u8)) {
+	// 	self.options[p.0 as usize - 1][p.1 as usize - 1] = CellOption::Unavailable;
+	// }
+	// pub fn add(&mut self, p: (u8, u8)) {
+	// 	self.options[p.0 as usize - 1][p.1 as usize - 1] = CellOption::Available;
+	// }
+	pub fn rm(&mut self, p: impl Into<ChessPoint>) {
+		let p = p.into();
+		self.options[p.row as usize - 1][p.column as usize - 1] = CellOption::Unavailable;
 	}
-	pub fn add(&mut self, p: (u8, u8)) {
-		self.options[p.0 as usize - 1][p.1 as usize - 1] = CellOption::Available;
+	pub fn add(&mut self, p: impl Into<ChessPoint>) {
+		let p = p.into();
+		self.options[p.row as usize - 1][p.column as usize - 1] = CellOption::Available;
 	}
 
 	/// 1 indexed
