@@ -292,12 +292,15 @@ mod cells {
 						..default()
 					});
 
-					commands.spawn(PbrBundle {
-						mesh,
-						material: material_handle,
-						transform,
-						..default()
-					});
+					commands.spawn((
+						PbrBundle {
+							mesh,
+							material: material_handle,
+							transform,
+							..default()
+						},
+						at,
+					));
 				}
 				CellMark::Succeeded => {
 					let material_handle = materials.add(StandardMaterial {
@@ -306,12 +309,12 @@ mod cells {
 						..default()
 					});
 
-					commands.spawn(PbrBundle {
+					commands.spawn((PbrBundle {
 						mesh,
 						material: material_handle,
 						transform,
 						..default()
-					});
+					}, at));
 				}
 			}
 		}
