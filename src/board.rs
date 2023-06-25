@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy::tasks::AsyncComputeTaskPool;
 use bevy_mod_picking::prelude::*;
+use msrc_q11::pieces::StandardKnight;
 use msrc_q11::*;
 use msrc_q11::{algs::ImplementedAlgorithms, pieces::ChessPiece, BoardOptions, ChessPoint};
 use std::f32::consts::TAU;
@@ -14,6 +15,7 @@ impl Plugin for BoardPlugin {
 	fn build(&self, app: &mut App) {
 		app
 			.add_event::<NewOptions>()
+			.add_event::<ComputationResult>()
 			.add_startup_system(setup)
 			.add_system(handle_automatic_computation)
 			.add_system(spawn_left_sidebar_ui)
@@ -32,17 +34,13 @@ impl Plugin for BoardPlugin {
 }
 
 /// Represents information required to display cells + visual solutions
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Options {
 	options: BoardOptions,
 	selected_start: Option<ChessPoint>,
 	selected_algorithm: Algorithm,
-}
 
-trait OptionsWrapper {
-	fn into_options(self) -> Options;
-
-	fn from_options(options: Options) -> Self;
+	force_update: bool,
 }
 
 #[derive(Resource, Debug, Clone)]
@@ -50,29 +48,9 @@ pub struct CurrentOptions {
 	current: Options,
 }
 
-impl OptionsWrapper for CurrentOptions {
-	fn into_options(self) -> Options {
-		self.current
-	}
-
-	fn from_options(options: Options) -> Self {
-		CurrentOptions { current: options }
-	}
-}
-
 #[derive(Debug, Clone)]
 pub struct NewOptions {
 	new: Options,
-}
-
-impl OptionsWrapper for NewOptions {
-	fn into_options(self) -> Options {
-		self.new
-	}
-
-	fn from_options(options: Options) -> Self {
-		NewOptions { new: options }
-	}
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, EnumIter, IntoStaticStr, Hash)]
@@ -88,17 +66,21 @@ pub enum Algorithm {
 	BruteForceNotCached,
 }
 
-impl Algorithm {
-	fn to_impl<P: ChessPiece>(&self, piece: P) -> ImplementedAlgorithms<P> {
-		match self {
-			Algorithm::Warnsdorf => ImplementedAlgorithms::Warnsdorf(piece),
-			Algorithm::BruteForce => ImplementedAlgorithms::BruteRecursiveCached(piece),
-			Algorithm::BruteForceNotCached => ImplementedAlgorithms::BruteRecursiveNotCached(piece),
-		}
-	}
+use top_level_types::OptionsWrapper;
+mod top_level_types {
+	use super::*;
 
-	fn get_description(&self) -> &'static str {
-		match self {
+	impl Algorithm {
+		pub fn to_impl<P: ChessPiece>(&self, piece: P) -> ImplementedAlgorithms<P> {
+			match self {
+				Algorithm::Warnsdorf => ImplementedAlgorithms::Warnsdorf(piece),
+				Algorithm::BruteForce => ImplementedAlgorithms::BruteRecursiveCached(piece),
+				Algorithm::BruteForceNotCached => ImplementedAlgorithms::BruteRecursiveNotCached(piece),
+			}
+		}
+
+		pub fn get_description(&self) -> &'static str {
+			match self {
 			Algorithm::Warnsdorf => "A standard knights tour.\
 			This algorithm applies Warnsdorf's Rule, which tells you to always move to the square with the fewest available moves. \
 			This algorithm is always guaranteed to terminate in finite time, however it sometimes misses solutions e.g. 8x8 board @ (5, 3).\
@@ -115,6 +97,42 @@ impl Algorithm {
 			Algorithm::BruteForceNotCached => "A standard knights tour.\
 			Same as the other brute force algorithm, except without the cache. This will likely slow your computer down a bit when computing larger boards.
 			",
+		}
+		}
+	}
+
+	pub trait OptionsWrapper {
+		fn into_options(self) -> Options;
+		fn as_options(&self) -> &Options;
+
+		fn from_options(options: Options) -> Self;
+	}
+
+	impl OptionsWrapper for NewOptions {
+		fn into_options(self) -> Options {
+			self.new
+		}
+
+		fn as_options(&self) -> &Options {
+			&self.new
+		}
+
+		fn from_options(options: Options) -> Self {
+			NewOptions { new: options }
+		}
+	}
+
+	impl OptionsWrapper for CurrentOptions {
+		fn into_options(self) -> Options {
+			self.current
+		}
+
+		fn as_options(&self) -> &Options {
+			&self.current
+		}
+
+		fn from_options(options: Options) -> Self {
+			CurrentOptions { current: options }
 		}
 	}
 }
@@ -192,15 +210,63 @@ fn setup(mut commands: Commands, mut update_board: EventWriter<NewOptions>) {
 		options: BoardOptions::new(8, 8),
 		selected_start: None,
 		selected_algorithm: Algorithm::default(),
+		force_update: true,
 	};
-	let current_options = CurrentOptions::from_options(options);
+	let current_options = CurrentOptions::from_options(options.clone());
 
 	commands.insert_resource(current_options);
 
 	update_board.send(NewOptions::from_options(options));
 }
 
-fn handle_new_options() {}
+fn handle_new_options(
+	mut options_events: EventReader<NewOptions>,
+	old_options: Res<CurrentOptions>,
+
+	cells: Query<Entity, With<ChessPoint>>,
+
+	mut commands: Commands,
+	mut mma: ResSpawning,
+) {
+	if let Some(options) = options_events.iter().next() {
+		let options = options.clone().into_options();
+		let old_options = old_options.clone().into_options();
+
+		if options.force_update {
+			info!("Force updating ...")
+		}
+
+		if options == old_options && !options.force_update {
+			// info!("Ignoring update, options are the same");
+			return;
+		}
+
+		// if BoardOptions changed, despawn + re-spawn cells
+		if options.options != old_options.options || options.force_update {
+			// info!("BoardOptions changed, despawning + respawning cells & markers");
+			despawn_cells(&mut commands, cells);
+			despawn_markers();
+
+			spawn_cells(&options, &mut commands, &mut mma);
+			spawn_markers();
+		}
+
+		// begin recomputing visualization
+		begin_background_compute(
+			options.selected_algorithm.to_impl(StandardKnight {}),
+			options.clone(),
+			&mut commands,
+		);
+
+		// add new options as current
+		commands.insert_resource(CurrentOptions::from_options(Options {
+			force_update: false,
+			..options.clone()
+		}));
+
+		options_events.clear();
+	}
+}
 
 use cells::*;
 mod cells;
@@ -234,26 +300,32 @@ mod compute {
 		options: Options,
 		commands: &mut Commands,
 	) {
-		let thread_pool = AsyncComputeTaskPool::get();
-		let (start, options) = (options.selected_start.unwrap(), options.options);
+		if let (Some(start), options) = (options.selected_start, options.options) {
+			let thread_pool = AsyncComputeTaskPool::get();
 
-		commands.insert_resource(ComputationTask(thread_pool.spawn(async move {
-			let ret = alg.tour_computation(options.clone(), start).await;
-			// panic!("Failed here");
-			ret
-		})));
+			commands.insert_resource(ComputationTask(
+				thread_pool.spawn(async move { alg.tour_computation(options.clone(), start).await }),
+			));
+		}
 	}
 
-	fn get_computation(commands: &mut Commands, task: ResMut<ComputationTask>) -> Computation {
+	/// adds [ComputationResult]; Polls [ComputationTask] and returns [Computation] if ready
+	fn get_computation(
+		commands: &mut Commands,
+		task: ResMut<ComputationTask>,
+		update_computation: EventWriter<ComputationResult>,
+	) -> Option<Computation> {
 		let task = task.into_inner();
 		let task = &mut task.0;
 
+		// TODO: use threading (web_worker on wasm)
 		let comp = futures::executor::block_on(task);
 
 		commands.remove_resource::<ComputationTask>();
 		commands.insert_resource(ComputationResult(comp.clone()));
+		update_computation.send();
 
-		comp
+		Some(comp)
 	}
 
 	/// When / how to run [get_computation], + cached_info
@@ -263,13 +335,13 @@ mod compute {
 		task: Option<ResMut<ComputationTask>>,
 		options: Res<CurrentOptions>,
 
-		cells: Query<(Entity, &ChessPoint), With<CellMarkMarker>>,
+		cells: Query<(Entity, &ChessPoint), With<MarkerMarker>>,
 		mut mma: ResSpawning,
 	) {
 		if let Some(task) = task {
-			let alg = &options.into_options().selected_algorithm;
+			let alg = &options.as_options().selected_algorithm;
 			// does the work of computing
-			let comp = get_computation(&mut commands, task);
+			let comp = get_computation(&mut commands, task).expect("TODO: impl retry");
 
 			let options = &options.current;
 			cached_info::set(
@@ -478,12 +550,9 @@ mod visualization {
 
 use ui::*;
 
-use self::compute::handle_automatic_computation;
+use self::compute::{begin_background_compute, handle_automatic_computation, ComputationResult};
 mod ui {
-	use super::{
-		compute::{ComputationResult},
-		*,
-	};
+	use super::{compute::ComputationResult, *};
 	use bevy_egui::{
 		egui::{Color32, RichText},
 		*,
@@ -498,50 +567,25 @@ mod ui {
 		mut new_board_event: EventWriter<NewOptions>,
 	) {
 		egui::SidePanel::left("general_controls_panel").show(contexts.ctx_mut(), |ui| {
-			let old_options: BoardOptions = options.current.options.clone();
-			let current_alg = &options.into_options().selected_algorithm;
+			let options = options.clone().into_options();
+			let current_alg = &options.selected_algorithm;
 
 			ui.heading("Controls Panel");
 			ui.label("Instructions: Hover over cell to begin knight there. Click cell to toggle availability (red = unavailable). You can alter the dimensions of the board (below) and the algorithm used.");
 
-			// ui.add(egui::Slider::new(&mut my_f32, 3.0..=10.).text("My value"));
-			// ui.add(egui::Slider::new(&mut ui_state.value, 0.0..=10.0).text("value"));
-
-			ui.label("Change board dimensions:");
-			ui.horizontal(|ui| {
-				if ui.button("Wider +1").clicked() {
-					let new_options = old_options.clone().update_width(old_options.width() + 1);
-					new_board_event.send(NewOptions::from_options(new_options));
+			ui.add(egui::Slider::from_get_set((2.)..=10., |val| {
+				let mut options = options.clone();
+				if let Some(new_val) = val {
+					options.options = options.options.update_width(new_val as u8);
+					new_board_event.send(NewOptions::from_options(options));
+					new_val
+				} else {
+					options.options.width() as f64
 				}
-
-				if ui.button("Thinner -1").clicked() {
-					let new_options = old_options.clone().update_width(old_options.width() - 1);
-					new_board_event.send(NewOptions::from_options(new_options));
-				}
-			});
-
-			ui.horizontal(|ui| {
-				if ui.button("Taller +1").clicked() {
-					let new_options = old_options.clone().update_height(old_options.height() + 1);
-					new_board_event.send(NewOptions::from_options(new_options));
-				}
-
-				if ui.button("Shorter -1").clicked() {
-					let new_options = old_options.clone().update_height(old_options.height() - 1);
-					new_board_event.send(NewOptions::from_options(new_options));
-				}
-			});
+			}));
 
 			ui.label("Select algorithm:");
 			ui.horizontal(|ui| {
-				// let alg_names = Algorithm::VARIANTS;
-				// for name in alg_names {
-				// 	let mut btn = ui.button(*name);
-				// 	if current_alg ==
-				// 	if btn.clicked() {
-				// 		commands.insert_resource(Algorithm::from_str(name).unwrap())
-				// 	}
-				// }
 				for alg in Algorithm::iter() {
 					let str: &'static str = alg.clone().into();
 					let mut text = RichText::new(str);
@@ -549,7 +593,10 @@ mod ui {
 						text = text.color(UI_ALG_ENABLED_COLOUR);
 					}
 					if ui.button(text).clicked() {
-						commands.insert_resource(alg);
+						new_board_event.send(NewOptions::from_options(Options {
+							selected_algorithm: alg,
+							..options.clone()
+						}));
 					}
 				}
 			});
@@ -598,7 +645,7 @@ mod ui {
 			}
 
 			if let Some(start) = &options.selected_start {
-				let alg_selected: &str = options.into_options().selected_algorithm.into();
+				let alg_selected: &str = options.selected_algorithm.clone().into();
 				ui.label(format!(
 					"Current info: Starting at {start} with {} algorithm {}",
 					alg_selected,

@@ -2,13 +2,15 @@ use super::{cached_info::CellMark, *};
 use crate::CELL_DISABLED_COLOUR;
 use msrc_q11::CellOption;
 
+/// Marker for Markers lol
 #[derive(Component)]
-pub struct CellMarkMarker;
+pub struct MarkerMarker;
+// marker for cells is [ChessPoint]
 
 pub fn spawn_cells(
-	commands: &mut Commands,
 	options: &Options,
-	alg: Option<&Algorithm>,
+
+	commands: &mut Commands,
 	mma: &mut ResSpawning,
 ) {
 	let start = options.selected_start;
@@ -17,15 +19,23 @@ pub fn spawn_cells(
 	for point in options.get_all_points() {
 		let colour = compute_colour(&point, Some(&options), start);
 		spawn_cell(
-			point, &options, colour, alg, commands, mma,
+			point, &options, colour, commands, mma,
 		);
 	}
 }
 
-fn despawn_cells(commands: &mut Commands, cells: Query<Entity, With<ChessPoint>>) {
+pub fn spawn_markers() {
+
+}
+
+pub fn despawn_cells(commands: &mut Commands, cells: Query<Entity, With<ChessPoint>>) {
 	for cell in cells.iter() {
 		commands.entity(cell).despawn_recursive();
 	}
+}
+
+pub fn despawn_markers() {
+
 }
 
 /// Takes as much information as it can get and returns the colour the cell should be.
@@ -56,11 +66,11 @@ fn spawn_cell(
 	at: ChessPoint,
 	options: &BoardOptions,
 	colour: Color,
-	alg: Option<&Algorithm>,
 	commands: &mut Commands,
-	(meshes, materials, ass): &mut ResSpawning,
+	mma: &mut ResSpawning,
 ) {
 	let transform = cell_get_transform(at, options);
+	let (meshes, materials, _) = mma;
 	let mesh = meshes.add(shape::Box::new(CELL_SIZE, CELL_SIZE, CELL_DEPTH).into());
 
 	commands.spawn((
@@ -78,10 +88,6 @@ fn spawn_cell(
 		OnPointer::<Out>::run_callback(cell_deselected),
 		OnPointer::<Click>::run_callback(toggle_cell_availability),
 	));
-
-	spawn_mark(
-		at, options, transform, alg, commands, (meshes, materials, ass),
-	);
 }
 
 fn spawn_mark(
@@ -121,7 +127,7 @@ fn spawn_mark(
 							..default()
 						},
 						at,
-						CellMarkMarker {},
+						MarkerMarker {},
 					));
 				}
 				CellMark::Succeeded => {
@@ -139,7 +145,7 @@ fn spawn_mark(
 							..default()
 						},
 						at,
-						CellMarkMarker {},
+						MarkerMarker {},
 					));
 				}
 			}
@@ -150,7 +156,7 @@ fn spawn_mark(
 /// Called to destroy + create a cell, to reload its marks
 pub fn mark_reload_cell(
 	cell: &ChessPoint,
-	marks: Query<(Entity, &ChessPoint), With<CellMarkMarker>>,
+	marks: Query<(Entity, &ChessPoint), With<MarkerMarker>>,
 	alg: &Algorithm,
 	options: &Options,
 
@@ -190,12 +196,11 @@ fn cell_selected(
 ) -> Bubble {
 	let (mat, point) = cells.get(event.target).unwrap();
 
-	let is_disabled = options.into_options().get_unavailable_points().contains(point);
-
+	let is_disabled = options.as_options().options.get_unavailable_points().contains(point);
 	if !is_disabled {
 		// sets colour to selected
-		// let material = materials.get_mut(mat).unwrap();
-		// material.base_color = CELL_SELECTED_COLOUR;
+		let material = materials.get_mut(mat).unwrap();
+		material.base_color = CELL_SELECTED_COLOUR;
 
 		let mut options = options.clone().into_options();
 		options.selected_start = Some(*point);
@@ -234,7 +239,7 @@ fn toggle_cell_availability(
 	let (mat, point) = cells.get(event.target).unwrap();
 
 	let mut options = options.current.clone();
-	match options.get(point) {
+	match options.options.get(point) {
 		Some(CellOption::Available) => {
 			// let material = materials.get_mut(mat).unwrap();
 			// material.base_color = CELL_DISABLED_COLOUR;
@@ -252,75 +257,4 @@ fn toggle_cell_availability(
 		None => panic!("Tried to change availability of cell that doesn't exist"),
 	}
 	Bubble::Up
-}
-
-/// When new cell is selected
-pub fn handle_new_cell_selected_event(
-	mut new_starting_point: EventReader<NewCellSelected>,
-	current_options: ResMut<CurrentOptions>,
-
-	vis: Query<Entity, With<VisualizationComponent>>,
-	algs: Res<Algorithm>,
-
-	mut commands: Commands,
-	mut meshes: ResMut<Assets<Mesh>>,
-	mut materials: ResMut<Assets<StandardMaterial>>,
-) {
-	let current_options = &current_options.current;
-	if let Some(new_starting_point) = new_starting_point.into_iter().next() {
-		let new_options = Options {
-			options: current_options.options.clone(),
-			selected_start: Some(new_starting_point.new),
-		};
-		commands.insert_resource(CurrentOptions {
-			current: new_options.clone(),
-		});
-
-		// info!("New starting point: {}", new_starting_point.new);
-		despawn_visualization(&mut commands, vis);
-		begin_showing_new_visualization(
-			&new_options,
-			algs,
-			&mut commands,
-			&mut meshes,
-			&mut materials,
-		);
-	}
-}
-
-/// When board dimensions change
-#[allow(clippy::too_many_arguments)]
-pub fn handle_new_board_event(
-	mut new_board: EventReader<NewBoardCellOptions>,
-
-	vis: Query<Entity, With<VisualizationComponent>>,
-	cells: Query<Entity, With<ChessPoint>>,
-
-	mut commands: Commands,
-	mut meshes: ResMut<Assets<Mesh>>,
-	mut materials: ResMut<Assets<StandardMaterial>>,
-	mut ass: ResMut<AssetServer>,
-	alg: Res<Algorithm>,
-) {
-	if let Some(new_options) = new_board.into_iter().next() {
-		let new_options = Options {
-			options: new_options.new.clone(),
-			selected_start: None,
-		};
-		commands.insert_resource(CurrentOptions {
-			current: new_options.clone(),
-		});
-
-		despawn_visualization(&mut commands, vis);
-		despawn_cells(&mut commands, cells);
-
-		spawn_cells(
-			&mut commands,
-			&new_options,
-			&mut meshes,
-			&mut materials,
-			&mut ass,
-			Some(alg),
-		);
-	}
 }
