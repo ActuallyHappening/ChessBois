@@ -58,7 +58,8 @@ impl From<Option<Moves>> for PartialComputation {
 pub enum ImplementedAlgorithms<P: ChessPiece + 'static> {
 	Warnsdorf(P),
 
-	BruteRecursive(P),
+	BruteRecursiveCached(P),
+	BruteRecursiveNotCached(P),
 }
 
 impl<P: ChessPiece> ImplementedAlgorithms<P> {
@@ -78,7 +79,8 @@ impl<P: ChessPiece> ImplementedAlgorithms<P> {
 	pub async fn tour_computation(&self, options: BoardOptions, start: ChessPoint) -> Computation {
 		match self {
 			Self::Warnsdorf(piece) => warnsdorf_tour_repeatless(piece, options, start),
-			Self::BruteRecursive(piece) => brute_recursive_tour_repeatless_cached(piece, options, start).await,
+			Self::BruteRecursiveCached(piece) => brute_recursive_tour_repeatless_cached(piece, options, start).await,
+			Self::BruteRecursiveNotCached(piece) => brute_recursive_tour_repeatless_not_cached(piece, options, start).await,
 		}
 	}
 }
@@ -248,7 +250,7 @@ fn try_move_recursive(
 		};
 	}
 
-	moves.into()
+	PartialComputation::from(moves)
 }
 
 pub async fn brute_recursive_tour_repeatless_cached<P: ChessPiece + 'static>(
@@ -264,6 +266,25 @@ pub async fn brute_recursive_tour_repeatless_cached<P: ChessPiece + 'static>(
 	let board = Board::from_options(options);
 	try_move_recursive_cached(num_moves_required, piece, board, start, &mut state_counter)
 		.await
+		.map(|moves| {
+			let mut moves = moves.into_iter().rev().collect::<Vec<Move>>();
+			moves.push(Move::new(start, start));
+			moves.into()
+		}).add_state_count(state_counter)
+}
+
+pub async fn brute_recursive_tour_repeatless_not_cached<P: ChessPiece + 'static>(
+	piece: &P,
+	options: BoardOptions,
+	start: ChessPoint,
+) -> Computation {
+	let all_available_points = options.get_available_points();
+	let num_moves_required = all_available_points.len() as u8 - 1;
+
+	let mut state_counter = 0_u128;
+
+	let board = Board::from_options(options);
+	try_move_recursive(num_moves_required, piece, board, start, &mut state_counter)
 		.map(|moves| {
 			let mut moves = moves.into_iter().rev().collect::<Vec<Move>>();
 			moves.push(Move::new(start, start));
@@ -309,12 +330,14 @@ mod cache {
 	use std::{any::TypeId, collections::HashMap, sync::Mutex};
 	use tracing::info;
 
-	static CYCLE_CACHE: Lazy<Mutex<HashMap<TypeId, LruCache<State, Moves>>>> =
+	static CYCLE_CACHE: Lazy<Mutex<HashMap<TypeId, LruCache<State, Solution>>>> =
 		Lazy::new(|| Mutex::new(HashMap::new()));
 
 	fn new() -> LruCache<State, Moves> {
 		LruCache::new(NonZeroUsize::new(10_000).unwrap())
 	}
+
+	type Solution = Moves;
 
 	#[derive(Hash, PartialEq, Eq, Clone, Debug)]
 	pub struct State {
@@ -322,7 +345,7 @@ mod cache {
 		pub board: Board,
 	}
 
-	pub fn try_get_cached_solution<P: ChessPiece + 'static>(options: &State) -> Option<Moves> {
+	pub fn try_get_cached_solution<P: ChessPiece + 'static>(options: &State) -> Option<Solution> {
 		let mut caches = CYCLE_CACHE.lock().unwrap();
 		let id = TypeId::of::<P>();
 
@@ -338,7 +361,7 @@ mod cache {
 		cache.get(options).cloned()
 	}
 
-	pub fn add_solution_to_cache<P: ChessPiece + 'static>(options: State, moves: Moves) {
+	pub fn add_solution_to_cache<P: ChessPiece + 'static>(options: State, moves: Solution) {
 		let mut caches = CYCLE_CACHE.lock().unwrap();
 		let id = TypeId::of::<P>();
 

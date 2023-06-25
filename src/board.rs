@@ -60,27 +60,38 @@ pub enum Algorithm {
 	Warnsdorf,
 
 	#[strum(serialize = "Brute Force")]
-	BruteRecursive,
+	BruteForce,
+
+	#[strum(serialize = "Brute Force (Not Cached")]
+	BruteForceNotCached,
 }
 
 impl Algorithm {
 	fn to_impl<P: ChessPiece>(&self, piece: P) -> ImplementedAlgorithms<P> {
 		match self {
 			Algorithm::Warnsdorf => ImplementedAlgorithms::Warnsdorf(piece),
-			Algorithm::BruteRecursive => ImplementedAlgorithms::BruteRecursive(piece),
+			Algorithm::BruteForce => ImplementedAlgorithms::BruteRecursiveCached(piece),
+			Algorithm::BruteForceNotCached => ImplementedAlgorithms::BruteRecursiveNotCached(piece),
 		}
 	}
 
 	fn get_description(&self) -> &'static str {
 		match self {
-			Algorithm::Warnsdorf => "This algorithm applies Warnsdorf's Rule, which tells you to always move to the square with the fewest available moves. \
+			Algorithm::Warnsdorf => "A standard knights tour.\
+			This algorithm applies Warnsdorf's Rule, which tells you to always move to the square with the fewest available moves. \
 			This algorithm is always guaranteed to terminate in finite time, however it sometimes misses solutions e.g. 8x8 board @ (5, 3).\
 			Warnsdorf's Rule is very easy to implement and is very popular because of its simplicity. The implementation used is sub-optimal, but should suffice.
 			", 
-			Algorithm::BruteRecursive => "This algorithm is a recursive brute-force approach, which favours Warnsdorf's Rule first before backtracking.\
+			Algorithm::BruteForce => "A standard knights tour.\
+			This algorithm is a recursive brute-force approach, which favours Warnsdorf's Rule first before backtracking.\
 			This algorithm is always guaranteed to terminate in finite time, but that time complexity is exponential compared with number of cells, so \
 			large boards with no solutions will take a long time to solve. In worst case scenario, since it is brute force, it will check every possible \
 			knights tour before exiting with no solution! However, if Warnsdorf's algorithm finds a solution, this program will find that solution first.
+			This algorithm uses a cache (because this will often save expensive work) so sometimes you will see 0 states considered. This is because the \
+			cache has been hit, to remove cache select the 'Brute Force (Not Cached)' algorithm.
+			",
+			Algorithm::BruteForceNotCached => "A standard knights tour.\
+			Same as the other brute force algorithm, except without the cache. This will likely slow your computer down a bit when computing larger boards.
 			",
 		}
 	}
@@ -731,16 +742,22 @@ mod ui {
 						explored_states: states,
 						..
 					} => {
-						ui.label(RichText::new(format!("Solution found in {} states considered", states)).color(Color32::GREEN));
-						// ui.label(format!("Solution: {:?}", moves));
+						ui.label(
+							RichText::new(format!("Solution found in {} states considered", states))
+								.color(Color32::GREEN),
+						);
+						ui.label("Notes: if states =0 it is because the solution was cached");
 					}
 					Computation::Failed {
 						total_states: states,
 					} => {
-						ui.label(RichText::new(format!(
-							"No solution found, with {} states considered",
-							states
-						)).color(Color32::RED));
+						ui.label(
+							RichText::new(format!(
+								"No solution found, with {} states considered",
+								states
+							))
+							.color(Color32::RED),
+						);
 					}
 				}
 			}
