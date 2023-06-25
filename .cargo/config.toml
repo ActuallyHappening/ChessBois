@@ -14,12 +14,12 @@ cw = "c --target wasm32-unknown-unknown"
 linker = "clang"
 rustflags = ["-Clink-arg=-fuse-ld=lld", "-Zshare-generics=y"]
 
-[target.x86_64-apple-darwin]
-rustflags = [
-    "-C",
-    "link-arg=-fuse-ld=/usr/local/opt/llvm/bin/ld64.lld",
-    # "-Zshare-generics=y",
-]
+# [target.x86_64-apple-darwin]
+# rustflags = [
+#     "-C",
+#     "link-arg=-fuse-ld=/usr/local/opt/llvm/bin/ld64.lld",
+#     # "-Zshare-generics=y",
+# ]
 
 [target.aarch64-apple-darwin]
 rustflags = [

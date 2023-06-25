@@ -35,6 +35,15 @@ impl PartialComputation {
 			},
 		}
 	}
+
+	fn map(self, f: impl FnOnce(Moves) -> Moves) -> Self {
+		match self {
+			Self::Successful { solution } => Self::Successful {
+				solution: f(solution),
+			},
+			Self::Failed => Self::Failed,
+		}
+	}
 }
 
 impl From<Option<Moves>> for PartialComputation {
@@ -69,8 +78,7 @@ impl<P: ChessPiece> ImplementedAlgorithms<P> {
 	pub async fn tour_computation(&self, options: BoardOptions, start: ChessPoint) -> Computation {
 		match self {
 			Self::Warnsdorf(piece) => warnsdorf_tour_repeatless(piece, options, start),
-			// Self::BruteRecursive(piece) => brute_recursive_tour_repeatless_cached(piece, options, start).await,
-			_ => unimplemented!()
+			Self::BruteRecursive(piece) => brute_recursive_tour_repeatless_cached(piece, options, start).await,
 		}
 	}
 }
@@ -247,7 +255,7 @@ pub async fn brute_recursive_tour_repeatless_cached<P: ChessPiece + 'static>(
 	piece: &P,
 	options: BoardOptions,
 	start: ChessPoint,
-) -> Option<Moves> {
+) -> Computation {
 	let all_available_points = options.get_available_points();
 	let num_moves_required = all_available_points.len() as u8 - 1;
 
@@ -260,7 +268,7 @@ pub async fn brute_recursive_tour_repeatless_cached<P: ChessPiece + 'static>(
 			let mut moves = moves.into_iter().rev().collect::<Vec<Move>>();
 			moves.push(Move::new(start, start));
 			moves.into()
-		})
+		}).add_state_count(state_counter)
 }
 
 async fn try_move_recursive_cached<P: ChessPiece + 'static>(
@@ -269,14 +277,14 @@ async fn try_move_recursive_cached<P: ChessPiece + 'static>(
 	attempting_board: Board,
 	current_pos: ChessPoint,
 	state_counter: &mut u128,
-) -> Option<Moves> {
+) -> PartialComputation {
 	let state = State {
 		start: current_pos,
 		board: attempting_board.clone(),
 	};
 	if let Some(solution) = try_get_cached_solution::<P>(&state) {
 		info!("Cache hit! Len: {}", solution.len());
-		Some(solution)
+		Some(solution).into()
 	} else if let PartialComputation::Successful { solution } = try_move_recursive(
 		num_moves_required,
 		piece,
@@ -285,9 +293,9 @@ async fn try_move_recursive_cached<P: ChessPiece + 'static>(
 		state_counter,
 	) {
 		add_solution_to_cache::<P>(state, solution.clone());
-		Some(solution)
+		Some(solution).into()
 	} else {
-		None
+		None.into()
 	}
 }
 
