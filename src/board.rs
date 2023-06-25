@@ -176,7 +176,14 @@ fn setup(
 	commands.insert_resource(current_options);
 	commands.init_resource::<Algorithm>();
 
-	spawn_cells(&mut commands, &options, &mut meshes, &mut materials, &mut ass, alg);
+	spawn_cells(
+		&mut commands,
+		&options,
+		&mut meshes,
+		&mut materials,
+		&mut ass,
+		alg,
+	);
 	// spawn_visualization_from_options(&options, &mut commands, &mut meshes, &mut materials);
 
 	// spawn_left_sidebar_ui(&mut commands);
@@ -186,7 +193,7 @@ use cells::*;
 mod cells {
 	use msrc_q11::CellOption;
 
-	use super::{*, cached_info::CellMark};
+	use super::{cached_info::CellMark, *};
 	use crate::CELL_DISABLED_COLOUR;
 
 	pub fn spawn_cells(
@@ -203,7 +210,9 @@ mod cells {
 
 		for point in options.get_all_points() {
 			let colour = compute_colour(&point, Some(&options), start);
-			spawn_cell(point, &options, colour, commands, meshes, materials, ass, alg);
+			spawn_cell(
+				point, &options, colour, commands, meshes, materials, ass, alg,
+			);
 		}
 	}
 
@@ -250,7 +259,7 @@ mod cells {
 		commands.spawn((
 			PbrBundle {
 				mesh,
-				transform: transform.clone(),
+				transform,
 				material: materials.add(StandardMaterial::from(colour)),
 				..default()
 			},
@@ -263,25 +272,25 @@ mod cells {
 			OnPointer::<Click>::run_callback(toggle_cell_availability),
 		));
 
-		// if let Some(mark) = cached_info::get(&at, options, &Algorithm::Warnsdorf) {
-		if let Some(mark) = Some(CellMark::Failed) {
+		if let Some(mark) = cached_info::get(&at, options, &Algorithm::Warnsdorf) {
+		// if let Some(mark) = Some(CellMark::Succeeded) {
+			let quad = shape::Quad::new(Vec2::new(
+				// width
+				CELL_SIZE, // height
+				CELL_SIZE,
+			));
+			let mesh = meshes.add(Mesh::from(quad));
+
+			let mut transform = transform;
+			transform.translation += Vec3::Y * CELL_DEPTH / 2.;
+
 			match mark {
 				CellMark::Failed => {
-					let texture_handle = ass.load("images/XMark.png");
 					let material_handle = materials.add(StandardMaterial {
-						base_color_texture: Some(texture_handle),
+						base_color_texture: Some(ass.load("images/XMark.png")),
+						alpha_mode: AlphaMode::Blend,
 						..default()
 					});
-					
-					let quad = shape::Quad::new(Vec2::new(
-						// width
-						CELL_SIZE,
-						// height
-						CELL_SIZE,
-					));
-					let mesh = meshes.add(Mesh::from(quad));
-
-					let transform = transform;
 
 					commands.spawn(PbrBundle {
 						mesh,
@@ -291,7 +300,18 @@ mod cells {
 					});
 				}
 				CellMark::Succeeded => {
+					let material_handle = materials.add(StandardMaterial {
+						base_color_texture: Some(ass.load("images/TickMark.png")),
+						alpha_mode: AlphaMode::Blend,
+						..default()
+					});
 
+					commands.spawn(PbrBundle {
+						mesh,
+						material: material_handle,
+						transform,
+						..default()
+					});
 				}
 			}
 		}
@@ -435,7 +455,14 @@ mod cells {
 			despawn_visualization(&mut commands, vis);
 			despawn_cells(&mut commands, cells);
 
-			spawn_cells(&mut commands, &new_options, &mut meshes, &mut materials, &mut ass, Some(alg));
+			spawn_cells(
+				&mut commands,
+				&new_options,
+				&mut meshes,
+				&mut materials,
+				&mut ass,
+				Some(alg),
+			);
 		}
 	}
 }
@@ -576,11 +603,15 @@ mod visualization {
 					solution: moves,
 					explored_states: states,
 				} => {
-					info!("{} states visited, {} already exists", states, viz.iter().count());
+					info!(
+						"{} states visited, {} already exists",
+						states,
+						viz.iter().count()
+					);
 
 					if viz.iter().count() == 0 {
 						// despawn_visualization(&mut commands, viz);
-					spawn_visualization(
+						spawn_visualization(
 							moves,
 							options.current.options.clone(),
 							&mut commands,
@@ -592,7 +623,7 @@ mod visualization {
 				Computation::Failed {
 					total_states: states,
 				} => {
-					despawn_visualization(&mut commands, viz);
+					// despawn_visualization(&mut commands, viz);
 					info!("{} but No solution found!", states);
 				}
 			}
