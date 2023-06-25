@@ -245,12 +245,14 @@ mod compute {
 
 	/// When / how to run [get_computation], + cached_info
 	/// + mark reloading
+	#[allow(clippy::too_many_arguments)]
 	pub fn handle_automatic_computation(
 		mut commands: Commands,
 		task: Option<ResMut<ComputationTask>>,
 		alg: Res<Algorithm>,
 		options: Res<CurrentOptions>,
 
+		cells: Query<(Entity, &ChessPoint), With<CellMarkMarker>>,
 		mut ass: ResMut<AssetServer>,
 		mut meshes: ResMut<Assets<Mesh>>,
 		mut materials: ResMut<Assets<StandardMaterial>>,
@@ -269,11 +271,13 @@ mod compute {
 			);
 			mark_reload_cell(
 				&options.selected_start.unwrap(),
-				&mut ass,
+				cells,
 				alg,
+				options,
 				&mut commands,
 				&mut meshes,
 				&mut materials,
+				&mut ass,
 			)
 		}
 	}

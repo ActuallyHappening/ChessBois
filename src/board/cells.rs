@@ -1,6 +1,10 @@
 use super::{cached_info::CellMark, *};
 use crate::CELL_DISABLED_COLOUR;
+use bevy::transform;
 use msrc_q11::CellOption;
+
+#[derive(Component)]
+pub struct CellMarkMarker;
 
 pub fn spawn_cells(
 	commands: &mut Commands,
@@ -47,7 +51,11 @@ fn compute_colour(
 	}
 }
 
-#[allow(clippy::too_many_arguments)]
+fn cell_get_transform(at: ChessPoint, options: &BoardOptions) -> Transform {
+	Transform::from_translation(get_spacial_coord(options, at))
+		.with_rotation(Quat::from_rotation_x(-TAU / 4.))
+}
+
 fn spawn_cell(
 	at: ChessPoint,
 	options: &BoardOptions,
@@ -58,8 +66,7 @@ fn spawn_cell(
 	ass: &mut ResMut<AssetServer>,
 	alg: Option<&Algorithm>,
 ) {
-	let transform = Transform::from_translation(get_spacial_coord(options, at))
-		.with_rotation(Quat::from_rotation_x(-TAU / 4.));
+	let transform = cell_get_transform(at, options);
 	let mesh = meshes.add(shape::Box::new(CELL_SIZE, CELL_SIZE, CELL_DEPTH).into());
 
 	commands.spawn((
@@ -78,52 +85,73 @@ fn spawn_cell(
 		OnPointer::<Click>::run_callback(toggle_cell_availability),
 	));
 
-	if let Some(mark) = cached_info::get(&at, options, &Algorithm::Warnsdorf) {
-		// if let Some(mark) = Some(CellMark::Succeeded) {
-		let quad = shape::Quad::new(Vec2::new(
-			// width
-			CELL_SIZE, // height
-			CELL_SIZE,
-		));
-		let mesh = meshes.add(Mesh::from(quad));
+	spawn_mark(
+		at, options, transform, alg, commands, meshes, materials, ass,
+	);
+}
 
-		let mut transform = transform;
-		transform.translation += Vec3::Y * CELL_DEPTH / 2.;
+fn spawn_mark(
+	at: ChessPoint,
+	options: &BoardOptions,
 
-		match mark {
-			CellMark::Failed => {
-				let material_handle = materials.add(StandardMaterial {
-					base_color_texture: Some(ass.load("images/XMark.png")),
-					alpha_mode: AlphaMode::Blend,
-					..default()
-				});
+	transform: Transform,
 
-				commands.spawn((
-					PbrBundle {
-						mesh,
-						material: material_handle,
-						transform,
+	alg: Option<&Algorithm>,
+	commands: &mut Commands,
+	meshes: &mut ResMut<Assets<Mesh>>,
+	materials: &mut ResMut<Assets<StandardMaterial>>,
+	ass: &mut ResMut<AssetServer>,
+) {
+	if let Some(alg) = alg {
+		if let Some(mark) = cached_info::get(&at, options, alg) {
+			// if let Some(mark) = Some(CellMark::Succeeded) {
+			let quad = shape::Quad::new(Vec2::new(
+				// width
+				CELL_SIZE, // height
+				CELL_SIZE,
+			));
+			let mesh = meshes.add(Mesh::from(quad));
+
+			let mut transform = transform;
+			transform.translation += Vec3::Y * CELL_DEPTH / 2.;
+
+			match mark {
+				CellMark::Failed => {
+					let material_handle = materials.add(StandardMaterial {
+						base_color_texture: Some(ass.load("images/XMark.png")),
+						alpha_mode: AlphaMode::Blend,
 						..default()
-					},
-					at,
-				));
-			}
-			CellMark::Succeeded => {
-				let material_handle = materials.add(StandardMaterial {
-					base_color_texture: Some(ass.load("images/TickMark.png")),
-					alpha_mode: AlphaMode::Blend,
-					..default()
-				});
+					});
 
-				commands.spawn((
-					PbrBundle {
-						mesh,
-						material: material_handle,
-						transform,
+					commands.spawn((
+						PbrBundle {
+							mesh,
+							material: material_handle,
+							transform,
+							..default()
+						},
+						at,
+						CellMarkMarker {},
+					));
+				}
+				CellMark::Succeeded => {
+					let material_handle = materials.add(StandardMaterial {
+						base_color_texture: Some(ass.load("images/TickMark.png")),
+						alpha_mode: AlphaMode::Blend,
 						..default()
-					},
-					at,
-				));
+					});
+
+					commands.spawn((
+						PbrBundle {
+							mesh,
+							material: material_handle,
+							transform,
+							..default()
+						},
+						at,
+						CellMarkMarker {},
+					));
+				}
 			}
 		}
 	}
@@ -132,20 +160,36 @@ fn spawn_cell(
 /// Called to destroy + create a cell, to reload its marks
 pub fn mark_reload_cell(
 	cell: &ChessPoint,
-	cells: Query<(Entity, &ChessPoint)>,
+	marks: Query<(Entity, &ChessPoint), With<CellMarkMarker>>,
 	alg: &Algorithm,
+	options: &Options,
 
-	ass: &mut ResMut<AssetServer>,
 	commands: &mut Commands,
 	meshes: &mut ResMut<Assets<Mesh>>,
 	materials: &mut ResMut<Assets<StandardMaterial>>,
+	ass: &mut ResMut<AssetServer>,
 ) {
-	// info!("reloading cell {}", cell);
+	info!("reloading cell {}", cell);
 
-	cells
+	// remove
+	marks
 		.iter()
 		.filter(|(_, cp)| cp == &cell)
-		.for_each(|(e, _)| commands.entity(e).despawn_recursive())
+		.inspect(|g| println!("G: {g:?}"))
+		.for_each(|(e, _)| commands.entity(e).despawn_recursive());
+
+	let colour = compute_colour(cell, Some(&options.options), options.selected_start);
+	let transform = cell_get_transform(*cell, &options.options);
+	spawn_mark(
+		*cell,
+		&options.options,
+		transform,
+		Some(alg),
+		commands,
+		meshes,
+		materials,
+		ass
+	);
 }
 
 /// Changes selected cell
