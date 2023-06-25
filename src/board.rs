@@ -469,7 +469,7 @@ mod visualization {
 		// info!("Transform: {:?}", transform);
 		// info!("Angle: {:?}, Length: {:?}", angle, length);
 
-		let mesh_thin_rectangle = meshes.add(shape::Box::new(length, 1., 1.).into());
+		let mesh_thin_rectangle = meshes.add(shape::Box::new(length, VISUALIZATION_DIMENSIONS.x, VISUALIZATION_DIMENSIONS.y).into());
 
 		commands.spawn((
 			PbrBundle {
