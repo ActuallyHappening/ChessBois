@@ -1,5 +1,7 @@
 use bevy::prelude::*;
+use bevy::tasks::AsyncComputeTaskPool;
 use bevy_mod_picking::prelude::*;
+use msrc_q11::*;
 use msrc_q11::{algs::ImplementedAlgorithms, pieces::ChessPiece, BoardOptions, ChessPoint};
 use std::f32::consts::TAU;
 use strum::IntoEnumIterator;
@@ -15,6 +17,7 @@ impl Plugin for BoardPlugin {
 			.add_event::<NewBoardCellOptions>()
 			.add_startup_system(setup)
 			.add_system(spawn_left_sidebar_ui)
+			.add_system(right_sidebar_ui)
 			.add_plugins(
 				DefaultPickingPlugins
 					.build()
@@ -54,7 +57,7 @@ pub enum Algorithm {
 	#[default]
 	Warnsdorf,
 
-	#[strum(serialize = "Brute Force (uncached)")]
+	#[strum(serialize = "Brute Force")]
 	BruteRecursive,
 }
 
@@ -76,7 +79,6 @@ impl Algorithm {
 			This algorithm is always guaranteed to terminate in finite time, but that time complexity is exponential compared with number of cells, so \
 			large boards with no solutions will take a long time to solve. In worst case scenario, since it is brute force, it will check every possible \
 			knights tour before exiting with no solution! However, if Warnsdorf's algorithm finds a solution, this program will find that solution first.
-			There is an optimization that can be applied, i.e. caching pre-computed results.
 			",
 		}
 	}
@@ -344,13 +346,7 @@ mod cells {
 
 			// info!("New starting point: {}", new_starting_point.new);
 			despawn_visualization(&mut commands, vis);
-			spawn_visualizations_from_options(
-				&new_options,
-				algs,
-				&mut commands,
-				&mut meshes,
-				&mut materials,
-			);
+			begin_showing_visualizations(&new_options, algs, &mut commands, &mut meshes, &mut materials);
 		}
 	}
 
@@ -381,10 +377,44 @@ mod cells {
 	}
 }
 
+mod compute {
+	use super::*;
+	use bevy::tasks::Task;
+	use msrc_q11::algs::Computation;
+
+	#[derive(Resource, Debug)]
+	pub struct ComputationTask(Task<Computation>);
+
+	pub fn begin_background_compute<P: ChessPiece + Send + Sync + 'static>(
+		alg: ImplementedAlgorithms<P>,
+		options: Options,
+		commands: &mut Commands,
+		meshes: &mut ResMut<Assets<Mesh>>,
+		materials: &mut ResMut<Assets<StandardMaterial>>,
+	) {
+		let thread_pool = AsyncComputeTaskPool::get();
+		let (start, options) = (options.selected_start.unwrap(), options.options);
+
+		commands.insert_resource(ComputationTask(thread_pool.spawn(async move {
+			alg
+				.tour_computation(options.clone(), start)
+				.await
+		})));
+	}
+
+	#[tokio::main]
+	pub async fn get_computation(commands: &mut Commands, task: Res<ComputationTask>) -> Option<Computation> {
+		let task = task.into_inner();
+
+
+		unimplemented!()
+	}
+}
+
 use visualization::*;
 mod visualization {
-	use super::*;
-	use msrc_q11::{algs::ImplementedAlgorithms, pieces::StandardKnight, Move};
+	use super::{compute::begin_background_compute, *};
+	use msrc_q11::{algs::ImplementedAlgorithms, pieces::StandardKnight, Move, Moves};
 
 	#[allow(dead_code)]
 	#[derive(Component, Debug, Clone)]
@@ -393,10 +423,9 @@ mod visualization {
 		to: ChessPoint,
 	}
 
-	pub fn spawn_visualizations_from_options(
+	pub fn begin_showing_visualizations(
 		options: &Options,
 		alg: Res<Algorithm>,
-
 		commands: &mut Commands,
 		meshes: &mut ResMut<Assets<Mesh>>,
 		materials: &mut ResMut<Assets<StandardMaterial>>,
@@ -407,20 +436,19 @@ mod visualization {
 				return;
 			}
 
-			let options = options.options.clone();
 			let piece = StandardKnight {};
-			let algs = alg.to_impl(piece);
+			let solver = alg.to_impl(piece);
 
-			match algs.tour_no_repeat(options.clone(), start) {
-				Some(moves) => {
-					for Move { from, to } in moves.iter() {
-						spawn_path_line(&from, &to, &options, VISUALIZATION_SELECTED_COLOUR, commands, meshes, materials)
-					}
-				}
-				None => {
-					info!("No solution found!");
-				}
-			}
+			begin_background_compute(solver, options.clone(), commands, meshes, materials);
+
+			// match algs.tour_no_repeat(options.clone(), start) {
+			// 	Some(moves) => {
+			// 		// spawn_visualization(moves, options, commands, meshes, materials)
+			// 	}
+			// 	None => {
+			// 		info!("No solution found!");
+			// 	}
+			// }
 		}
 
 		// spawn_path_line(
@@ -431,6 +459,26 @@ mod visualization {
 		// 	&ChessPoint::new(4, 4),
 		// 	&board,
 		// )
+	}
+
+	pub fn spawn_visualization(
+		moves: Moves,
+		options: BoardOptions,
+		commands: &mut Commands,
+		meshes: &mut ResMut<Assets<Mesh>>,
+		materials: &mut ResMut<Assets<StandardMaterial>>,
+	) {
+		for Move { from, to } in moves.iter() {
+			spawn_path_line(
+				&from,
+				&to,
+				&options,
+				VISUALIZATION_SELECTED_COLOUR,
+				commands,
+				meshes,
+				materials,
+			)
+		}
 	}
 
 	pub fn despawn_visualization(
@@ -469,7 +517,14 @@ mod visualization {
 		// info!("Transform: {:?}", transform);
 		// info!("Angle: {:?}, Length: {:?}", angle, length);
 
-		let mesh_thin_rectangle = meshes.add(shape::Box::new(length, VISUALIZATION_DIMENSIONS.x, VISUALIZATION_DIMENSIONS.y).into());
+		let mesh_thin_rectangle = meshes.add(
+			shape::Box::new(
+				length,
+				VISUALIZATION_DIMENSIONS.x,
+				VISUALIZATION_DIMENSIONS.y,
+			)
+			.into(),
+		);
 
 		commands.spawn((
 			PbrBundle {
@@ -566,6 +621,13 @@ mod ui {
 			// 	current_options.current.options
 			// ));
 			ui.label(format!("Options selected: {}", old_options.get_description()));
+		});
+	}
+
+	pub fn right_sidebar_ui(mut contexts: EguiContexts) {
+		egui::SidePanel::right("right_sidebar").show(contexts.ctx_mut(), |ui| {
+			ui.heading("Right Sidebar");
+			ui.label("This is the right sidebar");
 		});
 	}
 }
