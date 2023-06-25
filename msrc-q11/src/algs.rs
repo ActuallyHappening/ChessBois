@@ -120,9 +120,11 @@ impl Board {
 		}
 		moves
 	}
-	fn get_degree(&self, p: &ChessPoint, piece: &impl ChessPiece) -> u16 {
+	fn get_degree(&self, p: &ChessPoint, piece: &impl ChessPiece, state_counter: &mut u128) -> u16 {
 		let mut degree = 0;
 		for &(dx, dy) in piece.relative_moves() {
+			*state_counter += 1;
+			
 			let p = p.mov(&(dx, dy));
 			if self.get(&p) == Some(CellState::NeverOccupied) {
 				degree += 1;
@@ -142,7 +144,7 @@ pub fn warnsdorf_tour_repeatless<P: ChessPiece>(
 	let mut current = start;
 
 	let num_available_cells = board.cell_states.len();
-	let mut states_visited_counter = 0_u128;
+	let mut state_counter = 0_u128;
 
 	for _ in 1..num_available_cells {
 		if !board.cell_states.contains_key(&current) {
@@ -157,10 +159,10 @@ pub fn warnsdorf_tour_repeatless<P: ChessPiece>(
 		let mut min_degree = u16::MAX;
 		for &(dx, dy) in piece.relative_moves() {
 			let p = current.mov(&(dx, dy));
-			states_visited_counter += 1;
+			state_counter += 1;
 
 			if board.get(&p) == Some(CellState::NeverOccupied) {
-				let degree = board.get_degree(&p, piece);
+				let degree = board.get_degree(&p, piece, &mut state_counter);
 				if degree < min_degree {
 					min_degree = degree;
 					next = Some(p);
@@ -173,14 +175,14 @@ pub fn warnsdorf_tour_repeatless<P: ChessPiece>(
 			current = next;
 		} else {
 			return Computation::Failed {
-				total_states: states_visited_counter,
+				total_states: state_counter,
 			};
 		}
 	}
 
 	Computation::Successful {
 		solution: moves.into(),
-		explored_states: states_visited_counter,
+		explored_states: state_counter,
 	}
 }
 
@@ -208,7 +210,7 @@ fn try_move_recursive(
 		return PartialComputation::Failed;
 	}
 	// sort by degree
-	available_moves.sort_by_cached_key(|p| attempting_board.get_degree(p, piece));
+	available_moves.sort_by_cached_key(|p| attempting_board.get_degree(p, piece, state_counter));
 	// println!("Available moves: {:?}", available_moves);
 
 	let mut moves = None;

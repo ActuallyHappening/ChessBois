@@ -393,6 +393,9 @@ mod compute {
 	#[derive(Resource, Debug)]
 	pub struct ComputationTask(Task<Computation>);
 
+	#[derive(Resource, Debug)]
+	pub struct ComputationResult(Computation);
+
 	pub fn begin_background_compute<P: ChessPiece + Send + Sync + 'static>(
 		alg: ImplementedAlgorithms<P>,
 		options: Options,
@@ -416,6 +419,7 @@ mod compute {
 		let ret = future::block_on(future::poll_once(&mut task.0)).unwrap();
 
 		commands.remove_resource::<ComputationTask>();
+		commands.insert_resource(ComputationResult(ret.clone()));
 
 		Some(ret)
 	}
@@ -451,15 +455,23 @@ mod visualization {
 		if let Some(task) = task {
 			let solution = get_computation(&mut commands, task).unwrap();
 			match solution {
-				Computation::Successful { solution: moves, explored_states: states } => spawn_visualization(
-					moves,
-					options.current.options.clone(),
-					&mut commands,
-					&mut meshes,
-					&mut materials,
-				),
-				Computation::Failed { total_states: states } => {
-					info!("No solution found!");
+				Computation::Successful {
+					solution: moves,
+					explored_states: states,
+				} => {
+					info!("{} states visited", states);
+					spawn_visualization(
+						moves,
+						options.current.options.clone(),
+						&mut commands,
+						&mut meshes,
+						&mut materials,
+					)
+				}
+				Computation::Failed {
+					total_states: states,
+				} => {
+					info!("{} but No solution found!", states);
 				}
 			}
 		}
@@ -657,19 +669,19 @@ mod ui {
 				}
 			});
 			ui.label(current_alg.get_description());
-
-			// ui.label(format!(
-			// 	"Current Options: \n{}",
-			// 	current_options.current.options
-			// ));
-			ui.label(format!("Options selected: {}", old_options.get_description()));
 		});
 	}
 
-	pub fn right_sidebar_ui(mut contexts: EguiContexts) {
-		// egui::SidePanel::right("right_sidebar").show(contexts.ctx_mut(), |ui| {
-		// 	ui.heading("Right Sidebar");
-		// 	ui.label("This is the right sidebar");
-		// });
+	pub fn right_sidebar_ui(mut contexts: EguiContexts, options: Res<CurrentOptions>, alg: Res<Algorithm>) {
+		let options = &options.current;
+		egui::SidePanel::right("right_sidebar").show(contexts.ctx_mut(), |ui| {
+			ui.heading("Results Panel");
+
+			if let Some(start) = &options.selected_start {
+				let alg_selected: &str = alg.into_inner().into();
+				ui.label(format!("Current info: Starting at {start} with {} algorithm {}", alg_selected, options.options.get_description()));
+			}
+
+		});
 	}
 }
