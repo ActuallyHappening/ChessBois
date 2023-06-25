@@ -18,6 +18,32 @@ pub enum Computation {
 	},
 }
 
+enum PartialComputation {
+	Successful { solution: Moves },
+	Failed,
+}
+
+impl PartialComputation {
+	fn add_state_count(self, count: u128) -> Computation {
+		match self {
+			Self::Successful { solution } => Computation::Successful {
+				solution,
+				explored_states: count,
+			},
+			Self::Failed => Computation::Failed { total_states: count },
+		}
+	}
+}
+
+impl From<Option<Moves>> for PartialComputation {
+	fn from(moves: Option<Moves>) -> Self {
+		match moves {
+			Some(moves) => Self::Successful { solution: moves },
+			None => Self::Failed,
+		}
+	}
+}
+
 pub enum ImplementedAlgorithms<P: ChessPiece + 'static> {
 	Warnsdorf(P),
 
@@ -158,39 +184,28 @@ pub fn warnsdorf_tour_repeatless<P: ChessPiece>(
 	}
 }
 
-pub fn brute_recursive_tour_repeatless<P: ChessPiece>(
-	piece: &P,
-	options: BoardOptions,
-	start: ChessPoint,
-) -> Option<Moves> {
-	let all_available_points = options.get_available_points();
-	let num_moves_required = all_available_points.len() as u8 - 1;
-
-	let board = Board::from_options(options);
-	try_move_recursive(num_moves_required, piece, board, start)
-		// .map(|moves| moves.into_iter().rev().collect())
-		.map(|moves| {
-			let mut moves = moves.into_iter().rev().collect::<Vec<Move>>();
-			moves.push(Move::new(start, start));
-			moves.into()
-		})
-}
-
 fn try_move_recursive(
 	num_moves_required: u8,
 	piece: &impl ChessPiece,
 	attempting_board: Board,
 	current_pos: ChessPoint,
-) -> Option<Moves> {
+	state_counter: &mut u128,
+) -> PartialComputation {
+	*state_counter += 1;
+
 	if num_moves_required == 0 {
 		// println!("Found solution!");
-		return Some(Vec::new().into());
+		// return Some(Vec::new().into());
+		return PartialComputation::Successful {
+			solution: vec![].into(),
+		};
 	}
 
 	let mut available_moves = attempting_board.get_available_moves_from(&current_pos, piece);
 	if available_moves.is_empty() {
 		// println!("No moves available");
-		return None;
+		// return None;
+		return PartialComputation::Failed;
 	}
 	// sort by degree
 	available_moves.sort_by_cached_key(|p| attempting_board.get_degree(p, piece));
@@ -208,11 +223,12 @@ fn try_move_recursive(
 			piece,
 			board_with_potential_move,
 			potential_next_move,
+			state_counter,
 		);
 
 		match result {
-			None => {}
-			Some(mut working_moves) => {
+			PartialComputation::Failed => {},
+			PartialComputation::Successful { solution: mut working_moves } => {
 				// initially, working_moves will be empty
 				// first iteration must add move from current_pos to potential_next_move
 				// this repeats
@@ -224,7 +240,7 @@ fn try_move_recursive(
 		};
 	}
 
-	moves
+	moves.into()
 }
 
 pub async fn brute_recursive_tour_repeatless_cached<P: ChessPiece + 'static>(
@@ -235,8 +251,10 @@ pub async fn brute_recursive_tour_repeatless_cached<P: ChessPiece + 'static>(
 	let all_available_points = options.get_available_points();
 	let num_moves_required = all_available_points.len() as u8 - 1;
 
+	let mut state_counter = 0_u128;
+
 	let board = Board::from_options(options);
-	try_move_recursive_cached(num_moves_required, piece, board, start)
+	try_move_recursive_cached(num_moves_required, piece, board, start, &mut state_counter)
 		.await
 		.map(|moves| {
 			let mut moves = moves.into_iter().rev().collect::<Vec<Move>>();
@@ -250,6 +268,7 @@ async fn try_move_recursive_cached<P: ChessPiece + 'static>(
 	piece: &P,
 	attempting_board: Board,
 	current_pos: ChessPoint,
+	state_counter: &mut u128,
 ) -> Option<Moves> {
 	let state = State {
 		start: current_pos,
@@ -258,9 +277,13 @@ async fn try_move_recursive_cached<P: ChessPiece + 'static>(
 	if let Some(solution) = try_get_cached_solution::<P>(&state) {
 		info!("Cache hit! Len: {}", solution.len());
 		Some(solution)
-	} else if let Some(solution) =
-		try_move_recursive(num_moves_required, piece, attempting_board, current_pos)
-	{
+	} else if let PartialComputation::Successful { solution } = try_move_recursive(
+		num_moves_required,
+		piece,
+		attempting_board,
+		current_pos,
+		state_counter,
+	) {
 		add_solution_to_cache::<P>(state, solution.clone());
 		Some(solution)
 	} else {
