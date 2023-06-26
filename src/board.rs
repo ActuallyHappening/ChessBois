@@ -480,25 +480,6 @@ mod visualization {
 		}
 	}
 
-	/// Call to begin process of showing new solution
-	pub fn begin_showing_new_visualization(
-		options: &Options,
-		commands: &mut Commands,
-		mma: &mut ResSpawning,
-	) {
-		if let Some(start) = options.selected_start {
-			if options.options.get_unavailable_points().contains(&start) {
-				// debug!("Start point is disabled!");
-				return;
-			}
-
-			let piece = StandardKnight {};
-			let solver = options.selected_algorithm.to_impl(piece);
-
-			begin_background_compute(solver, options.clone(), commands);
-		}
-	}
-
 	/// Actually spawn entities of new solution
 	pub fn spawn_visualization(
 		moves: Moves,
@@ -639,6 +620,7 @@ mod ui {
 					if ui.button(text).clicked() {
 						new_board_event.send(NewOptions::from_options(Options {
 							selected_algorithm: alg,
+							selected_start: None,
 							..options.clone()
 						}));
 					}

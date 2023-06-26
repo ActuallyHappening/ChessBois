@@ -18,7 +18,8 @@ pub enum Computation {
 	},
 }
 
-enum PartialComputation {
+#[derive(Clone)]
+pub enum PartialComputation {
 	Successful { solution: Moves },
 	Failed,
 }
@@ -79,8 +80,12 @@ impl<P: ChessPiece> ImplementedAlgorithms<P> {
 	pub async fn tour_computation(&self, options: BoardOptions, start: ChessPoint) -> Computation {
 		match self {
 			Self::Warnsdorf(piece) => warnsdorf_tour_repeatless(piece, options, start),
-			Self::BruteRecursiveCached(piece) => brute_recursive_tour_repeatless_cached(piece, options, start).await,
-			Self::BruteRecursiveNotCached(piece) => brute_recursive_tour_repeatless_not_cached(piece, options, start).await,
+			Self::BruteRecursiveCached(piece) => {
+				brute_recursive_tour_repeatless_cached(piece, options, start).await
+			}
+			Self::BruteRecursiveNotCached(piece) => {
+				brute_recursive_tour_repeatless_not_cached(piece, options, start).await
+			}
 		}
 	}
 }
@@ -269,7 +274,8 @@ pub async fn brute_recursive_tour_repeatless_cached<P: ChessPiece + 'static>(
 			let mut moves = moves.into_iter().rev().collect::<Vec<Move>>();
 			moves.push(Move::new(start, start));
 			moves.into()
-		}).add_state_count(state_counter)
+		})
+		.add_state_count(state_counter)
 }
 
 pub async fn brute_recursive_tour_repeatless_not_cached<P: ChessPiece + 'static>(
@@ -288,7 +294,8 @@ pub async fn brute_recursive_tour_repeatless_not_cached<P: ChessPiece + 'static>
 			let mut moves = moves.into_iter().rev().collect::<Vec<Move>>();
 			moves.push(Move::new(start, start));
 			moves.into()
-		}).add_state_count(state_counter)
+		})
+		.add_state_count(state_counter)
 }
 
 async fn try_move_recursive_cached<P: ChessPiece + 'static>(
@@ -303,19 +310,27 @@ async fn try_move_recursive_cached<P: ChessPiece + 'static>(
 		board: attempting_board.clone(),
 	};
 	if let Some(solution) = try_get_cached_solution::<P>(&state) {
-		info!("Cache hit! Len: {}", solution.len());
-		Some(solution).into()
-	} else if let PartialComputation::Successful { solution } = try_move_recursive(
-		num_moves_required,
-		piece,
-		attempting_board,
-		current_pos,
-		state_counter,
-	) {
-		add_solution_to_cache::<P>(state, solution.clone());
-		Some(solution).into()
+		match solution {
+			PartialComputation::Failed => info!("Found a cached failure"),
+			PartialComputation::Successful { ref solution } => {
+				info!("Found a cached success, len: {}", solution.len())
+			}
+		}
+		solution
 	} else {
-		None.into()
+		let comp = try_move_recursive(
+			num_moves_required,
+			piece,
+			attempting_board,
+			current_pos,
+			state_counter,
+		);
+		if let PartialComputation::Failed = comp {
+			info!("Caching a failure");
+			add_solution_to_cache::<P>(state, comp.clone());
+		}
+
+		comp
 	}
 }
 
@@ -332,11 +347,11 @@ mod cache {
 	static CYCLE_CACHE: Lazy<Mutex<HashMap<TypeId, LruCache<State, Solution>>>> =
 		Lazy::new(|| Mutex::new(HashMap::new()));
 
-	fn new() -> LruCache<State, Moves> {
+	fn new() -> LruCache<State, Solution> {
 		LruCache::new(NonZeroUsize::new(10_000).unwrap())
 	}
 
-	type Solution = Moves;
+	type Solution = PartialComputation;
 
 	#[derive(Hash, PartialEq, Eq, Clone, Debug)]
 	pub struct State {
@@ -376,70 +391,4 @@ mod cache {
 		info!("Putting a solution in the cache");
 		cache.put(options, moves);
 	}
-}
-
-#[cfg(test)]
-mod benchmarks {
-	use crate::pieces::StandardKnight;
-
-	use super::*;
-
-	// extern crate test;
-	// use test::Bencher;
-
-	// #[bench]
-	// fn normal_square_4x4_removed(b: &mut Bencher) {
-	// 	let mut options = BoardOptions::new(8, 8);
-
-	// 	for y in 3..=6 {
-	// 		for x in 3..=6 {
-	// 			options.rm((x, y));
-	// 		}
-	// 	}
-
-	// 	let start = ChessPoint::new(1, 1);
-	// 	let piece = StandardKnight {};
-
-	// 	b.iter(move || {
-	// 		ImplementedAlgorithms::BruteRecursive(piece.clone()).tour_no_repeat(options.clone(), start)
-	// 	});
-	// }
-
-	// #[bench]
-	// fn normal_4x4_removed_minus_2(b: &mut Bencher) {
-	// 	let mut options = BoardOptions::new(8, 8);
-
-	// 	for y in 3..=6 {
-	// 		for x in 3..=6 {
-	// 			options.rm((x, y));
-	// 		}
-	// 	}
-	// 	options.add((4, 5));
-	// 	options.add((5, 4));
-
-	// 	let start = ChessPoint::new(1, 1);
-	// 	let piece = StandardKnight {};
-
-	// 	b.iter(move || {
-	// 		ImplementedAlgorithms::BruteRecursive(piece.clone()).tour_no_repeat(options.clone(), start)
-	// 	});
-	// }
-
-	// #[bench]
-	// fn normal_square_2x2_removed(b: &mut Bencher) {
-	// 	let mut options = BoardOptions::new(8, 8);
-
-	// 	for y in 4..=5 {
-	// 		for x in 4..=5 {
-	// 			options.rm((x, y));
-	// 		}
-	// 	}
-
-	// 	let start = ChessPoint::new(1, 1);
-	// 	let piece = StandardKnight {};
-
-	// 	b.iter(move || {
-	// 		ImplementedAlgorithms::BruteRecursive(piece.clone()).tour_no_repeat(options.clone(), start)
-	// 	});
-	// }
 }
