@@ -29,8 +29,8 @@ impl Plugin for BoardPlugin {
 					.disable::<DefaultHighlightingPlugin>()
 					.disable::<DebugPickingPlugin>(),
 			);
-			// .add_system(handle_new_cell_selected_event)
-			// .add_system(handle_new_board_event)
+		// .add_system(handle_new_cell_selected_event)
+		// .add_system(handle_new_board_event)
 	}
 }
 
@@ -136,6 +136,15 @@ mod top_level_types {
 			CurrentOptions { current: options }
 		}
 	}
+
+	impl Options {
+		pub fn with_start(&self, start: ChessPoint) -> Self {
+			Self {
+				selected_start: Some(start),
+				..self.clone()
+			}
+		}
+	}
 }
 
 use coords::*;
@@ -227,6 +236,7 @@ fn handle_new_options(
 
 	cells: Query<Entity, With<ChessPoint>>,
 	viz: Query<Entity, With<VisualizationComponent>>,
+	markers: Query<Entity, With<MarkerMarker>>,
 
 	mut commands: Commands,
 	mut mma: ResSpawning,
@@ -246,14 +256,16 @@ fn handle_new_options(
 
 		despawn_visualization(&mut commands, viz);
 
+		// markers
+		despawn_markers(&mut commands, markers);
+		spawn_markers(&options, &mut commands, &mut mma);
+
 		// if BoardOptions changed, despawn + re-spawn cells
 		if options.options != old_options.options || options.force_update {
 			// info!("BoardOptions changed, de-spawning + re-spawning cells & markers");
 			despawn_cells(&mut commands, cells);
-			despawn_markers();
 
 			spawn_cells(&options, &mut commands, &mut mma);
-			spawn_markers();
 		}
 
 		// begin recomputing visualization
@@ -442,7 +454,10 @@ mod visualization {
 	) {
 		if let Some(solution) = solutions.iter().next() {
 			let (solution, Options { options, .. }) = solution.clone().get();
-			if let Computation::Successful { solution: moves, ..  } = solution {
+			if let Computation::Successful {
+				solution: moves, ..
+			} = solution
+			{
 				spawn_visualization(moves, options, &mut commands, &mut mma);
 			}
 

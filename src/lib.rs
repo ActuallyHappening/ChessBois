@@ -26,7 +26,7 @@ const CELL_DISABLED_COLOUR: Color = Color::RED;
 
 const VISUALIZATION_HEIGHT: f32 = 3.;
 const VISUALIZATION_DIMENSIONS: Vec2 = Vec2::new(0.2, 0.2);
-const VISUALIZATION_SELECTED_COLOUR: Color = Color::ORANGE;
+const VISUALIZATION_SELECTED_COLOUR: Color = Color::GREEN;
 const VISUALIZATION_ALL_BASE_COLOUR: Color = Color::Rgba { red: 0., green: 1., blue: 0.1, alpha: 0.5 };
 
 const UI_ALG_ENABLED_COLOUR: Color32 = Color32::GREEN;

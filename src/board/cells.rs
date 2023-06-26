@@ -17,7 +17,11 @@ pub fn spawn_cells(options: &Options, commands: &mut Commands, mma: &mut ResSpaw
 	}
 }
 
-pub fn spawn_markers() {}
+pub fn spawn_markers(options: &Options, commands: &mut Commands, mma: &mut ResSpawning) {
+	for point in options.options.get_all_points() {
+		spawn_mark(point, options, cell_get_transform(point, &options.options), commands, mma);
+	}
+}
 
 pub fn despawn_cells(commands: &mut Commands, cells: Query<Entity, With<ChessPoint>>) {
 	for cell in cells.iter() {
@@ -25,7 +29,11 @@ pub fn despawn_cells(commands: &mut Commands, cells: Query<Entity, With<ChessPoi
 	}
 }
 
-pub fn despawn_markers() {}
+pub fn despawn_markers(commands: &mut Commands, markers: Query<Entity, With<MarkerMarker>>) {
+	for mark in markers.iter() {
+		commands.entity(mark).despawn_recursive();
+	}
+}
 
 /// Takes as much information as it can get and returns the colour the cell should be.
 ///
@@ -82,17 +90,16 @@ fn spawn_cell(
 fn spawn_mark(
 	at: ChessPoint,
 	options: &Options,
-	transform: Transform,
+	cell_transform: Transform,
 
 	commands: &mut Commands,
 	(meshes, materials, ass): &mut ResSpawning,
 ) {
-	if let Some(mark) = cached_info::get(&options) {
-		// if let Some(mark) = Some(CellMark::Succeeded) {
-		let quad = shape::Quad::new(Vec2::new(CELL_SIZE, CELL_SIZE) / 0.9);
+	if let Some(mark) = cached_info::get(&options.with_start(at)) {
+		let quad = shape::Quad::new(Vec2::new(CELL_SIZE, CELL_SIZE) * 0.7);
 		let mesh = meshes.add(Mesh::from(quad));
 
-		let mut transform = transform;
+		let mut transform = cell_transform;
 		transform.translation += Vec3::Y * CELL_DEPTH / 2.;
 
 		match mark {
@@ -110,7 +117,6 @@ fn spawn_mark(
 						transform,
 						..default()
 					},
-					at,
 					MarkerMarker {},
 				));
 			}
@@ -128,7 +134,6 @@ fn spawn_mark(
 						transform,
 						..default()
 					},
-					at,
 					MarkerMarker {},
 				));
 			}

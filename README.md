@@ -1,5 +1,5 @@
 #
-Prerequisites: `brew install llvm`
+Prerequisites: `brew install llvm && cargo install cargo-watch`
 To run: `cargo watch -x run`, or `cargo watch -q -c -w src/ -x "r -F dev"`
 To run on web: `trunk serve --open --no-default-features`
 To release: Remove feature `bevy/dynamic_linking`
