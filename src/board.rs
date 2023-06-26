@@ -3,7 +3,7 @@
 //! [NewOptions]:
 //! - Handled by [handle_new_options]
 //! - Begins new computation
-//! 
+//!
 //! Each NewOptions guarantees that the visualization will be voided/de-spawned
 //!
 //! When computation is required, start with [begin_background_compute]
@@ -288,6 +288,7 @@ mod compute {
 		let state = options.clone();
 		if options.selected_start.is_some() {
 			start_executing_task(state, move || {
+				info!("About to compute");
 				alg.tour_computation_cached(options.clone()).unwrap()
 			})
 		}
@@ -296,12 +297,39 @@ mod compute {
 	static TASK_RESULT: Mutex<Option<ComputationResult>> = Mutex::new(None);
 
 	fn start_executing_task(state: Options, task: impl FnOnce() -> Computation + Send + 'static) {
-		// create a new thread to run the task on
-		std::thread::spawn(move || {
-			let res = task();
+		#[cfg(not(target_arch = "wasm32"))]
+		{
+			use std::thread;
 
-			*TASK_RESULT.lock().unwrap() = Some(ComputationResult(res, state));
-		});
+			// create a new thread to run the task on
+			thread::spawn(move || {
+				let res = task();
+
+				*TASK_RESULT.lock().unwrap() = Some(ComputationResult(res, state));
+			});
+		}
+
+		#[cfg(target_arch = "wasm32")]
+		{
+			let res = task();
+			*TASK_RESULT.lock().unwrap() = Some(ComputationResult(res, state));	
+		}
+		// TODO: Mess around with WebWorkers & don't break audio?
+		// futures::executor::block_on(async move {
+		// 	{
+		// 		use wasm_futures_executor::ThreadPool;
+
+		// 		let pool = ThreadPool::max_threads().await.unwrap();
+
+		// 		pool.spawn_ok(async move {
+		// 			let res = task();
+
+		// 			*TASK_RESULT.lock().unwrap() = Some(ComputationResult(res, state));
+		// 		});
+		// 	}
+		// })
+
+		
 	}
 	fn poll_computation_result() -> Option<ComputationResult> {
 		(*TASK_RESULT.lock().unwrap()).clone()

@@ -61,3 +61,10 @@ linker = "x86_64-w64-mingw32-gcc"
 # cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS=lld -DCMAKE_INSTALL_PREFIX=/usr/local ../llvm
 # sudo make -j8 install # adjust `-j10` based on your number of CPU cores
 # cd ../../; rm -rf llvm-project # delete the git repo and build files to free disk space
+
+# [target.'cfg(target_arch = "wasm32")']
+# rustflags = ["-C", "target-feature=+atomics,+bulk-memory"]
+# # rustflags = ["-C", "target-feature=+atomics,+bulk-memory,+mutable-globals"]
+
+# [unstable]
+# build-std = ["panic_abort", "std"]
