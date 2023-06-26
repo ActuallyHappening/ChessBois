@@ -1,9 +1,9 @@
 set -e
 
-cargo +nightly bwindows --release
-
 TARGET_NAME=x86_64-pc-windows-gnu
 ENV_BINARY=bevy_solver
+
+cargo +nightly bwindows --release
 
 mkdir -p $ENV_BINARY.zipfolder
 cp target/$TARGET_NAME/release/$ENV_BINARY.exe $ENV_BINARY.zipfolder/
