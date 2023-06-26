@@ -1,6 +1,9 @@
 use crate::solver::{pieces::ChessPiece, *};
 use strum::{EnumIter, IntoStaticStr};
 
+mod hamiltonian;
+
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Computation {
 	// Computing {
@@ -147,7 +150,7 @@ enum CellState {
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub struct Board {
+struct Board {
 	cell_states: BTreeMap<ChessPoint, CellState>,
 }
 
@@ -191,7 +194,7 @@ impl Board {
 	}
 }
 
-pub fn warnsdorf_tour_repeatless<P: ChessPiece>(
+fn warnsdorf_tour_repeatless<P: ChessPiece>(
 	piece: &P,
 	options: BoardOptions,
 	start: ChessPoint,

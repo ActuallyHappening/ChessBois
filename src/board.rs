@@ -1,9 +1,9 @@
+use crate::solver::algs::*;
+use crate::solver::pieces::StandardKnight;
+use crate::solver::{algs::ImplementedAlgorithms, pieces::ChessPiece, BoardOptions, ChessPoint};
 use bevy::prelude::*;
 use bevy::tasks::AsyncComputeTaskPool;
 use bevy_mod_picking::prelude::*;
-use crate::solver::pieces::StandardKnight;
-use crate::solver::{algs::ImplementedAlgorithms, pieces::ChessPiece, BoardOptions, ChessPoint};
-use crate::solver::{algs::*};
 use std::f32::consts::TAU;
 
 use crate::*;
@@ -239,10 +239,13 @@ use cells::*;
 mod cells;
 
 mod compute {
-	use super::*;
-	use bevy::tasks::Task;
-	use crate::solver::algs::Computation;
+	use std::sync::Mutex;
 
+	use super::*;
+	use crate::solver::algs::Computation;
+	use bevy::tasks::Task;
+
+	/// If this resource is present, then computation is underway
 	#[derive(Resource, Debug)]
 	pub struct ComputationTask(Task<Computation>, Options);
 
@@ -283,6 +286,22 @@ mod compute {
 		}
 	}
 
+	static TASK_RESULT: Mutex<TaskResult> = Mutex::new(TaskResult::Empty);
+
+	#[derive(Clone)]
+	enum TaskResult {
+		Empty,
+		Result(Computation),
+	}
+
+	fn start_executing_task(task: &mut Task<Computation>) {
+		let res = futures::executor::block_on(task);
+		*TASK_RESULT.lock().unwrap() = TaskResult::Result(res);
+	}
+	fn poll_computation_result() -> TaskResult {
+		(*TASK_RESULT.lock().unwrap()).clone()
+	}
+
 	/// adds [ComputationResult]; Polls [ComputationTask] and returns [Computation] if ready.
 	/// Theoretically non-blocking
 	fn get_computation(
@@ -293,17 +312,18 @@ mod compute {
 		let state = task.1.clone();
 		let task = &mut task.0;
 
-		// TODO: use threading (+ web_worker on wasm)
-		fn execute_task(task: &mut Task<Computation>) -> Option<Computation> {
-			Some(futures::executor::block_on(task))
+		match poll_computation_result() {
+			TaskResult::Empty => {
+				start_executing_task(task);
+				None
+			}
+			TaskResult::Result(comp) => {
+				let res = ComputationResult(comp, state);
+
+				commands.remove_resource::<ComputationTask>();
+				Some(res)
+			}
 		}
-
-		let comp = execute_task(task)?;
-		let res = ComputationResult(comp, state);
-
-		commands.remove_resource::<ComputationTask>();
-
-		Some(res)
 	}
 
 	/// When / how to run [get_computation], sends [ComputationResult] event
@@ -333,8 +353,8 @@ mod compute {
 }
 
 mod cached_info {
-	use lru::LruCache;
 	use crate::solver::algs::Computation;
+	use lru::LruCache;
 	use once_cell::sync::Lazy;
 	use std::{num::NonZeroUsize, sync::Mutex};
 
@@ -519,12 +539,12 @@ use self::cached_info::update_cache_from_computation;
 use self::compute::{begin_background_compute, handle_automatic_computation, ComputationResult};
 mod ui {
 	use super::{compute::ComputationResult, *};
+	use crate::solver::algs::Computation;
 	use bevy_egui::{
 		egui::{Color32, RichText},
 		*,
 	};
-use strum::IntoEnumIterator;
-	use crate::solver::algs::Computation;
+	use strum::IntoEnumIterator;
 
 	pub fn spawn_left_sidebar_ui(
 		mut commands: Commands,
