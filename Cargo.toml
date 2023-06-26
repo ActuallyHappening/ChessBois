@@ -25,7 +25,6 @@ opt-level = 3
 codegen-units = 1
 lto = true
 
-
 [dependencies]
 bevy = { version = "0.10" }
 bevy_editor_pls = { version = "0.4.0", optional = false }

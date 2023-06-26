@@ -328,8 +328,6 @@ mod compute {
 		// 		});
 		// 	}
 		// })
-
-		
 	}
 	fn poll_computation_result() -> Option<ComputationResult> {
 		(*TASK_RESULT.lock().unwrap()).clone()
