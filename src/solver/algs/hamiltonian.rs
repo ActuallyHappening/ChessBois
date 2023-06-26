@@ -55,7 +55,7 @@ pub fn hamiltonian_tour_repeatless<P: ChessPiece + 'static>(
 	piece: &P,
 	options: BoardOptions,
 	start: ChessPoint,
-	only_cycle: bool,
+	cycle: bool,
 ) -> Computation {
 	assert!(options.get_available_points().contains(&start));
 
@@ -90,7 +90,8 @@ pub fn hamiltonian_tour_repeatless<P: ChessPiece + 'static>(
 
 	let start = *available_mapped_points.get(&start).unwrap();
 	let start_vec = vec![start];
-	if !only_cycle {
+	if !cycle {
+		// show any path that works
 		for valid_end_point in available_mapped_points.values() {
 			if let Some(mut path) = find_hamiltonian_path(*valid_end_point, &start_vec, &graph) {
 				path.pop();
@@ -110,6 +111,7 @@ pub fn hamiltonian_tour_repeatless<P: ChessPiece + 'static>(
 		}
 		Computation::Failed { total_states: 0 }
 	} else if let Some(path) = find_hamiltonian_path(start, &start_vec, &graph) {
+		// show only cycle
  			assert_eq!(available_points.len(), path.len() - 1);
 
  			debug!("Path found: {:?}", path);
