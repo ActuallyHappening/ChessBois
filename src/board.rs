@@ -1,8 +1,19 @@
+//! Overall structure
+//! Whenever something that could change the visualization happens, send a [NewOptions] event.
+//! [NewOptions]:
+//! - Handled by [handle_new_options]
+//! - Begins new computation
+//! 
+//! Each NewOptions guarantees that the visualization will be voided/de-spawned
+//!
+//! When computation is required, start with [begin_background_compute]
+//! - polls result with [get_computation]
+//! - system [handle_automatic_computation] sends [ComputationResult] event + adds as resource when computation is received
+
 use crate::solver::algs::*;
 use crate::solver::pieces::StandardKnight;
 use crate::solver::{algs::ImplementedAlgorithms, pieces::ChessPiece, BoardOptions, ChessPoint};
 use bevy::prelude::*;
-use bevy::tasks::AsyncComputeTaskPool;
 use bevy_mod_picking::prelude::*;
 use std::f32::consts::TAU;
 
@@ -243,12 +254,11 @@ mod compute {
 
 	use super::*;
 	use crate::solver::algs::Computation;
-	use bevy::tasks::Task;
 
-	/// If this resource is present, then computation is underway
-	#[derive(Resource, Debug)]
-	pub struct ComputationTask(Task<Computation>, Options);
-
+	/// When sent as an event, indicates that this computation has just finished NOT that it is current!
+	/// Check current Options against state to see if it is current.
+	///
+	/// When as a resource, indicates that is is current computation
 	#[derive(Resource, Debug, Clone, PartialEq, Eq)]
 	pub struct ComputationResult(Computation, Options);
 
@@ -276,78 +286,55 @@ mod compute {
 		commands: &mut Commands,
 	) {
 		let state = options.clone();
-		if let Some(_) = options.selected_start {
-			let thread_pool = AsyncComputeTaskPool::get();
-
-			commands.insert_resource(ComputationTask(
-				thread_pool.spawn(async move { alg.tour_computation_cached(options.clone()).unwrap() }),
-				state,
-			));
+		if options.selected_start.is_some() {
+			start_executing_task(state, move || {
+				alg.tour_computation_cached(options.clone()).unwrap()
+			})
 		}
 	}
 
-	static TASK_RESULT: Mutex<TaskResult> = Mutex::new(TaskResult::Empty);
+	static TASK_RESULT: Mutex<Option<ComputationResult>> = Mutex::new(None);
 
-	#[derive(Clone)]
-	enum TaskResult {
-		Empty,
-		Result(Computation),
-	}
+	fn start_executing_task(state: Options, task: impl FnOnce() -> Computation + Send + 'static) {
+		// create a new thread to run the task on
+		std::thread::spawn(move || {
+			let res = task();
 
-	fn start_executing_task(task: &mut Task<Computation>) {
-		let res = futures::executor::block_on(task);
-		*TASK_RESULT.lock().unwrap() = TaskResult::Result(res);
+			*TASK_RESULT.lock().unwrap() = Some(ComputationResult(res, state));
+		});
 	}
-	fn poll_computation_result() -> TaskResult {
+	fn poll_computation_result() -> Option<ComputationResult> {
 		(*TASK_RESULT.lock().unwrap()).clone()
 	}
 
-	/// adds [ComputationResult]; Polls [ComputationTask] and returns [Computation] if ready.
-	/// Theoretically non-blocking
-	fn get_computation(
-		commands: &mut Commands,
-		task: ResMut<ComputationTask>,
-	) -> Option<ComputationResult> {
-		let task = task.into_inner();
-		let state = task.1.clone();
-		let task = &mut task.0;
-
+	/// Returns successful computation ONCE (else None) immediately (doesn't block)
+	fn get_computation() -> Option<ComputationResult> {
 		match poll_computation_result() {
-			TaskResult::Empty => {
-				start_executing_task(task);
-				None
+			Some(comp) => {
+				*TASK_RESULT.lock().unwrap() = None;
+				Some(comp)
 			}
-			TaskResult::Result(comp) => {
-				let res = ComputationResult(comp, state);
-
-				commands.remove_resource::<ComputationTask>();
-				Some(res)
-			}
+			None => None,
 		}
 	}
 
-	/// When / how to run [get_computation], sends [ComputationResult] event
-	/// Validates computation is valid for current Options
+	/// Polls for and handles raw [ComputationResult]
 	pub fn handle_automatic_computation(
 		mut commands: Commands,
-		task: Option<ResMut<ComputationTask>>,
 		options: Res<CurrentOptions>,
 
 		mut update_computation: EventWriter<ComputationResult>,
 	) {
-		if let Some(task) = task {
-			// does the work of computing
-			if let Some(comp) = get_computation(&mut commands, task) {
-				let state = options.as_options();
-				if &comp.1 != state {
-					info!("Ignoring received computation as state has changed since");
-					return;
-				}
-
-				// let message get out to everybody
-				update_computation.send(comp.clone());
-				commands.insert_resource(comp);
+		// does the work of computing
+		if let Some(comp) = get_computation() {
+			let state = options.as_options();
+			if &comp.1 == state {
+				// only set as current if state is valid
+				commands.insert_resource(comp.clone());
 			}
+
+			// let message get out to everybody, even if state is invalid
+			update_computation.send(comp);
 		}
 	}
 }
@@ -431,22 +418,28 @@ mod visualization {
 		to: ChessPoint,
 	}
 
-	/// Consumes [EventReader<ComputationResult>] and actually spawns concrete visualization
+	/// Consumes [EventReader<ComputationResult>] and actually spawns concrete visualization if state is correct
 	pub fn handle_spawning_visualization(
 		mut commands: Commands,
 		mut solutions: EventReader<ComputationResult>,
+		current_options: Res<CurrentOptions>,
 
 		viz: Query<Entity, With<VisualizationComponent>>,
 
 		mut mma: ResSpawning,
 	) {
 		if let Some(solution) = solutions.iter().next() {
-			let (solution, Options { options, .. }) = solution.clone().get();
+			let (solution, options) = solution.clone().get();
+			if &options != current_options.as_options() {
+				warn!("Not rendering visualization for computation of non-valid state");
+				return;
+			}
+
 			if let Computation::Successful {
 				solution: moves, ..
 			} = solution
 			{
-				spawn_visualization(moves, options, &mut commands, &mut mma);
+				spawn_visualization(moves, options.options, &mut commands, &mut mma);
 			}
 
 			solutions.clear()
