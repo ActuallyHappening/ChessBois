@@ -117,24 +117,20 @@ impl<P: ChessPiece> ImplementedAlgorithms<P> {
 	/// Returns None if options.selected_start is None
 	pub fn tour_computation_cached(&self, options: Options) -> Option<Computation> {
 		if let Some(start) = options.selected_start {
-			Some(match self {
-				Self::Warnsdorf(piece) => {
-					// try get cache first
-					if let Some(comp) = try_get_cached_solution::<P>(&options) {
-						debug!("Solution cache hit!");
-						comp
-					} else {
-						warnsdorf_tour_repeatless(piece, options.options, start)
-					}
-				}
-				Self::BruteRecursive(piece) => {
-					if let Some(comp) = try_get_cached_solution::<P>(&options) {
-						debug!("Solution cache hit!");
-						comp
-					} else {
-						brute_recursive_tour_repeatless(piece, options.options, start)
-					}
-				}
+			type ComputerFn<P> = dyn Fn(&P, BoardOptions, ChessPoint) -> Computation;
+			let (piece, computer_fn): (&P, Box<ComputerFn<P>>) = match self {
+				Self::Warnsdorf(piece) => (piece, Box::new(warnsdorf_tour_repeatless)),
+				Self::BruteRecursive(piece) => (piece, Box::new(brute_recursive_tour_repeatless)),
+			};
+
+			Some(if let Some(comp) = try_get_cached_solution::<P>(&options) {
+				debug!("Solution cache hit!");
+				comp
+			} else {
+				debug!("Cache miss");
+				let comp = computer_fn(piece, options.options.clone(), start);
+				add_solution_to_cache::<P>(options, comp.clone());
+				comp
 			})
 		} else {
 			None
