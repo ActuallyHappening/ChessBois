@@ -234,9 +234,9 @@ fn handle_new_options(
 	mut options_events: EventReader<NewOptions>,
 	old_options: Res<CurrentOptions>,
 
-	cells: Query<Entity, With<ChessPoint>>,
+	cells: Query<Entity, (With<CellMarker>, With<ChessPoint>)>,
 	viz: Query<Entity, With<VisualizationComponent>>,
-	markers: Query<Entity, With<MarkerMarker>>,
+	markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
 
 	mut commands: Commands,
 	mut mma: ResSpawning,
@@ -304,7 +304,6 @@ use cells::*;
 mod cells;
 
 mod compute {
-	use super::cached_info::CellMark;
 	use super::*;
 	use bevy::tasks::Task;
 	use msrc_q11::algs::Computation;
@@ -433,13 +432,22 @@ mod cached_info {
 		cache.put(options, mark);
 	}
 
-	pub fn update_cache_from_computation(mut computations: EventReader<ComputationResult>) {
+	pub fn update_cache_from_computation(
+		mut computations: EventReader<ComputationResult>,
+		mut commands: Commands,
+
+		// markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
+		mut mma: ResSpawning,
+	) {
 		for comp in computations.iter() {
 			let (comp, options) = comp.clone().get();
 			let mark = CellMark::from(comp);
 
 			debug!("Updating info cache");
-			set(options, mark);
+			set(options.clone(), mark);
+
+			// despawn_markers(&mut commands, markers);
+			spawn_markers(&options, &mut commands, &mut mma)
 		}
 	}
 }

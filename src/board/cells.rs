@@ -5,7 +5,10 @@ use msrc_q11::CellOption;
 /// Marker for Markers lol
 #[derive(Component)]
 pub struct MarkerMarker;
-// marker for cells is [ChessPoint]
+
+/// Marker for cells
+#[derive(Component)]
+pub struct CellMarker;
 
 pub fn spawn_cells(options: &Options, commands: &mut Commands, mma: &mut ResSpawning) {
 	let start = options.selected_start;
@@ -23,13 +26,13 @@ pub fn spawn_markers(options: &Options, commands: &mut Commands, mma: &mut ResSp
 	}
 }
 
-pub fn despawn_cells(commands: &mut Commands, cells: Query<Entity, With<ChessPoint>>) {
+pub fn despawn_cells(commands: &mut Commands, cells: Query<Entity, (With<CellMarker>, With<ChessPoint>)>) {
 	for cell in cells.iter() {
 		commands.entity(cell).despawn_recursive();
 	}
 }
 
-pub fn despawn_markers(commands: &mut Commands, markers: Query<Entity, With<MarkerMarker>>) {
+pub fn despawn_markers(commands: &mut Commands, markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>) {
 	for mark in markers.iter() {
 		commands.entity(mark).despawn_recursive();
 	}

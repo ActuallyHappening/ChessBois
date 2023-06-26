@@ -326,7 +326,7 @@ async fn try_move_recursive_cached<P: ChessPiece + 'static>(
 			state_counter,
 		);
 		if let PartialComputation::Failed = comp {
-			info!("Caching a failure");
+			debug!("Caching a failure");
 			add_solution_to_cache::<P>(state, comp.clone());
 		}
 
@@ -388,7 +388,7 @@ mod cache {
 			}
 		};
 
-		info!("Putting a solution in the cache");
+		debug!("Putting something in the cache");
 		cache.put(options, moves);
 	}
 }
