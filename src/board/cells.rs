@@ -141,29 +141,6 @@ fn spawn_mark(
 	}
 }
 
-/// Called to destroy + create a cell, to reload its marks
-pub fn mark_reload_cell(
-	cell: &ChessPoint,
-	marks: Query<(Entity, &ChessPoint), With<MarkerMarker>>,
-	alg: &Algorithm,
-	options: &Options,
-
-	commands: &mut Commands,
-	mma: &mut ResSpawning,
-) {
-	info!("reloading cell {}", cell);
-
-	// remove
-	marks
-		.iter()
-		.filter(|(_, cp)| cp == &cell)
-		.for_each(|(e, _)| commands.entity(e).despawn_recursive());
-
-	let colour = compute_colour(cell, Some(&options.options), options.selected_start);
-	let transform = cell_get_transform(*cell, &options.options);
-	spawn_mark(*cell, options, transform, commands, mma);
-}
-
 /// Changes selected cell
 fn cell_selected(
 	// The first parameter is always the `ListenedEvent`, passed in by the event listening system.
@@ -193,7 +170,7 @@ fn cell_selected(
 		update_board.send(NewOptions::from_options(options));
 	}
 
-	Bubble::Up
+	Bubble::Burst
 }
 
 /// Just undoes colour change to normal
@@ -210,7 +187,7 @@ fn cell_deselected(
 	let material = materials.get_mut(mat).unwrap();
 	material.base_color = compute_colour(point, Some(&options.current.options), None);
 
-	Bubble::Up
+	Bubble::Burst
 }
 
 fn toggle_cell_availability(

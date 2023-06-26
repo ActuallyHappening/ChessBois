@@ -285,6 +285,21 @@ fn handle_new_options(
 	}
 }
 
+pub fn handle_plane_clicked<T: IsPointerEvent>(
+	In(_): In<ListenedEvent<T>>,
+	options: Res<CurrentOptions>,
+	mut update_board: EventWriter<NewOptions>,
+) -> Bubble {
+	debug!("Plane clicked");
+
+	update_board.send(NewOptions::from_options(Options {
+		selected_start: None,
+		..options.clone().into_options()
+	}));
+
+	Bubble::Up
+}
+
 use cells::*;
 mod cells;
 

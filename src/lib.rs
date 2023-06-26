@@ -1,6 +1,6 @@
 use bevy::prelude::*;
-use bevy_egui::egui::{Color32};
-use bevy_mod_picking::prelude::RaycastPickCamera;
+use bevy_egui::egui::Color32;
+use bevy_mod_picking::{prelude::{RaycastPickCamera, RaycastPickTarget, OnPointer, Click}, PickableBundle};
 mod board;
 use board::*;
 
@@ -27,7 +27,12 @@ const CELL_DISABLED_COLOUR: Color = Color::RED;
 const VISUALIZATION_HEIGHT: f32 = 3.;
 const VISUALIZATION_DIMENSIONS: Vec2 = Vec2::new(0.2, 0.2);
 const VISUALIZATION_SELECTED_COLOUR: Color = Color::GREEN;
-const VISUALIZATION_ALL_BASE_COLOUR: Color = Color::Rgba { red: 0., green: 1., blue: 0.1, alpha: 0.5 };
+const VISUALIZATION_ALL_BASE_COLOUR: Color = Color::Rgba {
+	red: 0.,
+	green: 1.,
+	blue: 0.1,
+	alpha: 0.5,
+};
 
 const UI_ALG_ENABLED_COLOUR: Color32 = Color32::GREEN;
 
@@ -59,11 +64,16 @@ pub fn setup(
 	});
 
 	// ground plane
-	commands.spawn(PbrBundle {
-		mesh: meshes.add(shape::Plane::from_size(500.0).into()),
-		material: materials.add(Color::SILVER.into()),
-		// transform to be behind, xy plane
-		transform: Transform::from_xyz(0., 0., 0.),
-		..default()
-	});
+	commands.spawn((
+		PbrBundle {
+			mesh: meshes.add(shape::Plane::from_size(500.0).into()),
+			material: materials.add(Color::SILVER.into()),
+			// transform to be behind, xy plane
+			transform: Transform::from_xyz(0., 0., 0.),
+			..default()
+		},
+		PickableBundle::default(),    // Makes the entity pickable
+		RaycastPickTarget::default(), // Marker for the `bevy_picking_raycast` backend
+		OnPointer::<Click>::run_callback(handle_plane_clicked),
+	));
 }
