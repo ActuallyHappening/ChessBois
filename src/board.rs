@@ -12,7 +12,7 @@
 
 use crate::solver::algs::*;
 use crate::solver::pieces::StandardKnight;
-use crate::solver::{algs::ImplementedAlgorithms, pieces::ChessPiece, BoardOptions, ChessPoint};
+use crate::solver::{pieces::ChessPiece, BoardOptions, ChessPoint};
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 use std::f32::consts::TAU;
@@ -162,11 +162,12 @@ type ResSpawning<'a> = (
 
 /// Sets up default resources + sends initial [NewOptions] event
 fn setup(mut commands: Commands, mut update_board: EventWriter<NewOptions>) {
-	let mut board = BoardOptions::new(2, 3);
-	board.rm((1, 2));
-	board.rm((2, 2));
-	board.rm((2, 1));
-	board.rm((3, 1));
+	// let mut board = BoardOptions::new(2, 3);
+	// board.rm((1, 2));
+	// board.rm((2, 2));
+	// board.rm((2, 1));
+	// board.rm((3, 1));
+	let board = BoardOptions::new(8, 8);
 
 	let options = Options {
 		options: board,
@@ -222,7 +223,8 @@ fn handle_new_options(
 
 		// begin recomputing visualization
 		begin_background_compute(
-			options.selected_algorithm.to_impl(StandardKnight {}),
+			options.selected_algorithm,
+			&StandardKnight {},
 			options.clone(),
 			&mut commands,
 		);
@@ -286,17 +288,19 @@ mod compute {
 		}
 	}
 
-	pub fn begin_background_compute<P: ChessPiece + Send + Sync + 'static>(
-		alg: ImplementedAlgorithms<P>,
+	pub fn begin_background_compute<P: ChessPiece + Copy + Send + Sync + 'static>(
+		alg: Algorithm,
+		piece: &P,
 		options: Options,
 		commands: &mut Commands,
 	) {
 		let state = options.clone();
 		if let Some(start) = options.selected_start {
 			if options.options.get_available_points().contains(&start) {
+				let piece: P = *piece;
 				start_executing_task(state, move || {
 					trace!("About to compute");
-					alg.tour_computation_cached(options.clone()).unwrap()
+					alg.tour_computation_cached(&piece, options.clone()).unwrap()
 				})
 			}
 		}

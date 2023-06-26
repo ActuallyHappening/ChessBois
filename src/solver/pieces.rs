@@ -2,7 +2,7 @@ pub trait ChessPiece {
 	fn relative_moves(&self) -> &[(i8, i8)];
 }
 
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct StandardKnight;
 
 impl ChessPiece for StandardKnight {

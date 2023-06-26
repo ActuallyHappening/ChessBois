@@ -56,12 +56,7 @@ impl From<Option<Moves>> for PartialComputation {
 	}
 }
 
-pub enum ImplementedAlgorithms<P: ChessPiece + 'static> {
-	Warnsdorf(P),
-	BruteForce(P),
-}
-
-#[derive(Debug, Clone, Default, PartialEq, Eq, EnumIter, IntoStaticStr, Hash, PartialOrd, Ord)]
+#[derive(Copy, Debug, Clone, Default, PartialEq, Eq, EnumIter, IntoStaticStr, Hash, PartialOrd, Ord)]
 pub enum Algorithm {
 	#[default]
 	#[strum(serialize = "Warnsdorf")]
@@ -72,13 +67,6 @@ pub enum Algorithm {
 }
 
 impl Algorithm {
-	pub fn to_impl<P: ChessPiece>(&self, piece: P) -> ImplementedAlgorithms<P> {
-		match self {
-			Algorithm::Warnsdorf => ImplementedAlgorithms::Warnsdorf(piece),
-			Algorithm::BruteForce => ImplementedAlgorithms::BruteForce(piece),
-		}
-	}
-
 	pub fn get_description(&self) -> &'static str {
 		match self {
 			Algorithm::Warnsdorf => "A standard knights tour.\
@@ -115,24 +103,29 @@ impl Options {
 	}
 }
 
-impl<P: ChessPiece> ImplementedAlgorithms<P> {
-	/// Returns None if options.selected_start is None
-	pub fn tour_computation_cached(&self, options: Options) -> Option<Computation> {
-		if let Some(start) = options.selected_start {
-			type ComputerFn<P> = dyn Fn(&P, BoardOptions, ChessPoint) -> Computation;
-			let (piece, computer_fn): (&P, Box<ComputerFn<P>>) = match self {
-				Self::Warnsdorf(piece) => (piece, Box::new(warnsdorf_tour_repeatless)),
-				// Self::BruteForce(piece) => (piece, Box::new(brute_recursive_tour_repeatless)),
-				Self::BruteForce(piece) => (piece, Box::new(hamiltonian_tour_repeatless)),
-			};
+impl Algorithm {
+	fn tour_computation<P: ChessPiece + 'static>(&self, piece: &P, options: BoardOptions, start: ChessPoint) -> Computation {
+		match self {
+			Algorithm::Warnsdorf => warnsdorf_tour_repeatless(piece, options, start),
+			Algorithm::BruteForce => {
+				hamiltonian_tour_repeatless(piece, options, start, false)
+			}
+		}
+	}
 
+	/// Returns None if options.selected_start is None
+	pub fn tour_computation_cached<P: ChessPiece + 'static>(&self, piece: &P, options: Options) -> Option<Computation> {
+		if let Some(start) = options.selected_start {
+			if !options.options.get_available_points().contains(&start) {
+				return None;
+			}
 			Some(if let Some(comp) = try_get_cached_solution::<P>(&options) {
 				debug!("Solution cache hit!");
 				comp
 			} else {
 				debug!("Cache miss");
-				let comp = computer_fn(piece, options.options.clone(), start);
-				// add_solution_to_cache::<P>(options, comp.clone());
+				let comp = self.tour_computation(piece, options.options.clone(), start);
+				add_solution_to_cache::<P>(options, comp.clone());
 				comp
 			})
 		} else {

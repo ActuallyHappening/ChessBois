@@ -38,24 +38,25 @@ fn find_hamiltonian_path(end: u32, P: &Path, g: &Graph) -> Option<Path> {
 	}
 }
 
+impl ChessPoint {
+	pub fn hash(&self) -> Key {
+		(self.column as Key) << 16 | (self.row as Key)
+	}
+	pub fn un_hash(key: Key) -> Self {
+		Self {
+			column: (key >> 16) as u8,
+			row: (key & 0xFFFF) as u8,
+		}
+	}
+}
+
 pub fn hamiltonian_tour_repeatless<P: ChessPiece + 'static>(
 	piece: &P,
 	options: BoardOptions,
 	start: ChessPoint,
+	only_cycle: bool,
 ) -> Computation {
 	assert!(options.get_available_points().contains(&start));
-
-	impl ChessPoint {
-		pub fn hash(&self) -> Key {
-			(self.column as Key) << 16 | (self.row as Key)
-		}
-		pub fn un_hash(key: Key) -> Self {
-			Self {
-				column: (key >> 16) as u8,
-				row: (key & 0xFFFF) as u8,
-			}
-		}
-	}
 
 	let available_points = options.get_available_points();
 
@@ -87,26 +88,46 @@ pub fn hamiltonian_tour_repeatless<P: ChessPiece + 'static>(
 	);
 
 	let start = *available_mapped_points.get(&start).unwrap();
-	if let Some(mut path) = find_hamiltonian_path(start, &vec![start], &graph) {
-		assert_eq!(available_points.len(), path.len() - 1);
+	let start_vec = vec![start];
+	if !only_cycle {
+		for valid_end_point in available_mapped_points.values() {
+			if let Some(mut path) = find_hamiltonian_path(*valid_end_point, &start_vec, &graph) {
+				path.pop();
 
-		debug!("Path found: {:?}", path);
-		// path always ends back up at start, so remove end
-		path.pop();
+				let moves: Moves = path
+					.into_iter()
+					.map(ChessPoint::un_hash)
+					.tuple_windows()
+					.map(Move::from_tuple)
+					.collect();
 
-		let moves: Moves = path
-			.into_iter()
-			.map(ChessPoint::un_hash)
-			.tuple_windows()
-			.map(Move::from_tuple)
-			.collect();
-
-		Computation::Successful {
-			solution: moves,
-			explored_states: 0,
+				return Computation::Successful {
+					solution: moves,
+					explored_states: 0,
+				};
+			}
 		}
-	} else {
-		debug!("No path found");
-		Computation::Failed { total_states: 0 }
-	}
+		return Computation::Failed { total_states: 0 };
+	} else if let Some(mut path) = find_hamiltonian_path(start, &start_vec, &graph) {
+ 			assert_eq!(available_points.len(), path.len() - 1);
+
+ 			debug!("Path found: {:?}", path);
+ 			// path always ends back up at start, so remove end
+ 			path.pop();
+
+ 			let moves: Moves = path
+ 				.into_iter()
+ 				.map(ChessPoint::un_hash)
+ 				.tuple_windows()
+ 				.map(Move::from_tuple)
+ 				.collect();
+
+ 			return Computation::Successful {
+ 				solution: moves,
+ 				explored_states: 0,
+ 			};
+ 		} else {
+ 			debug!("No path found");
+ 			return Computation::Failed { total_states: 0 };
+ 		}
 }
