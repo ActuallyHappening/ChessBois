@@ -425,10 +425,12 @@ mod cached_info {
 
 	pub fn get(options: &Options) -> Option<CellMark> {
 		let mut cache = CACHE.lock().unwrap();
+		trace!("Getting info cache for alg: {:?} at {}", options.selected_algorithm, options.selected_start.unwrap());
 		cache.get(options).cloned()
 	}
 	fn set(options: Options, mark: CellMark) {
 		let mut cache = CACHE.lock().unwrap();
+		trace!("Setting info cache for alg: {:?} at {}", options.selected_algorithm, options.selected_start.unwrap());
 		cache.put(options, mark);
 	}
 

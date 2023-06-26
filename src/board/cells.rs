@@ -82,6 +82,7 @@ fn spawn_cell(
 		},
 		Name::new(format!("Chess Square ({}, {})", at.row, at.column)),
 		at,
+		CellMarker {},
 		PickableBundle::default(),    // Makes the entity pickable
 		RaycastPickTarget::default(), // Marker for the `bevy_picking_raycast` backend
 		OnPointer::<Over>::run_callback(cell_selected),
@@ -120,6 +121,7 @@ fn spawn_mark(
 						transform,
 						..default()
 					},
+					at,
 					MarkerMarker {},
 				));
 			}
@@ -137,6 +139,7 @@ fn spawn_mark(
 						transform,
 						..default()
 					},
+					at,
 					MarkerMarker {},
 				));
 			}
