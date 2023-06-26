@@ -579,12 +579,24 @@ mod ui {
 				let mut options = options.clone();
 				if let Some(new_val) = val {
 					options.options = options.options.update_width(new_val as u8);
+					options.selected_start = None;
 					new_board_event.send(NewOptions::from_options(options));
 					new_val
 				} else {
 					options.options.width() as f64
 				}
-			}));
+			}).text("Width"));
+			ui.add(egui::Slider::from_get_set((2.)..=10., |val| {
+				let mut options = options.clone();
+				if let Some(new_val) = val {
+					options.options = options.options.update_height(new_val as u8);
+					options.selected_start = None;
+					new_board_event.send(NewOptions::from_options(options));
+					new_val
+				} else {
+					options.options.height() as f64
+				}
+			}).text("Height"));
 
 			ui.label("Select algorithm:");
 			ui.horizontal(|ui| {
