@@ -1,6 +1,6 @@
 use super::{cached_info::CellMark, *};
 use crate::CELL_DISABLED_COLOUR;
-use msrc_q11::CellOption;
+use crate::solver::CellOption;
 
 /// Marker for Markers lol
 #[derive(Component)]

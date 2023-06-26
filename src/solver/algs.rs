@@ -1,8 +1,5 @@
-use crate::{
-	pieces::{ChessPiece, StandardKnight},
-	*,
-};
-use cached::proc_macro::cached;
+use crate::solver::{pieces::ChessPiece, *};
+use strum::{EnumIter, IntoStaticStr};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Computation {
@@ -59,33 +56,88 @@ impl From<Option<Moves>> for PartialComputation {
 pub enum ImplementedAlgorithms<P: ChessPiece + 'static> {
 	Warnsdorf(P),
 
-	BruteRecursiveCached(P),
-	BruteRecursiveNotCached(P),
+	BruteRecursive(P),
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, EnumIter, IntoStaticStr, Hash, PartialOrd, Ord)]
+pub enum Algorithm {
+	#[default]
+	#[strum(serialize = "Warnsdorf")]
+	Warnsdorf,
+
+	#[strum(serialize = "Brute Force")]
+	BruteForce,
+}
+
+impl Algorithm {
+	pub fn to_impl<P: ChessPiece>(&self, piece: P) -> ImplementedAlgorithms<P> {
+		match self {
+			Algorithm::Warnsdorf => ImplementedAlgorithms::Warnsdorf(piece),
+			Algorithm::BruteForce => ImplementedAlgorithms::BruteRecursive(piece),
+		}
+	}
+
+	pub fn get_description(&self) -> &'static str {
+		match self {
+			Algorithm::Warnsdorf => "A standard knights tour.\
+			This algorithm applies Warnsdorf's Rule, which tells you to always move to the square with the fewest available moves. \
+			This algorithm is always guaranteed to terminate in finite time, however it sometimes misses solutions e.g. 8x8 board @ (5, 3).\
+			Warnsdorf's Rule is very easy to implement and is very popular because of its simplicity. The implementation used is sub-optimal, but should suffice.
+			", 
+			Algorithm::BruteForce => "A standard knights tour.\
+			This algorithm is a recursive brute-force approach, which favours Warnsdorf's Rule first before backtracking.\
+			This algorithm is always guaranteed to terminate in finite time, but that time complexity is exponential compared with number of cells, so \
+			large boards with no solutions will take a long time to solve. In worst case scenario, since it is brute force, it will check every possible \
+			knights tour before exiting with no solution! However, if Warnsdorf's algorithm finds a solution, this algorithm will find that solution first.
+			",
+		}
+	}
+}
+
+/// Represents information required to display cells + visual solutions
+#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+pub struct Options {
+	pub options: BoardOptions,
+	pub selected_start: Option<ChessPoint>,
+	pub selected_algorithm: Algorithm,
+
+	pub force_update: bool,
+}
+
+impl Options {
+	pub fn with_start(&self, start: ChessPoint) -> Self {
+		Self {
+			selected_start: Some(start),
+			..self.clone()
+		}
+	}
 }
 
 impl<P: ChessPiece> ImplementedAlgorithms<P> {
-	// pub async fn tour_no_repeat(
-	// 	&self,
-	// 	options: BoardOptions,
-	// 	start: ChessPoint,
-	// ) -> Option<Moves> {
-	// 	match self {
-	// 		Self::Warnsdorf(piece) => warnsdorf_tour_repeatless(piece, options, start),
-	// 		Self::BruteRecursive(piece) => {
-	// 			brute_recursive_tour_repeatless_cached(piece, options, start).await
-	// 		}
-	// 	}
-	// }
-
-	pub async fn tour_computation(&self, options: BoardOptions, start: ChessPoint) -> Computation {
-		match self {
-			Self::Warnsdorf(piece) => warnsdorf_tour_repeatless(piece, options, start),
-			Self::BruteRecursiveCached(piece) => {
-				brute_recursive_tour_repeatless_cached(piece, options, start).await
-			}
-			Self::BruteRecursiveNotCached(piece) => {
-				brute_recursive_tour_repeatless_not_cached(piece, options, start).await
-			}
+	/// Returns None if options.selected_start is None
+	pub fn tour_computation_cached(&self, options: Options) -> Option<Computation> {
+		if let Some(start) = options.selected_start {
+			Some(match self {
+				Self::Warnsdorf(piece) => {
+					// try get cache first
+					if let Some(comp) = try_get_cached_solution::<P>(&options) {
+						debug!("Solution cache hit!");
+						comp
+					} else {
+						warnsdorf_tour_repeatless(piece, options.options, start)
+					}
+				}
+				Self::BruteRecursive(piece) => {
+					if let Some(comp) = try_get_cached_solution::<P>(&options) {
+						debug!("Solution cache hit!");
+						comp
+					} else {
+						brute_recursive_tour_repeatless(piece, options.options, start)
+					}
+				}
+			})
+		} else {
+			None
 		}
 	}
 }
@@ -257,28 +309,7 @@ fn try_move_recursive(
 	PartialComputation::from(moves)
 }
 
-pub async fn brute_recursive_tour_repeatless_cached<P: ChessPiece + 'static>(
-	piece: &P,
-	options: BoardOptions,
-	start: ChessPoint,
-) -> Computation {
-	let all_available_points = options.get_available_points();
-	let num_moves_required = all_available_points.len() as u8 - 1;
-
-	let mut state_counter = 0_u128;
-
-	let board = Board::from_options(options);
-	try_move_recursive_cached(num_moves_required, piece, board, start, &mut state_counter)
-		.await
-		.map(|moves| {
-			let mut moves = moves.into_iter().rev().collect::<Vec<Move>>();
-			moves.push(Move::new(start, start));
-			moves.into()
-		})
-		.add_state_count(state_counter)
-}
-
-pub async fn brute_recursive_tour_repeatless_not_cached<P: ChessPiece + 'static>(
+fn brute_recursive_tour_repeatless<P: ChessPiece + 'static>(
 	piece: &P,
 	options: BoardOptions,
 	start: ChessPoint,
@@ -298,43 +329,7 @@ pub async fn brute_recursive_tour_repeatless_not_cached<P: ChessPiece + 'static>
 		.add_state_count(state_counter)
 }
 
-async fn try_move_recursive_cached<P: ChessPiece + 'static>(
-	num_moves_required: u8,
-	piece: &P,
-	attempting_board: Board,
-	current_pos: ChessPoint,
-	state_counter: &mut u128,
-) -> PartialComputation {
-	let state = State {
-		start: current_pos,
-		board: attempting_board.clone(),
-	};
-	if let Some(solution) = try_get_cached_solution::<P>(&state) {
-		match solution {
-			PartialComputation::Failed => info!("Found a cached failure"),
-			PartialComputation::Successful { ref solution } => {
-				info!("Found a cached success, len: {}", solution.len())
-			}
-		}
-		solution
-	} else {
-		let comp = try_move_recursive(
-			num_moves_required,
-			piece,
-			attempting_board,
-			current_pos,
-			state_counter,
-		);
-		if let PartialComputation::Failed = comp {
-			debug!("Caching a failure");
-			add_solution_to_cache::<P>(state, comp.clone());
-		}
-
-		comp
-	}
-}
-
-use cache::{add_solution_to_cache, try_get_cached_solution, State};
+use cache::{add_solution_to_cache, try_get_cached_solution};
 
 mod cache {
 	use super::*;
@@ -342,24 +337,18 @@ mod cache {
 	use once_cell::sync::Lazy;
 	use std::num::NonZeroUsize;
 	use std::{any::TypeId, collections::HashMap, sync::Mutex};
-	use tracing::info;
 
-	static CYCLE_CACHE: Lazy<Mutex<HashMap<TypeId, LruCache<State, Solution>>>> =
+	static CYCLE_CACHE: Lazy<Mutex<HashMap<TypeId, LruCache<Key, Solution>>>> =
 		Lazy::new(|| Mutex::new(HashMap::new()));
 
-	fn new() -> LruCache<State, Solution> {
+	fn new() -> LruCache<Key, Solution> {
 		LruCache::new(NonZeroUsize::new(10_000).unwrap())
 	}
 
-	type Solution = PartialComputation;
+	type Key = Options;
+	type Solution = Computation;
 
-	#[derive(Hash, PartialEq, Eq, Clone, Debug)]
-	pub struct State {
-		pub start: ChessPoint,
-		pub board: Board,
-	}
-
-	pub fn try_get_cached_solution<P: ChessPiece + 'static>(options: &State) -> Option<Solution> {
+	pub fn try_get_cached_solution<P: ChessPiece + 'static>(options: &Key) -> Option<Solution> {
 		let mut caches = CYCLE_CACHE.lock().unwrap();
 		let id = TypeId::of::<P>();
 
@@ -375,7 +364,7 @@ mod cache {
 		cache.get(options).cloned()
 	}
 
-	pub fn add_solution_to_cache<P: ChessPiece + 'static>(options: State, moves: Solution) {
+	pub fn add_solution_to_cache<P: ChessPiece + 'static>(options: Key, moves: Solution) {
 		let mut caches = CYCLE_CACHE.lock().unwrap();
 		let id = TypeId::of::<P>();
 

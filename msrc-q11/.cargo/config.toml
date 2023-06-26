@@ -1,3 +1,0 @@
-[alias]
-bw = "b --target wasm32-unknown-unknown"
-cw = "c --target wasm32-unknown-unknown"

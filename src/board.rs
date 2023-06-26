@@ -1,12 +1,10 @@
 use bevy::prelude::*;
 use bevy::tasks::AsyncComputeTaskPool;
 use bevy_mod_picking::prelude::*;
-use msrc_q11::pieces::StandardKnight;
-use msrc_q11::*;
-use msrc_q11::{algs::ImplementedAlgorithms, pieces::ChessPiece, BoardOptions, ChessPoint};
+use crate::solver::pieces::StandardKnight;
+use crate::solver::{algs::ImplementedAlgorithms, pieces::ChessPiece, BoardOptions, ChessPoint};
+use crate::solver::{algs::*};
 use std::f32::consts::TAU;
-use strum::IntoEnumIterator;
-use strum::{EnumIter, EnumString, EnumVariantNames, IntoStaticStr};
 
 use crate::*;
 
@@ -34,16 +32,6 @@ impl Plugin for BoardPlugin {
 	}
 }
 
-/// Represents information required to display cells + visual solutions
-#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
-pub struct Options {
-	options: BoardOptions,
-	selected_start: Option<ChessPoint>,
-	selected_algorithm: Algorithm,
-
-	force_update: bool,
-}
-
 #[derive(Resource, Debug, Clone)]
 pub struct CurrentOptions {
 	current: Options,
@@ -54,53 +42,9 @@ pub struct NewOptions {
 	new: Options,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, EnumIter, IntoStaticStr, Hash, PartialOrd, Ord)]
-pub enum Algorithm {
-	#[default]
-	#[strum(serialize = "Warnsdorf")]
-	Warnsdorf,
-
-	#[strum(serialize = "Brute Force")]
-	BruteForce,
-
-	#[strum(serialize = "Brute Force (Not Cached")]
-	BruteForceNotCached,
-}
-
 use top_level_types::OptionsWrapper;
 mod top_level_types {
 	use super::*;
-
-	impl Algorithm {
-		pub fn to_impl<P: ChessPiece>(&self, piece: P) -> ImplementedAlgorithms<P> {
-			match self {
-				Algorithm::Warnsdorf => ImplementedAlgorithms::Warnsdorf(piece),
-				Algorithm::BruteForce => ImplementedAlgorithms::BruteRecursiveCached(piece),
-				Algorithm::BruteForceNotCached => ImplementedAlgorithms::BruteRecursiveNotCached(piece),
-			}
-		}
-
-		pub fn get_description(&self) -> &'static str {
-			match self {
-			Algorithm::Warnsdorf => "A standard knights tour.\
-			This algorithm applies Warnsdorf's Rule, which tells you to always move to the square with the fewest available moves. \
-			This algorithm is always guaranteed to terminate in finite time, however it sometimes misses solutions e.g. 8x8 board @ (5, 3).\
-			Warnsdorf's Rule is very easy to implement and is very popular because of its simplicity. The implementation used is sub-optimal, but should suffice.
-			", 
-			Algorithm::BruteForce => "A standard knights tour.\
-			This algorithm is a recursive brute-force approach, which favours Warnsdorf's Rule first before backtracking.\
-			This algorithm is always guaranteed to terminate in finite time, but that time complexity is exponential compared with number of cells, so \
-			large boards with no solutions will take a long time to solve. In worst case scenario, since it is brute force, it will check every possible \
-			knights tour before exiting with no solution! However, if Warnsdorf's algorithm finds a solution, this program will find that solution first.
-			This algorithm uses a cache (because this will often save expensive work) so sometimes you will see 0 states considered. This is because the \
-			cache has been hit, to remove cache select the 'Brute Force (Not Cached)' algorithm.
-			",
-			Algorithm::BruteForceNotCached => "A standard knights tour.\
-			Same as the other brute force algorithm, except without the cache. This will likely slow your computer down a bit when computing larger boards.
-			",
-		}
-		}
-	}
 
 	pub trait OptionsWrapper {
 		fn into_options(self) -> Options;
@@ -134,15 +78,6 @@ mod top_level_types {
 
 		fn from_options(options: Options) -> Self {
 			CurrentOptions { current: options }
-		}
-	}
-
-	impl Options {
-		pub fn with_start(&self, start: ChessPoint) -> Self {
-			Self {
-				selected_start: Some(start),
-				..self.clone()
-			}
 		}
 	}
 }
@@ -306,7 +241,7 @@ mod cells;
 mod compute {
 	use super::*;
 	use bevy::tasks::Task;
-	use msrc_q11::algs::Computation;
+	use crate::solver::algs::Computation;
 
 	#[derive(Resource, Debug)]
 	pub struct ComputationTask(Task<Computation>, Options);
@@ -338,11 +273,11 @@ mod compute {
 		commands: &mut Commands,
 	) {
 		let state = options.clone();
-		if let (Some(start), options) = (options.selected_start, options.options) {
+		if let Some(_) = options.selected_start {
 			let thread_pool = AsyncComputeTaskPool::get();
 
 			commands.insert_resource(ComputationTask(
-				thread_pool.spawn(async move { alg.tour_computation(options.clone(), start).await }),
+				thread_pool.spawn(async move { alg.tour_computation_cached(options.clone()).unwrap() }),
 				state,
 			));
 		}
@@ -399,7 +334,7 @@ mod compute {
 
 mod cached_info {
 	use lru::LruCache;
-	use msrc_q11::algs::Computation;
+	use crate::solver::algs::Computation;
 	use once_cell::sync::Lazy;
 	use std::{num::NonZeroUsize, sync::Mutex};
 
@@ -425,12 +360,20 @@ mod cached_info {
 
 	pub fn get(options: &Options) -> Option<CellMark> {
 		let mut cache = CACHE.lock().unwrap();
-		trace!("Getting info cache for alg: {:?} at {}", options.selected_algorithm, options.selected_start.unwrap());
+		trace!(
+			"Getting info cache for alg: {:?} at {}",
+			options.selected_algorithm,
+			options.selected_start.unwrap()
+		);
 		cache.get(options).cloned()
 	}
 	fn set(options: Options, mark: CellMark) {
 		let mut cache = CACHE.lock().unwrap();
-		trace!("Setting info cache for alg: {:?} at {}", options.selected_algorithm, options.selected_start.unwrap());
+		trace!(
+			"Setting info cache for alg: {:?} at {}",
+			options.selected_algorithm,
+			options.selected_start.unwrap()
+		);
 		cache.put(options, mark);
 	}
 
@@ -460,7 +403,7 @@ mod visualization {
 		compute::{begin_background_compute, ComputationResult},
 		*,
 	};
-	use msrc_q11::{algs::Computation, pieces::StandardKnight, Move, Moves};
+	use crate::solver::{algs::Computation, pieces::StandardKnight, Move, Moves};
 
 	#[derive(Component, Debug, Clone)]
 	pub struct VisualizationComponent {
@@ -580,7 +523,8 @@ mod ui {
 		egui::{Color32, RichText},
 		*,
 	};
-	use msrc_q11::algs::Computation;
+use strum::IntoEnumIterator;
+	use crate::solver::algs::Computation;
 
 	pub fn spawn_left_sidebar_ui(
 		mut commands: Commands,
