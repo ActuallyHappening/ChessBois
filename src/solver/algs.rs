@@ -56,14 +56,23 @@ impl From<Option<Moves>> for PartialComputation {
 	}
 }
 
-#[derive(Copy, Debug, Clone, Default, PartialEq, Eq, EnumIter, IntoStaticStr, Hash, PartialOrd, Ord)]
+#[derive(
+	Copy, Debug, Clone, Default, PartialEq, Eq, EnumIter, IntoStaticStr, Hash, PartialOrd, Ord,
+)]
 pub enum Algorithm {
 	#[default]
 	#[strum(serialize = "Warnsdorf")]
 	Warnsdorf,
 
-	#[strum(serialize = "Brute Force")]
+	#[strum(serialize = "Brute Force (⚠️ slow ⚠️)")]
+	#[strum()]
+	HamiltonianPath,
+
+	#[strum(serialize = "Brute Force (Warnsdorf biased)")]
 	BruteForce,
+
+	#[strum(serialize = "Hamiltonian Cycle (⚠️ slow ⚠️)")]
+	HamiltonianCycle,
 }
 
 impl Algorithm {
@@ -80,7 +89,18 @@ impl Algorithm {
 			large boards with no solutions will take a long time to solve. In worst case scenario, since it is brute force, it will check every possible \
 			knights tour before exiting with no solution! However, if Warnsdorf's algorithm finds a solution, this algorithm will find that solution first.
 			",
+			Algorithm::HamiltonianPath => "A standard knights tour.\
+			This algorithm attempts to find a hamiltonian path from the start to any end point with brute force.\
+			",
+			Algorithm::HamiltonianCycle => "NOT a knights tour!\
+			This algorithm tries to find a hamiltonian cycle, as in a path starting and ending at the same point.\
+			This is significantly slower than other algorithms, but when found it provides solutions to knights tour for every start point.\
+			"
 		}
+	}
+
+	pub fn should_show_states(&self) -> bool {
+		matches!(self, Algorithm::Warnsdorf | Algorithm::BruteForce)
 	}
 }
 
@@ -104,17 +124,26 @@ impl Options {
 }
 
 impl Algorithm {
-	fn tour_computation<P: ChessPiece + 'static>(&self, piece: &P, options: BoardOptions, start: ChessPoint) -> Computation {
+	fn tour_computation<P: ChessPiece + 'static>(
+		&self,
+		piece: &P,
+		options: BoardOptions,
+		start: ChessPoint,
+	) -> Computation {
 		match self {
 			Algorithm::Warnsdorf => warnsdorf_tour_repeatless(piece, options, start),
-			Algorithm::BruteForce => {
-				hamiltonian_tour_repeatless(piece, options, start, false)
-			}
+			Algorithm::HamiltonianPath => hamiltonian_tour_repeatless(piece, options, start, false),
+			Algorithm::BruteForce => brute_recursive_tour_repeatless(piece, options, start),
+			Algorithm::HamiltonianCycle => hamiltonian_tour_repeatless(piece, options, start, true),
 		}
 	}
 
 	/// Returns None if options.selected_start is None
-	pub fn tour_computation_cached<P: ChessPiece + 'static>(&self, piece: &P, options: Options) -> Option<Computation> {
+	pub fn tour_computation_cached<P: ChessPiece + 'static>(
+		&self,
+		piece: &P,
+		options: Options,
+	) -> Option<Computation> {
 		if let Some(start) = options.selected_start {
 			if !options.options.get_available_points().contains(&start) {
 				return None;

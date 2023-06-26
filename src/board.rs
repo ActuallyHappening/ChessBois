@@ -172,7 +172,7 @@ fn setup(mut commands: Commands, mut update_board: EventWriter<NewOptions>) {
 	let options = Options {
 		options: board,
 		selected_start: None,
-		selected_algorithm: Algorithm::BruteForce,
+		selected_algorithm: Algorithm::default(),
 		force_update: true,
 	};
 	let current_options = CurrentOptions::from_options(options.clone());
@@ -300,7 +300,9 @@ mod compute {
 				let piece: P = *piece;
 				start_executing_task(state, move || {
 					trace!("About to compute");
-					alg.tour_computation_cached(&piece, options.clone()).unwrap()
+					alg
+						.tour_computation_cached(&piece, options.clone())
+						.unwrap()
 				})
 			}
 		}
@@ -615,9 +617,9 @@ mod ui {
 			}).text("Height"));
 
 			ui.label("Select algorithm:");
-			ui.horizontal(|ui| {
+			ui.horizontal_wrapped(|ui| {
 				for alg in Algorithm::iter() {
-					let str: &'static str = alg.clone().into();
+					let str: &'static str = alg.into();
 					let mut text = RichText::new(str);
 					if &alg == current_alg {
 						text = text.color(UI_ALG_ENABLED_COLOUR);
@@ -650,27 +652,27 @@ mod ui {
 			ui.heading("Results Panel");
 
 			if let Some(solution) = solution {
+				let alg: Algorithm = options.selected_algorithm;
 				match solution {
 					Computation::Successful {
 						explored_states: states,
 						..
 					} => {
-						ui.label(
-							RichText::new(format!("Solution found in {} states considered", states))
-								.color(Color32::GREEN),
-						);
+						let mut msg = format!("Solution found in {} states considered", states);
+						if !alg.should_show_states() {
+							msg = "Solution found".to_string();
+						}
+						ui.label(RichText::new(msg).color(Color32::GREEN));
 						ui.label("Notes: if states =0 it is because the solution was cached");
 					}
 					Computation::Failed {
 						total_states: states,
 					} => {
-						ui.label(
-							RichText::new(format!(
-								"No solution found, with {} states considered",
-								states
-							))
-							.color(Color32::RED),
-						);
+						let mut msg = format!("No solution found, with {} states considered", states);
+						if !alg.should_show_states() {
+							msg = "Solution found".to_string();
+						}
+						ui.label(RichText::new(msg).color(Color32::RED));
 					}
 				}
 			}

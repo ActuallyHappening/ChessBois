@@ -50,6 +50,7 @@ impl ChessPoint {
 	}
 }
 
+/// only_cycle: If false, representing hamiltonian cycle
 pub fn hamiltonian_tour_repeatless<P: ChessPiece + 'static>(
 	piece: &P,
 	options: BoardOptions,
@@ -107,13 +108,12 @@ pub fn hamiltonian_tour_repeatless<P: ChessPiece + 'static>(
 				};
 			}
 		}
-		return Computation::Failed { total_states: 0 };
-	} else if let Some(mut path) = find_hamiltonian_path(start, &start_vec, &graph) {
+		Computation::Failed { total_states: 0 }
+	} else if let Some(path) = find_hamiltonian_path(start, &start_vec, &graph) {
  			assert_eq!(available_points.len(), path.len() - 1);
 
  			debug!("Path found: {:?}", path);
- 			// path always ends back up at start, so remove end
- 			path.pop();
+ 			// path always ends back up at start
 
  			let moves: Moves = path
  				.into_iter()
