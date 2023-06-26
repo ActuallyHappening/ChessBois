@@ -20,11 +20,14 @@ pub struct ChessPoint {
 }
 
 impl ChessPoint {
-	fn mov(&self, &(dx, dy): &(i8, i8)) -> Self {
-		Self {
-			row: self.row.wrapping_add(dx as u8),
-			column: self.column.wrapping_add(dy as u8),
+	fn displace(&self, (dx, dy): &(i8, i8)) -> Option<Self> {
+		if self.column as i8 + dx < 1 || self.row as i8 + dy < 1 {
+			return None;
 		}
+		Some(Self {
+			row: self.row.wrapping_add(*dx as u8),
+			column: self.column.wrapping_add(*dy as u8),
+		})
 	}
 
 	pub fn new(row: u8, column: u8) -> Self {
@@ -56,7 +59,7 @@ impl From<(u8, u8)> for ChessPoint {
 
 impl Display for ChessPoint {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		write!(f, "({}, {})", self.column, self.row)
+		write!(f, "({}, {})", self.row, self.column)
 	}
 }
 
@@ -176,7 +179,7 @@ impl BoardOptions {
 	/// Creates square board with given dimensions and all cells available
 	pub fn new(rows: u8, columns: u8) -> Self {
 		Self {
-			options: vec![vec![CellOption::Available; columns as usize]; rows as usize],
+			options: vec![vec![CellOption::Available; rows as usize]; columns as usize],
 		}
 	}
 
@@ -205,6 +208,7 @@ impl BoardOptions {
 	// }
 	pub fn rm(&mut self, p: impl Into<ChessPoint>) {
 		let p = p.into();
+		info!("Removing {} (row len = {}, column len = {})", p, self.options.len(), self.options[0].len());
 		self.options[p.row as usize - 1][p.column as usize - 1] = CellOption::Unavailable;
 	}
 	pub fn add(&mut self, p: impl Into<ChessPoint>) {

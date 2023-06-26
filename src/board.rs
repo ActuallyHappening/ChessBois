@@ -162,10 +162,17 @@ type ResSpawning<'a> = (
 
 /// Sets up default resources + sends initial [NewOptions] event
 fn setup(mut commands: Commands, mut update_board: EventWriter<NewOptions>) {
+	let mut board = BoardOptions::new(2, 3);
+	board.rm((1, 2));
+	board.rm((2, 2));
+	board.rm((2, 1));
+	board.rm((3, 1));
+
+
 	let options = Options {
-		options: BoardOptions::new(8, 8),
+		options: board,
 		selected_start: None,
-		selected_algorithm: Algorithm::default(),
+		selected_algorithm: Algorithm::BruteForce,
 		force_update: true,
 	};
 	let current_options = CurrentOptions::from_options(options.clone());
@@ -288,7 +295,7 @@ mod compute {
 		let state = options.clone();
 		if options.selected_start.is_some() {
 			start_executing_task(state, move || {
-				info!("About to compute");
+				trace!("About to compute");
 				alg.tour_computation_cached(options.clone()).unwrap()
 			})
 		}

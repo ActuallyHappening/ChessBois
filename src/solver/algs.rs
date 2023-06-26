@@ -2,7 +2,7 @@ use crate::solver::{pieces::ChessPiece, *};
 use strum::{EnumIter, IntoStaticStr};
 
 mod hamiltonian;
-
+use hamiltonian::hamiltonian_tour_repeatless;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Computation {
@@ -58,8 +58,7 @@ impl From<Option<Moves>> for PartialComputation {
 
 pub enum ImplementedAlgorithms<P: ChessPiece + 'static> {
 	Warnsdorf(P),
-
-	BruteRecursive(P),
+	BruteForce(P),
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, EnumIter, IntoStaticStr, Hash, PartialOrd, Ord)]
@@ -76,7 +75,7 @@ impl Algorithm {
 	pub fn to_impl<P: ChessPiece>(&self, piece: P) -> ImplementedAlgorithms<P> {
 		match self {
 			Algorithm::Warnsdorf => ImplementedAlgorithms::Warnsdorf(piece),
-			Algorithm::BruteForce => ImplementedAlgorithms::BruteRecursive(piece),
+			Algorithm::BruteForce => ImplementedAlgorithms::BruteForce(piece),
 		}
 	}
 
@@ -123,7 +122,8 @@ impl<P: ChessPiece> ImplementedAlgorithms<P> {
 			type ComputerFn<P> = dyn Fn(&P, BoardOptions, ChessPoint) -> Computation;
 			let (piece, computer_fn): (&P, Box<ComputerFn<P>>) = match self {
 				Self::Warnsdorf(piece) => (piece, Box::new(warnsdorf_tour_repeatless)),
-				Self::BruteRecursive(piece) => (piece, Box::new(brute_recursive_tour_repeatless)),
+				// Self::BruteForce(piece) => (piece, Box::new(brute_recursive_tour_repeatless)),
+				Self::BruteForce(piece) => (piece, Box::new(hamiltonian_tour_repeatless)),
 			};
 
 			Some(if let Some(comp) = try_get_cached_solution::<P>(&options) {
@@ -175,9 +175,10 @@ impl Board {
 	fn get_available_moves_from(&self, p: &ChessPoint, piece: &impl ChessPiece) -> Vec<ChessPoint> {
 		let mut moves = Vec::new();
 		for &(dx, dy) in piece.relative_moves() {
-			let p = p.mov(&(dx, dy));
-			if self.get(&p) == Some(CellState::NeverOccupied) {
-				moves.push(p);
+			if let Some(p) = p.displace(&(dx, dy)) {
+				if self.get(&p) == Some(CellState::NeverOccupied) {
+					moves.push(p);
+				}
 			}
 		}
 		moves
@@ -185,9 +186,10 @@ impl Board {
 	fn get_degree(&self, p: &ChessPoint, piece: &impl ChessPiece) -> u16 {
 		let mut degree = 0;
 		for &(dx, dy) in piece.relative_moves() {
-			let p = p.mov(&(dx, dy));
-			if self.get(&p) == Some(CellState::NeverOccupied) {
-				degree += 1;
+			if let Some(p) = p.displace(&(dx, dy)) {
+				if self.get(&p) == Some(CellState::NeverOccupied) {
+					degree += 1;
+				}
 			}
 		}
 		degree
@@ -218,15 +220,15 @@ fn warnsdorf_tour_repeatless<P: ChessPiece>(
 		let mut next = None;
 		let mut min_degree = u16::MAX;
 		for &(dx, dy) in piece.relative_moves() {
-			let p = current.mov(&(dx, dy));
+			if let Some(p) = current.displace(&(dx, dy)) {
+				if board.get(&p) == Some(CellState::NeverOccupied) {
+					state_counter += 1;
 
-			if board.get(&p) == Some(CellState::NeverOccupied) {
-				state_counter += 1;
-
-				let degree = board.get_degree(&p, piece);
-				if degree < min_degree {
-					min_degree = degree;
-					next = Some(p);
+					let degree = board.get_degree(&p, piece);
+					if degree < min_degree {
+						min_degree = degree;
+						next = Some(p);
+					}
 				}
 			}
 		}
