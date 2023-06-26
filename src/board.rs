@@ -220,11 +220,13 @@ fn setup(mut commands: Commands, mut update_board: EventWriter<NewOptions>) {
 	update_board.send(NewOptions::from_options(options));
 }
 
+/// Decides what happens when [NewOptions] event comes in
 fn handle_new_options(
 	mut options_events: EventReader<NewOptions>,
 	old_options: Res<CurrentOptions>,
 
 	cells: Query<Entity, With<ChessPoint>>,
+	viz: Query<Entity, With<VisualizationComponent>>,
 
 	mut commands: Commands,
 	mut mma: ResSpawning,
@@ -242,9 +244,11 @@ fn handle_new_options(
 			return;
 		}
 
+		despawn_visualization(&mut commands, viz);
+
 		// if BoardOptions changed, despawn + re-spawn cells
 		if options.options != old_options.options || options.force_update {
-			// info!("BoardOptions changed, despawning + respawning cells & markers");
+			// info!("BoardOptions changed, de-spawning + re-spawning cells & markers");
 			despawn_cells(&mut commands, cells);
 			despawn_markers();
 
@@ -361,9 +365,7 @@ mod compute {
 
 				// let message get out to everybody
 				update_computation.send(comp.clone());
-				commands.insert_resource(comp.clone());
-
-				// cached_info::set(state.clone(), CellMark::from(comp.0));
+				commands.insert_resource(comp);
 			}
 		}
 	}
@@ -409,7 +411,7 @@ mod cached_info {
 			let (comp, options) = comp.clone().get();
 			let mark = CellMark::from(comp);
 
-			info!("Updating info cache");
+			debug!("Updating info cache");
 			set(options, mark);
 		}
 	}
@@ -429,16 +431,23 @@ mod visualization {
 		to: ChessPoint,
 	}
 
-	/// Consumes [EventReader<ComputationResult>] and spawns visualization
+	/// Consumes [EventReader<ComputationResult>] and actually spawns concrete visualization
 	pub fn handle_spawning_visualization(
 		mut commands: Commands,
-		options: Res<CurrentOptions>,
-		solution: EventReader<ComputationResult>,
+		mut solutions: EventReader<ComputationResult>,
 
 		viz: Query<Entity, With<VisualizationComponent>>,
 
 		mut mma: ResSpawning,
 	) {
+		if let Some(solution) = solutions.iter().next() {
+			let (solution, Options { options, .. }) = solution.clone().get();
+			if let Computation::Successful { solution: moves, ..  } = solution {
+				spawn_visualization(moves, options, &mut commands, &mut mma);
+			}
+
+			solutions.clear()
+		}
 	}
 
 	/// Call to begin process of showing new solution
