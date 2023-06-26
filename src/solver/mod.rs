@@ -21,12 +21,16 @@ pub struct ChessPoint {
 
 impl ChessPoint {
 	fn displace(&self, (dx, dy): &(i8, i8)) -> Option<Self> {
-		if self.column as i8 + dx < 1 || self.row as i8 + dy < 1 {
+		let mut col = self.column as i8;
+		let mut row = self.row as i8;
+		if row + dx < 1 || col + dy < 1 {
 			return None;
 		}
+		row += dx;
+		col += dy;
 		Some(Self {
-			row: self.row.wrapping_add(*dx as u8),
-			column: self.column.wrapping_add(*dy as u8),
+			row: row as u8,
+			column: col as u8,
 		})
 	}
 
@@ -85,6 +89,10 @@ pub struct Move {
 impl Move {
 	pub fn new(from: ChessPoint, to: ChessPoint) -> Self {
 		Self { from, to }
+	}
+
+	pub fn from_tuple((from, to): (ChessPoint, ChessPoint)) -> Self {
+		Move::new(from, to)
 	}
 
 	pub fn new_checked(from: ChessPoint, to: ChessPoint, board: &BoardOptions) -> Option<Self> {
@@ -208,7 +216,7 @@ impl BoardOptions {
 	// }
 	pub fn rm(&mut self, p: impl Into<ChessPoint>) {
 		let p = p.into();
-		info!("Removing {} (row len = {}, column len = {})", p, self.options.len(), self.options[0].len());
+		trace!("Removing {} (row len = {}, column len = {})", p, self.options.len(), self.options[0].len());
 		self.options[p.row as usize - 1][p.column as usize - 1] = CellOption::Unavailable;
 	}
 	pub fn add(&mut self, p: impl Into<ChessPoint>) {

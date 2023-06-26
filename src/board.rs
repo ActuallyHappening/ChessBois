@@ -168,7 +168,6 @@ fn setup(mut commands: Commands, mut update_board: EventWriter<NewOptions>) {
 	board.rm((2, 1));
 	board.rm((3, 1));
 
-
 	let options = Options {
 		options: board,
 		selected_start: None,
@@ -293,11 +292,13 @@ mod compute {
 		commands: &mut Commands,
 	) {
 		let state = options.clone();
-		if options.selected_start.is_some() {
-			start_executing_task(state, move || {
-				trace!("About to compute");
-				alg.tour_computation_cached(options.clone()).unwrap()
-			})
+		if let Some(start) = options.selected_start {
+			if options.options.get_available_points().contains(&start) {
+				start_executing_task(state, move || {
+					trace!("About to compute");
+					alg.tour_computation_cached(options.clone()).unwrap()
+				})
+			}
 		}
 	}
 
@@ -319,7 +320,7 @@ mod compute {
 		#[cfg(target_arch = "wasm32")]
 		{
 			let res = task();
-			*TASK_RESULT.lock().unwrap() = Some(ComputationResult(res, state));	
+			*TASK_RESULT.lock().unwrap() = Some(ComputationResult(res, state));
 		}
 		// TODO: Mess around with WebWorkers & don't break audio?
 		// futures::executor::block_on(async move {

@@ -1,8 +1,12 @@
-use std::{collections::{HashMap, HashSet}, ops::Add};
-use tracing::info;
+use itertools::Itertools;
+use std::{
+	collections::{HashMap, HashSet},
+	ops::Add,
+};
+use tracing::{debug, info, trace};
 
 use crate::{
-	solver::{pieces::ChessPiece, BoardOptions},
+	solver::{pieces::ChessPiece, BoardOptions, Move, Moves},
 	ChessPoint,
 };
 
@@ -39,10 +43,17 @@ pub fn hamiltonian_tour_repeatless<P: ChessPiece + 'static>(
 	options: BoardOptions,
 	start: ChessPoint,
 ) -> Computation {
+	assert!(options.get_available_points().contains(&start));
 
 	impl ChessPoint {
 		pub fn hash(&self) -> Key {
 			(self.column as Key) << 16 | (self.row as Key)
+		}
+		pub fn un_hash(key: Key) -> Self {
+			Self {
+				column: (key >> 16) as u8,
+				row: (key & 0xFFFF) as u8,
+			}
 		}
 	}
 
@@ -68,14 +79,34 @@ pub fn hamiltonian_tour_repeatless<P: ChessPiece + 'static>(
 		graph.insert(*available_mapped_points.get(point).unwrap(), edges);
 	}
 
-	info!("Graph for {len} points: \n{:?}\nPoint mappings: {:?}", graph, available_mapped_points, len = available_points.len());
+	trace!(
+		"Graph for {len} points: \n{:?}\nPoint mappings: {:?}",
+		graph,
+		available_mapped_points,
+		len = available_points.len()
+	);
 
 	let start = *available_mapped_points.get(&start).unwrap();
-	if let Some(path) = find_hamiltonian_path(start, &vec![start], &graph) {
+	if let Some(mut path) = find_hamiltonian_path(start, &vec![start], &graph) {
 		assert_eq!(available_points.len(), path.len() - 1);
 
-		unimplemented!()
+		debug!("Path found: {:?}", path);
+		// path always ends back up at start, so remove end
+		path.pop();
+
+		let moves: Moves = path
+			.into_iter()
+			.map(ChessPoint::un_hash)
+			.tuple_windows()
+			.map(Move::from_tuple)
+			.collect();
+
+		Computation::Successful {
+			solution: moves,
+			explored_states: 0,
+		}
 	} else {
+		debug!("No path found");
 		Computation::Failed { total_states: 0 }
 	}
 }

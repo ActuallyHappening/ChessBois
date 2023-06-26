@@ -16,6 +16,7 @@
 			"denormalized",
 			"Egui",
 			"Fullscreen",
+			"Itertools",
 			"Pickable",
 			"Raycast",
 			"warnsdorf"

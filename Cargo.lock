@@ -1040,6 +1040,7 @@ dependencies = [
  "console_error_panic_hook",
  "futures",
  "getrandom",
+ "itertools",
  "lru",
  "once_cell",
  "rand",
@@ -1656,6 +1657,12 @@ checksum = "be7e6eb63cb936413bd2a4f54be4a9ef53a48252f25864f5f946d4954d7332bd"
 dependencies = [
  "egui",
 ]
+
+[[package]]
+name = "either"
+version = "1.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
 
 [[package]]
 name = "emath"
@@ -2296,6 +2303,15 @@ checksum = "9b2d4429acc1deff0fbdece0325b4997bdb02b2c245ab7023fd5deca0f6348de"
 dependencies = [
  "core-foundation-sys 0.8.4",
  "mach2",
+]
+
+[[package]]
+name = "itertools"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1c173a5686ce8bfa551b3563d0c2170bf24ca44da99c7ca4bfdab5418c3fe57"
+dependencies = [
+ "either",
 ]
 
 [[package]]

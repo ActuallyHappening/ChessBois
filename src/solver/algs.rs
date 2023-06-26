@@ -132,7 +132,7 @@ impl<P: ChessPiece> ImplementedAlgorithms<P> {
 			} else {
 				debug!("Cache miss");
 				let comp = computer_fn(piece, options.options.clone(), start);
-				add_solution_to_cache::<P>(options, comp.clone());
+				// add_solution_to_cache::<P>(options, comp.clone());
 				comp
 			})
 		} else {
