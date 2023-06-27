@@ -257,7 +257,6 @@ pub fn handle_plane_clicked<T: IsPointerEvent>(
 
 use cells::*;
 mod cells;
-
 mod compute {
 	use std::sync::Mutex;
 
@@ -435,9 +434,9 @@ mod cached_info {
 		markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
 		mut mma: ResSpawning,
 	) {
-		if !computations.is_empty() {
-			despawn_markers(&mut commands, markers);
-		}
+		// if !computations.is_empty() {
+		// 	despawn_markers(&mut commands, markers);
+		// }
 		for comp in computations.iter() {
 			let (comp, options) = comp.clone().get();
 			let mark = CellMark::from(comp);
@@ -477,7 +476,7 @@ mod visualization {
 		if let Some(solution) = solutions.iter().next() {
 			let (solution, options) = solution.clone().get();
 			if &options != current_options.as_options() {
-				warn!("Not rendering visualization for computation of non-valid state");
+				// warn!("Not rendering visualization for computation of non-valid state");
 				return;
 			}
 

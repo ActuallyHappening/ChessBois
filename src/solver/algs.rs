@@ -71,7 +71,7 @@ impl From<Option<Moves>> for PartialComputation {
 )]
 pub enum Algorithm {
 	#[default]
-	#[strum(serialize = "Reliable Warnsdorf")]
+	#[strum(serialize = "Warnsdorf")]
 	WarnsdorfBacktrack,
 
 	#[strum(serialize = "Warnsdorf (Unreliable)")]
@@ -80,7 +80,7 @@ pub enum Algorithm {
 	// #[strum(serialize = "Brute Force (SLOW)")]
 	// HamiltonianPath,
 
-	#[strum(serialize = "Hamiltonian Cycle (SLOW!)")]
+	#[strum(serialize = "Hamiltonian Cycle")]
 	HamiltonianCycle,
 }
 
@@ -109,7 +109,8 @@ impl Algorithm {
 	}
 
 	pub fn should_show_states(&self) -> bool {
-		matches!(self, Algorithm::WarnsdorfUnreliable | Algorithm::WarnsdorfBacktrack)
+		// matches!(self, Algorithm::WarnsdorfUnreliable | Algorithm::WarnsdorfBacktrack | Algorithm::HamiltonianCycle)
+		true
 	}
 }
 

@@ -7,7 +7,7 @@ use tracing::{debug, info, trace};
 
 use crate::{
 	solver::{pieces::ChessPiece, BoardOptions, Move, Moves},
-	ChessPoint,
+	ChessPoint, ALG_STATES_CAP,
 };
 
 use super::Computation;
@@ -16,12 +16,22 @@ type Key = u32;
 type Graph = HashMap<Key, HashSet<Key>>;
 type Path = Vec<Key>;
 
-fn find_hamiltonian_path(end: u32, P: &Path, g: &Graph) -> Option<Path> {
+fn find_hamiltonian_path(
+	end: u32,
+	P: &Path,
+	g: &Graph,
+	state_counter: &mut u128,
+) -> Result<Option<Path>, ()> {
+	*state_counter += 1;
+	if *state_counter >= unsafe { ALG_STATES_CAP } {
+		return Err(());
+	}
+
 	let v = P.last().unwrap();
 	if P.len() == g.len() && g.get(v).unwrap().contains(&end) {
 		let mut C = P.clone();
 		C.push(end);
-		Some(C)
+		Ok(Some(C))
 	} else {
 		for w in g.get(v).unwrap() {
 			if P.contains(w) {
@@ -29,12 +39,12 @@ fn find_hamiltonian_path(end: u32, P: &Path, g: &Graph) -> Option<Path> {
 			}
 			let mut Q = P.clone();
 			Q.push(*w);
-			let H = find_hamiltonian_path(end, &Q, g);
+			let H = find_hamiltonian_path(end, &Q, g, state_counter)?;
 			if H.is_some() {
-				return H;
+				return Ok(H);
 			}
 		}
-		None
+		Ok(None)
 	}
 }
 
@@ -92,9 +102,40 @@ pub fn hamiltonian_tour_repeatless<P: ChessPiece + 'static>(
 	let start_vec = vec![start];
 	if !cycle {
 		// show any path that works
+		let mut state_counter: u128 = 0;
 		for valid_end_point in available_mapped_points.values() {
-			if let Some(mut path) = find_hamiltonian_path(*valid_end_point, &start_vec, &graph) {
-				path.pop();
+			match find_hamiltonian_path(*valid_end_point, &start_vec, &graph, &mut state_counter) {
+				Err(_) => return Computation::Failed { total_states: 0 },
+				Ok(None) => continue,
+				Ok(Some(mut path)) => {
+					path.pop();
+
+					let moves: Moves = path
+						.into_iter()
+						.map(ChessPoint::un_hash)
+						.tuple_windows()
+						.map(Move::from_tuple)
+						.collect();
+
+					return Computation::Successful {
+						solution: moves,
+						explored_states: state_counter,
+					};
+				}
+			}
+		}
+		Computation::Failed { total_states: 0 }
+	} else {
+		let mut state_counter: u128 = 0;
+		match find_hamiltonian_path(start, &start_vec, &graph, &mut state_counter) {
+			Err(_) => Computation::GivenUp { explored_states: state_counter },
+			Ok(None) => Computation::Failed { total_states: state_counter },
+			Ok(Some(path)) => {
+				// show only cycle
+				assert_eq!(available_points.len(), path.len() - 1);
+
+				debug!("Path found: {:?}", path);
+				// path always ends back up at start
 
 				let moves: Moves = path
 					.into_iter()
@@ -103,33 +144,11 @@ pub fn hamiltonian_tour_repeatless<P: ChessPiece + 'static>(
 					.map(Move::from_tuple)
 					.collect();
 
-				return Computation::Successful {
+				Computation::Successful {
 					solution: moves,
 					explored_states: 0,
-				};
+				}
 			}
 		}
-		Computation::Failed { total_states: 0 }
-	} else if let Some(path) = find_hamiltonian_path(start, &start_vec, &graph) {
-		// show only cycle
- 			assert_eq!(available_points.len(), path.len() - 1);
-
- 			debug!("Path found: {:?}", path);
- 			// path always ends back up at start
-
- 			let moves: Moves = path
- 				.into_iter()
- 				.map(ChessPoint::un_hash)
- 				.tuple_windows()
- 				.map(Move::from_tuple)
- 				.collect();
-
- 			return Computation::Successful {
- 				solution: moves,
- 				explored_states: 0,
- 			};
- 		} else {
- 			debug!("No path found");
- 			return Computation::Failed { total_states: 0 };
- 		}
+	}
 }
