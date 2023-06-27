@@ -4,11 +4,8 @@
 			"path": "."
 		},
 		{
-			"path": "msrc-q11"
-		},
-		// {
-		// 	"path": "bevy_egui"
-		// }
+			"path": "e"
+		}
 	],
 	"settings": {
 		"cSpell.words": [
