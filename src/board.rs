@@ -432,9 +432,12 @@ mod cached_info {
 		mut computations: EventReader<ComputationResult>,
 		mut commands: Commands,
 
-		// markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
+		markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
 		mut mma: ResSpawning,
 	) {
+		if !computations.is_empty() {
+			despawn_markers(&mut commands, markers);
+		}
 		for comp in computations.iter() {
 			let (comp, options) = comp.clone().get();
 			let mark = CellMark::from(comp);
@@ -442,7 +445,6 @@ mod cached_info {
 			debug!("Updating info cache");
 			set(options.clone(), mark);
 
-			// despawn_markers(&mut commands, markers);
 			spawn_markers(&options, &mut commands, &mut mma)
 		}
 	}
