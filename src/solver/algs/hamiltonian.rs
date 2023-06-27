@@ -44,8 +44,8 @@ impl ChessPoint {
 	}
 	pub fn un_hash(key: Key) -> Self {
 		Self {
-			column: (key >> 16) as u8,
-			row: (key & 0xFFFF) as u8,
+			column: (key >> 16) as u16,
+			row: (key & 0xFFFF) as u16,
 		}
 	}
 }

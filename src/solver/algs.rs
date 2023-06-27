@@ -294,7 +294,7 @@ fn warnsdorf_tour_repeatless<P: ChessPiece>(
 }
 
 fn try_move_recursive(
-	num_moves_required: u8,
+	num_moves_required: u16,
 	piece: &impl ChessPiece,
 	attempting_board: Board,
 	current_pos: ChessPoint,
@@ -369,7 +369,7 @@ fn brute_recursive_tour_repeatless<P: ChessPiece + 'static>(
 	start: ChessPoint,
 ) -> Computation {
 	let all_available_points = options.get_available_points();
-	let num_moves_required = all_available_points.len() as u8 - 1;
+	let num_moves_required = all_available_points.len() as u16 - 1;
 
 	let mut state_counter = 0_u128;
 

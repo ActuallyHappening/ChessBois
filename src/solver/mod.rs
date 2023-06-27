@@ -12,33 +12,33 @@ pub mod pieces;
 pub struct ChessPoint {
 	// Between 1 and COLUMN_SIZE.
 	/// Corresponds to x axis
-	pub column: u8,
+	pub column: u16,
 
 	// Between 1 and ROW_SIZE.
 	/// Corresponds to y axis
-	pub row: u8,
+	pub row: u16,
 }
 
 impl ChessPoint {
-	fn displace(&self, (dx, dy): &(i8, i8)) -> Option<Self> {
-		let mut col = self.column as i8;
-		let mut row = self.row as i8;
+	fn displace(&self, (dx, dy): &(i16, i16)) -> Option<Self> {
+		let mut col = self.column as i16;
+		let mut row = self.row as i16;
 		if row + dx < 1 || col + dy < 1 {
 			return None;
 		}
 		row += dx;
 		col += dy;
 		Some(Self {
-			row: row as u8,
-			column: col as u8,
+			row: row as u16,
+			column: col as u16,
 		})
 	}
 
-	pub fn new(row: u8, column: u8) -> Self {
+	pub fn new(row: u16, column: u16) -> Self {
 		Self { row, column }
 	}
 
-	pub fn new_checked(row: u8, column: u8, board: &BoardOptions) -> Option<Self> {
+	pub fn new_checked(row: u16, column: u16, board: &BoardOptions) -> Option<Self> {
 		if board.validate_point(&Self { row, column }) {
 			Some(Self { row, column })
 		} else {
@@ -55,8 +55,8 @@ impl ChessPoint {
 	}
 }
 
-impl From<(u8, u8)> for ChessPoint {
-	fn from((row, column): (u8, u8)) -> Self {
+impl From<(u16, u16)> for ChessPoint {
+	fn from((row, column): (u16, u16)) -> Self {
 		Self { row, column }
 	}
 }
@@ -185,7 +185,7 @@ pub struct BoardOptions {
 
 impl BoardOptions {
 	/// Creates square board with given dimensions and all cells available
-	pub fn new(rows: u8, columns: u8) -> Self {
+	pub fn new(rows: u16, columns: u16) -> Self {
 		Self {
 			options: vec![vec![CellOption::Available; rows as usize]; columns as usize],
 		}
@@ -208,10 +208,10 @@ impl BoardOptions {
 		Self { options }
 	}
 
-	// pub fn rm(&mut self, p: (u8, u8)) {
+	// pub fn rm(&mut self, p: (u16, u16)) {
 	// 	self.options[p.0 as usize - 1][p.1 as usize - 1] = CellOption::Unavailable;
 	// }
-	// pub fn add(&mut self, p: (u8, u8)) {
+	// pub fn add(&mut self, p: (u16, u16)) {
 	// 	self.options[p.0 as usize - 1][p.1 as usize - 1] = CellOption::Available;
 	// }
 	pub fn rm(&mut self, p: impl Into<ChessPoint>) {
@@ -225,13 +225,13 @@ impl BoardOptions {
 	}
 
 	/// 1 indexed
-	pub fn width(&self) -> u8 {
-		self.options[0].len() as u8
+	pub fn width(&self) -> u16 {
+		self.options[0].len() as u16
 	}
 
 	/// 1 indexed
-	pub fn height(&self) -> u8 {
-		self.options.len() as u8
+	pub fn height(&self) -> u16 {
+		self.options.len() as u16
 	}
 
 	pub fn validate_point(&self, p: &ChessPoint) -> bool {
@@ -254,7 +254,7 @@ impl BoardOptions {
 		}
 	}
 
-	pub fn update_width(self, new_width: u8) -> Self {
+	pub fn update_width(self, new_width: u16) -> Self {
 		let mut options = self.options;
 		for row in options.iter_mut() {
 			if row.len() < new_width as usize {
@@ -268,7 +268,7 @@ impl BoardOptions {
 
 	/// Increases/decreases the height of the options,
 	/// defaulting to Available for new cells
-	pub fn update_height(self, new_height: u8) -> Self {
+	pub fn update_height(self, new_height: u16) -> Self {
 		let width = self.width() as usize;
 		let mut options = self.options;
 		if options.len() < new_height as usize {

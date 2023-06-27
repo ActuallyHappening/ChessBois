@@ -586,8 +586,10 @@ mod ui {
 	use strum::IntoEnumIterator;
 
 	pub fn spawn_left_sidebar_ui(
-		mut commands: Commands,
+		commands: Commands,
 		mut contexts: EguiContexts,
+
+		mut cam: Query<&mut Transform, With<MainCamera>>,
 
 		options: ResMut<CurrentOptions>,
 		mut new_board_event: EventWriter<NewOptions>,
@@ -599,10 +601,11 @@ mod ui {
 			ui.heading("Controls Panel");
 			ui.label("Instructions: Hover over cell to begin knight there. Click cell to toggle availability (red = unavailable). You can alter the dimensions of the board (below) and the algorithm used.");
 
-			ui.add(egui::Slider::from_get_set((2.)..=10., |val| {
+			const SIZE_CAP: f64 = 20.;
+			ui.add(egui::Slider::from_get_set((2.)..=SIZE_CAP, |val| {
 				let mut options = options.clone();
 				if let Some(new_val) = val {
-					options.options = options.options.update_width(new_val as u8);
+					options.options = options.options.update_width(new_val as u16);
 					options.selected_start = None;
 					new_board_event.send(NewOptions::from_options(options));
 					new_val
@@ -610,10 +613,10 @@ mod ui {
 					options.options.width() as f64
 				}
 			}).text("Width"));
-			ui.add(egui::Slider::from_get_set((2.)..=10., |val| {
+			ui.add(egui::Slider::from_get_set((2.)..=SIZE_CAP, |val| {
 				let mut options = options.clone();
 				if let Some(new_val) = val {
-					options.options = options.options.update_height(new_val as u8);
+					options.options = options.options.update_height(new_val as u16);
 					options.selected_start = None;
 					new_board_event.send(NewOptions::from_options(options));
 					new_val
@@ -640,6 +643,26 @@ mod ui {
 				}
 			});
 			ui.label(current_alg.get_description());
+
+			ui.add(egui::Slider::from_get_set((10.)..=10_000_000., |val| {
+				if let Some(new_val) = val {
+					unsafe {ALG_STATES_CAP = new_val as u128};
+					new_val
+				} else {
+					unsafe {ALG_STATES_CAP as f64}
+				}
+			}).text("Safety States Cap"));
+			ui.label("If your computer is good, you can safely make this number higher. This cap is put in to stop your computer infinitely computing. I can allow it higher if you want");
+
+			ui.add(egui::Slider::from_get_set(CAMERA_HEIGHT as f64..=(CAMERA_HEIGHT as f64 * 2.), |val| {
+				if let Some(new_val) = val {
+					cam.single_mut().translation.y = new_val as f32;
+					new_val
+				} else {
+					cam.single().translation.y as f64
+				}
+			}).text("Camera zoom"));
+			ui.label("You can change the camera zoom to see larger boards");
 		});
 	}
 
@@ -699,15 +722,6 @@ mod ui {
 				));
 			}
 		
-			ui.add(egui::Slider::from_get_set((10.)..=10_000_000., |val| {
-				if let Some(new_val) = val {
-					unsafe {ALG_STATES_CAP = new_val as u128};
-					new_val
-				} else {
-					unsafe {ALG_STATES_CAP as f64}
-				}
-			}).text("Safety States Cap"));
-			ui.label("If your computer is good, you can safely make this number higher. This cap is put in to stop your computer infinitely computing")
 		});
 	}
 
