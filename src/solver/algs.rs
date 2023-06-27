@@ -74,8 +74,8 @@ pub enum Algorithm {
 	#[strum(serialize = "Reliable Warnsdorf")]
 	WarnsdorfBacktrack,
 
-	#[strum(serialize = "Warnsdorf")]
-	Warnsdorf,
+	#[strum(serialize = "Warnsdorf (Unreliable)")]
+	WarnsdorfUnreliable,
 
 	// #[strum(serialize = "Brute Force (SLOW)")]
 	// HamiltonianPath,
@@ -87,7 +87,7 @@ pub enum Algorithm {
 impl Algorithm {
 	pub fn get_description(&self) -> &'static str {
 		match self {
-			Algorithm::Warnsdorf => "A standard knights tour.\
+			Algorithm::WarnsdorfUnreliable => "A standard knights tour.\
 			This algorithm applies Warnsdorf's Rule, which tells you to always move to the square with the fewest available moves. \
 			This algorithm is always guaranteed to terminate in finite time, however it sometimes misses solutions e.g. 8x8 board @ (5, 3).\
 			Warnsdorf's Rule is very easy to implement and is very popular because of its simplicity. The implementation used is sub-optimal, but should suffice.\
@@ -109,7 +109,7 @@ impl Algorithm {
 	}
 
 	pub fn should_show_states(&self) -> bool {
-		matches!(self, Algorithm::Warnsdorf | Algorithm::WarnsdorfBacktrack)
+		matches!(self, Algorithm::WarnsdorfUnreliable | Algorithm::WarnsdorfBacktrack)
 	}
 }
 
@@ -140,7 +140,7 @@ impl Algorithm {
 		start: ChessPoint,
 	) -> Computation {
 		match self {
-			Algorithm::Warnsdorf => warnsdorf_tour_repeatless(piece, options, start),
+			Algorithm::WarnsdorfUnreliable => warnsdorf_tour_repeatless(piece, options, start),
 			Algorithm::WarnsdorfBacktrack => brute_recursive_tour_repeatless(piece, options, start),
 			// Algorithm::HamiltonianPath => hamiltonian_tour_repeatless(piece, options, start, false),
 			Algorithm::HamiltonianCycle => hamiltonian_tour_repeatless(piece, options, start, true),
