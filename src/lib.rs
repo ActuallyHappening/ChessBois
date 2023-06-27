@@ -3,7 +3,7 @@ use bevy_egui::egui::Color32;
 use bevy_mod_picking::{prelude::{RaycastPickCamera, RaycastPickTarget, OnPointer, Click}, PickableBundle};
 
 mod board;
-mod solver;
+pub mod solver;
 
 pub use solver::ChessPoint;
 use board::*;

@@ -124,7 +124,7 @@ impl Options {
 }
 
 impl Algorithm {
-	fn tour_computation<P: ChessPiece + 'static>(
+	pub fn tour_computation<P: ChessPiece + 'static>(
 		&self,
 		piece: &P,
 		options: BoardOptions,

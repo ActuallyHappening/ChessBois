@@ -1,11 +1,14 @@
 {
 	"folders": [
 		{
+			"path": "src"
+		},
+		{
 			"path": "."
 		},
 		{
 			"path": "e"
-		}
+		},
 	],
 	"settings": {
 		"cSpell.words": [
