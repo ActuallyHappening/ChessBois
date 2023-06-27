@@ -4,6 +4,9 @@ To run: `cargo watch -x run`, or `cargo watch -q -c -w src/ -x "r -F dev"`
 To run on web: `trunk serve --open --no-default-features`
 To release: Remove feature `bevy/dynamic_linking`
 
+# notes:
+https://docs.rs/petgraph/latest/petgraph/algo/simple_paths/fn.all_simple_paths.html
+
 
 # Editor pls: https://github.com/jakobhellermann/bevy_editor_pls
 The default controls are:
