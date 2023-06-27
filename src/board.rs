@@ -696,6 +696,16 @@ mod ui {
 					options.options.get_description()
 				));
 			}
+		
+			ui.add(egui::Slider::from_get_set((10.)..=10_000_000., |val| {
+				if let Some(new_val) = val {
+					unsafe {ALG_STATES_CAP = new_val as u128};
+					new_val
+				} else {
+					unsafe {ALG_STATES_CAP as f64}
+				}
+			}).text("Safety States Cap"));
+			ui.label("If your computer is good, you can safely make this number higher. This cap is put in to stop your computer infinitely computing")
 		});
 	}
 

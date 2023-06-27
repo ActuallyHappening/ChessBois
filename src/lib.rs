@@ -1,3 +1,5 @@
+use std::sync::Mutex;
+
 use bevy::prelude::*;
 use bevy_egui::egui::Color32;
 use bevy_mod_picking::{prelude::{RaycastPickCamera, RaycastPickTarget, OnPointer, Click}, PickableBundle};
@@ -38,7 +40,7 @@ const VISUALIZATION_ALL_BASE_COLOUR: Color = Color::Rgba {
 	alpha: 0.5,
 };
 
-const ALG_STATES_CAP: u128 = 100_000;
+static mut ALG_STATES_CAP: u128 = 100_000;
 
 const UI_ALG_ENABLED_COLOUR: Color32 = Color32::GREEN;
 
