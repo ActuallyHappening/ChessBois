@@ -7,12 +7,15 @@ fn main() {
 	let mut board = BoardOptions::new(5, 5);
 	board.rm((1, 1));
 
-	match Algorithm::HamiltonianPath.tour_computation(&piece, board, (2, 1).into()) {
+	match Algorithm::WarnsdorfBacktrack.tour_computation(&piece, board, (2, 1).into()) {
 		Computation::Successful { solution, explored_states } => {
 			println!("Solution: {:?}", solution);
 		}
 		Computation::Failed { total_states } => {
 			println!("Failed after {} states", total_states);
+		}
+		Computation::GivenUp { explored_states: states } => {
+			println!("Gave up after {} states", states)
 		}
 	}
 }

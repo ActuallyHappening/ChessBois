@@ -32,6 +32,7 @@ impl Plugin for BoardPlugin {
 			.add_system(handle_new_options)
 			.add_system(spawn_left_sidebar_ui)
 			.add_system(right_sidebar_ui)
+			.add_system(export_import_ui)
 			.add_plugins(
 				DefaultPickingPlugins
 					.build()
@@ -394,6 +395,8 @@ mod cached_info {
 	pub enum CellMark {
 		Failed,
 		Succeeded,
+
+		GivenUp,
 	}
 
 	impl From<Computation> for CellMark {
@@ -401,6 +404,7 @@ mod cached_info {
 			match value {
 				Computation::Successful { .. } => CellMark::Succeeded,
 				Computation::Failed { .. } => CellMark::Failed,
+				Computation::GivenUp { .. } => CellMark::GivenUp,
 			}
 		}
 	}
@@ -674,6 +678,13 @@ mod ui {
 						}
 						ui.label(RichText::new(msg).color(Color32::RED));
 					}
+					Computation::GivenUp { explored_states: states } => {
+						let mut msg = format!("To avoid excessive computation finding a solution was given up, with {} states considered", states);
+						if !alg.should_show_states() {
+							msg = "Solution found".to_string();
+						}
+						ui.label(RichText::new(msg).color(Color32::RED));
+					}
 				}
 			}
 
@@ -687,4 +698,6 @@ mod ui {
 			}
 		});
 	}
+
+	pub fn export_import_ui() {}
 }

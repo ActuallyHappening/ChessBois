@@ -1,4 +1,4 @@
-use crate::solver::{pieces::ChessPiece, *};
+use crate::{solver::{pieces::ChessPiece, *}, ALG_STATES_CAP};
 use strum::{EnumIter, IntoStaticStr};
 
 mod hamiltonian;
@@ -16,12 +16,18 @@ pub enum Computation {
 	Failed {
 		total_states: u128,
 	},
+
+	GivenUp {
+		explored_states: u128,
+	}
 }
 
 #[derive(Clone)]
 pub enum PartialComputation {
 	Successful { solution: Moves },
 	Failed,
+
+	GivenUp,
 }
 
 impl PartialComputation {
@@ -34,6 +40,9 @@ impl PartialComputation {
 			Self::Failed => Computation::Failed {
 				total_states: count,
 			},
+			Self::GivenUp => Computation::GivenUp {
+				explored_states: count,
+			},
 		}
 	}
 
@@ -43,6 +52,7 @@ impl PartialComputation {
 				solution: f(solution),
 			},
 			Self::Failed => Self::Failed,
+			Self::GivenUp => Self::GivenUp,
 		}
 	}
 }
@@ -61,17 +71,16 @@ impl From<Option<Moves>> for PartialComputation {
 )]
 pub enum Algorithm {
 	#[default]
+	#[strum(serialize = "Reliable Warnsdorf")]
+	WarnsdorfBacktrack,
+
 	#[strum(serialize = "Warnsdorf")]
 	Warnsdorf,
 
-	#[strum(serialize = "Brute Force (⚠️ slow ⚠️)")]
-	#[strum()]
-	HamiltonianPath,
+	// #[strum(serialize = "Brute Force (SLOW)")]
+	// HamiltonianPath,
 
-	#[strum(serialize = "Brute Force (Warnsdorf biased)")]
-	BruteForce,
-
-	#[strum(serialize = "Hamiltonian Cycle (⚠️ slow ⚠️)")]
+	#[strum(serialize = "Hamiltonian Cycle (SLOW!)")]
 	HamiltonianCycle,
 }
 
@@ -81,17 +90,17 @@ impl Algorithm {
 			Algorithm::Warnsdorf => "A standard knights tour.\
 			This algorithm applies Warnsdorf's Rule, which tells you to always move to the square with the fewest available moves. \
 			This algorithm is always guaranteed to terminate in finite time, however it sometimes misses solutions e.g. 8x8 board @ (5, 3).\
-			Warnsdorf's Rule is very easy to implement and is very popular because of its simplicity. The implementation used is sub-optimal, but should suffice.
+			Warnsdorf's Rule is very easy to implement and is very popular because of its simplicity. The implementation used is sub-optimal, but should suffice.\
+			Also, in the case that Warnsdorf's Rule doesn't fully specify what to do, as in where you have to guess, this algorithm acts *deterministically* but\
+			*not correctly*. A fuller implementation would implement backtracking, which the Reliable Warnsdorf algorithm does.\
 			", 
-			Algorithm::BruteForce => "A standard knights tour.\
-			This algorithm is a recursive brute-force approach, which favours Warnsdorf's Rule first before backtracking.\
-			This algorithm is always guaranteed to terminate in finite time, but that time complexity is exponential compared with number of cells, so \
-			large boards with no solutions will take a long time to solve. In worst case scenario, since it is brute force, it will check every possible \
-			knights tour before exiting with no solution! However, if Warnsdorf's algorithm finds a solution, this algorithm will find that solution first.
+			Algorithm::WarnsdorfBacktrack => "A standard knights tour.\
+			See the Warnsdorf algorithm's description for more information.\
+			This algorithm is a fuller implementation of Warnsdorf's Rule, including backtracking when Warnsdorf's Rule doesn't fully specify what to do.\
 			",
-			Algorithm::HamiltonianPath => "A standard knights tour.\
-			This algorithm attempts to find a hamiltonian path from the start to any end point with brute force.\
-			",
+			// Algorithm::HamiltonianPath => "A standard knights tour.\
+			// This algorithm attempts to find a hamiltonian path from the start to any end point with brute force.\
+			// ",
 			Algorithm::HamiltonianCycle => "NOT a knights tour!\
 			This algorithm tries to find a hamiltonian cycle, as in a path starting and ending at the same point.\
 			This is significantly slower than other algorithms, but when found it provides solutions to knights tour for every start point.\
@@ -100,7 +109,7 @@ impl Algorithm {
 	}
 
 	pub fn should_show_states(&self) -> bool {
-		matches!(self, Algorithm::Warnsdorf | Algorithm::BruteForce)
+		matches!(self, Algorithm::Warnsdorf | Algorithm::WarnsdorfBacktrack)
 	}
 }
 
@@ -132,8 +141,8 @@ impl Algorithm {
 	) -> Computation {
 		match self {
 			Algorithm::Warnsdorf => warnsdorf_tour_repeatless(piece, options, start),
-			Algorithm::HamiltonianPath => hamiltonian_tour_repeatless(piece, options, start, false),
-			Algorithm::BruteForce => brute_recursive_tour_repeatless(piece, options, start),
+			Algorithm::WarnsdorfBacktrack => brute_recursive_tour_repeatless(piece, options, start),
+			// Algorithm::HamiltonianPath => hamiltonian_tour_repeatless(piece, options, start, false),
 			Algorithm::HamiltonianCycle => hamiltonian_tour_repeatless(piece, options, start, true),
 		}
 	}
@@ -279,6 +288,9 @@ fn try_move_recursive(
 	state_counter: &mut u128,
 ) -> PartialComputation {
 	*state_counter += 1;
+	if *state_counter > ALG_STATES_CAP {
+		return PartialComputation::GivenUp;
+	}
 
 	if num_moves_required == 0 {
 		// println!("Found solution!");
@@ -296,7 +308,10 @@ fn try_move_recursive(
 	}
 	// sort by degree
 	available_moves.sort_by_cached_key(|p| attempting_board.get_degree(p, piece));
-	// println!("Available moves: {:?}", available_moves);
+
+	// IMPORTANT: Only considers moves with the lowest degree. To make brute force, remove this
+	let lowest_degree = attempting_board.get_degree(&available_moves[0], piece);
+	available_moves.retain(|p| attempting_board.get_degree(p, piece) == lowest_degree);
 
 	let mut moves = None;
 
@@ -325,6 +340,9 @@ fn try_move_recursive(
 				// return Some(working_moves);
 				moves = Some(working_moves);
 				break;
+			}
+			PartialComputation::GivenUp => {
+				return PartialComputation::GivenUp;
 			}
 		};
 	}

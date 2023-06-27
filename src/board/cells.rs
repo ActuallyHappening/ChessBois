@@ -143,6 +143,24 @@ fn spawn_mark(
 					MarkerMarker {},
 				));
 			}
+			CellMark::GivenUp => {
+				let material_handle = materials.add(StandardMaterial {
+					base_color_texture: Some(ass.load("images/WarningMark.png")),
+					alpha_mode: AlphaMode::Blend,
+					..default()
+				});
+
+				commands.spawn((
+					PbrBundle {
+						mesh,
+						material: material_handle,
+						transform,
+						..default()
+					},
+					at,
+					MarkerMarker {},
+				));
+			}
 		}
 	}
 }
