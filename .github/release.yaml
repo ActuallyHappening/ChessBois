@@ -82,9 +82,9 @@ jobs:
 
   #     - name: Prepare package
   #       run: |
-  #         mkdir linux
-  #         cp target/x86_64-unknown-linux-gnu/release/${{ env.binary }} linux/
-  #         cp -r assets linux/
+          # mkdir linux
+          # cp target/x86_64-unknown-linux-gnu/release/${{ env.binary }} linux/
+          # cp -r assets linux/
 
   #     - name: Package as a zip
   #       working-directory: ./linux
