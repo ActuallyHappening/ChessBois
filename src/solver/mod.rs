@@ -104,7 +104,8 @@ impl Move {
 	}
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+/// Wrapper around `Vec<Move>` with some extra functionality
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Default)]
 pub struct Moves {
 	moves: Vec<Move>,
 }

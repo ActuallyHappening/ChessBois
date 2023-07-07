@@ -13,6 +13,7 @@
 use crate::solver::algs::*;
 use crate::solver::pieces::StandardKnight;
 use crate::solver::{pieces::ChessPiece, BoardOptions, ChessPoint};
+use bevy::ecs::event::ManualEventIterator;
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 use std::f32::consts::TAU;
@@ -26,13 +27,15 @@ impl Plugin for BoardPlugin {
 			.add_event::<NewOptions>()
 			.add_event::<ComputationResult>()
 			.add_startup_system(setup)
-			.add_system(handle_automatic_computation)
-			.add_system(update_cache_from_computation)
-			.add_system(handle_spawning_visualization)
-			.add_system(handle_new_options)
-			.add_system(spawn_left_sidebar_ui)
+			// normal state: Automatic
+			.add_systems((handle_automatic_computation, update_cache_from_computation, handle_spawning_visualization, handle_new_options).in_set(OnUpdate(ProgramState::Automatic)))
+			// on exit automatic
+			.add_systems((state_manual::despawn_visualization, state_manual::despawn_markers, state_manual::add_empty_manual_moves).in_schedule(OnExit(ProgramState::Automatic)))
+			// manual state:
+.add_event::<ManualNextCell>()
+			// end manual state
+			.add_system(left_sidebar_ui)
 			.add_system(right_sidebar_ui)
-			.add_system(export_import_ui)
 			.add_plugins(
 				DefaultPickingPlugins
 					.build()
@@ -255,6 +258,8 @@ pub fn handle_plane_clicked<T: IsPointerEvent>(
 	Bubble::Up
 }
 
+mod state_manual;
+
 use cells::*;
 mod cells;
 mod compute {
@@ -450,145 +455,29 @@ mod cached_info {
 }
 
 use visualization::*;
-mod visualization {
-	use super::{
-		compute::{begin_background_compute, ComputationResult},
-		*,
-	};
-	use crate::solver::{algs::Computation, pieces::StandardKnight, Move, Moves};
-
-	#[derive(Component, Debug, Clone)]
-	pub struct VisualizationComponent {
-		from: ChessPoint,
-		to: ChessPoint,
-	}
-
-	/// Consumes [EventReader<ComputationResult>] and actually spawns concrete visualization if state is correct
-	pub fn handle_spawning_visualization(
-		mut commands: Commands,
-		mut solutions: EventReader<ComputationResult>,
-		current_options: Res<CurrentOptions>,
-
-		viz: Query<Entity, With<VisualizationComponent>>,
-
-		mut mma: ResSpawning,
-	) {
-		if let Some(solution) = solutions.iter().next() {
-			let (solution, options) = solution.clone().get();
-			if &options != current_options.as_options() {
-				// warn!("Not rendering visualization for computation of non-valid state");
-				return;
-			}
-
-			if let Computation::Successful {
-				solution: moves, ..
-			} = solution
-			{
-				spawn_visualization(moves, options.options, &mut commands, &mut mma);
-			}
-
-			solutions.clear()
-		}
-	}
-
-	/// Actually spawn entities of new solution
-	pub fn spawn_visualization(
-		moves: Moves,
-		options: BoardOptions,
-		commands: &mut Commands,
-		mma: &mut ResSpawning,
-	) {
-		for Move { from, to } in moves.iter() {
-			spawn_path_line(
-				from,
-				to,
-				&options,
-				VISUALIZATION_SELECTED_COLOUR,
-				commands,
-				mma,
-			)
-		}
-	}
-
-	pub fn despawn_visualization(
-		commands: &mut Commands,
-		visualization: Query<Entity, With<VisualizationComponent>>,
-	) {
-		for entity in visualization.iter() {
-			commands.entity(entity).despawn_recursive();
-		}
-	}
-
-	fn spawn_path_line(
-		from: &ChessPoint,
-		to: &ChessPoint,
-		options: &BoardOptions,
-		colour: Color,
-
-		commands: &mut Commands,
-		// meshes: &mut ResMut<Assets<Mesh>>,
-		// materials: &mut ResMut<Assets<StandardMaterial>>,
-		mma: &mut ResSpawning,
-	) {
-		let start_pos = get_spacial_coord_2d(options, *from);
-		let end_pos = get_spacial_coord_2d(options, *to);
-
-		let center = (start_pos + end_pos) / 2.; // ✅
-		let length = (start_pos - end_pos).length(); // ✅
-		let angle: f32 = -(start_pos.y - end_pos.y).atan2(start_pos.x - end_pos.x);
-
-		// assert_eq!(angle, TAU / 8., "Drawing from {from} [{from:?}] [{from_pos}] to {to} [{to:?}] [{to_pos}], Angle: {angle}, 𝚫y: {}, 𝚫x: {}", (to_pos.y - from_pos.y), (to_pos.x - from_pos.x));
-		// info!("Angle: {angle}, {}", angle.to_degrees());
-
-		let transform =
-			Transform::from_translation(Vec3::new(center.x, VISUALIZATION_HEIGHT, center.y))
-				.with_rotation(Quat::from_rotation_y(angle));
-
-		// info!("Transform: {:?}", transform);
-		// info!("Angle: {:?}, Length: {:?}", angle, length);
-
-		let mesh_thin_rectangle = mma.0.add(
-			shape::Box::new(
-				length,
-				VISUALIZATION_DIMENSIONS.x,
-				VISUALIZATION_DIMENSIONS.y,
-			)
-			.into(),
-		);
-
-		commands.spawn((
-			PbrBundle {
-				mesh: mesh_thin_rectangle,
-				material: mma.1.add(colour.into()),
-				transform,
-				..default()
-			},
-			VisualizationComponent {
-				from: *from,
-				to: *to,
-			},
-		));
-	}
-}
+mod visualization;
 
 use ui::*;
 
 use self::cached_info::update_cache_from_computation;
 use self::compute::{begin_background_compute, handle_automatic_computation, ComputationResult};
+use self::state_manual::ManualNextCell;
 mod ui {
 	use super::{compute::ComputationResult, *};
-	use crate::solver::algs::Computation;
+	use crate::{solver::algs::Computation, ProgramState};
 	use bevy_egui::{
 		egui::{Color32, RichText},
 		*,
 	};
 	use strum::IntoEnumIterator;
 
-	pub fn spawn_left_sidebar_ui(
+	pub fn left_sidebar_ui(
 		commands: Commands,
 		mut contexts: EguiContexts,
 
 		mut cam: Query<&mut Transform, With<MainCamera>>,
+		mut next_state: ResMut<NextState<ProgramState>>,
+		state: Res<State<ProgramState>>,
 
 		options: ResMut<CurrentOptions>,
 		mut new_board_event: EventWriter<NewOptions>,
@@ -662,6 +551,21 @@ mod ui {
 				}
 			}).text("Camera zoom"));
 			ui.label("You can change the camera zoom to see larger boards");
+
+			// states
+			let current_state = &state.into_inner().0;
+			match current_state {
+				ProgramState::Automatic => {
+					if ui.button("Switch to manual mode").clicked() {
+						next_state.set(ProgramState::Manual);
+					}
+				},
+				ProgramState::Manual => {
+					if ui.button("Switch to automatic mode").clicked() {
+						next_state.set(ProgramState::Automatic);
+					}
+				},
+			}
 		});
 	}
 
@@ -722,9 +626,5 @@ mod ui {
 			}
 		
 		});
-	}
-
-	pub fn export_import_ui() {
-		
 	}
 }

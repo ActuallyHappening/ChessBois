@@ -1,21 +1,35 @@
-use std::sync::Mutex;
-
 use bevy::prelude::*;
 use bevy_egui::egui::Color32;
-use bevy_mod_picking::{prelude::{RaycastPickCamera, RaycastPickTarget, OnPointer, Click}, PickableBundle};
+use bevy_mod_picking::{
+	prelude::{Click, OnPointer, RaycastPickCamera, RaycastPickTarget},
+	PickableBundle,
+};
 
 mod board;
 pub mod solver;
 
-pub use solver::ChessPoint;
 use board::*;
+pub use solver::ChessPoint;
 
 #[derive(Default)]
 pub struct ChessSolverPlugin;
 impl Plugin for ChessSolverPlugin {
 	fn build(&self, app: &mut App) {
-		app.add_startup_system(setup).add_plugin(BoardPlugin);
+		app
+			.add_startup_system(setup)
+			.add_state::<ProgramState>()
+			.add_plugin(BoardPlugin);
 	}
+}
+
+#[derive(
+	States, derive_more::Display, strum::EnumIs, Default, Clone, PartialEq, Eq, Debug, Hash,
+)]
+pub enum ProgramState {
+	#[default]
+	Automatic,
+
+	Manual,
 }
 
 const CAMERA_HEIGHT: f32 = 75.;

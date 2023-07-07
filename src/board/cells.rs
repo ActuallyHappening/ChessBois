@@ -220,8 +220,9 @@ fn toggle_cell_availability(
 	options: ResMut<CurrentOptions>,
 
 	mut update_board: EventWriter<NewOptions>,
+	mut update_manual: EventWriter<ManualNextCell>,
 ) -> Bubble {
-	let (mat, point) = cells.get(event.target).unwrap();
+	let (_mat, point) = cells.get(event.target).unwrap();
 
 	let mut options = options.current.clone();
 	match options.options.get(point) {
@@ -231,6 +232,7 @@ fn toggle_cell_availability(
 
 			options.options.rm(*point);
 			update_board.send(NewOptions::from_options(options));
+			update_manual.send(ManualNextCell::from(*point));
 		}
 		Some(CellOption::Unavailable) => {
 			// let material = materials.get_mut(mat).unwrap();
