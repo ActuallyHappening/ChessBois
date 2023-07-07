@@ -5,10 +5,7 @@
 		},
 		{
 			"path": "."
-		},
-		{
-			"path": "e"
-		},
+		}
 	],
 	"settings": {
 		"cSpell.words": [

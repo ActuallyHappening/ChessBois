@@ -1,5 +1,5 @@
 set -e
 
 ./macos-release.sh
-# ./windows-release.sh
-trunk build
+./windows-release.sh
+trunk build --release
