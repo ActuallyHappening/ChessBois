@@ -1,7 +1,6 @@
 use itertools::Itertools;
 use std::{
 	collections::{HashMap, HashSet},
-	ops::Add,
 };
 use tracing::{debug, info, trace};
 
@@ -16,6 +15,7 @@ type Key = u32;
 type Graph = HashMap<Key, HashSet<Key>>;
 type Path = Vec<Key>;
 
+#[allow(non_snake_case)]
 fn find_hamiltonian_path(
 	end: u32,
 	P: &Path,

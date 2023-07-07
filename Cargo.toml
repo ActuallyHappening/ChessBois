@@ -23,7 +23,7 @@ opt-level = 3
 
 [profile.release]
 # codegen-units = 1
-lto = true
+# lto = true
 
 [dependencies.bevy]
 version = "0.10.1"

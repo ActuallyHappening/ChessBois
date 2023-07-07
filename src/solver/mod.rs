@@ -1,8 +1,8 @@
+use bevy::prelude::*;
 use std::{
 	fmt::{self, Display},
 	ops::{Deref, DerefMut},
 };
-use bevy::prelude::*;
 
 pub mod algs;
 pub mod pieces;
@@ -201,7 +201,7 @@ impl BoardOptions {
 	}
 
 	// pub fn set(&mut self, point: &ChessPoint, state: CellOption) {
-		// self.options[point.row as usize - 1][point.column as usize - 1] = state;
+	// self.options[point.row as usize - 1][point.column as usize - 1] = state;
 	// }
 	pub fn set(self, point: &ChessPoint, state: CellOption) -> Self {
 		let mut options = self.options;
@@ -217,7 +217,12 @@ impl BoardOptions {
 	// }
 	pub fn rm(&mut self, p: impl Into<ChessPoint>) {
 		let p = p.into();
-		trace!("Removing {} (row len = {}, column len = {})", p, self.options.len(), self.options[0].len());
+		trace!(
+			"Removing {} (row len = {}, column len = {})",
+			p,
+			self.options.len(),
+			self.options[0].len()
+		);
 		self.options[p.row as usize - 1][p.column as usize - 1] = CellOption::Unavailable;
 	}
 	pub fn add(&mut self, p: impl Into<ChessPoint>) {
@@ -273,9 +278,7 @@ impl BoardOptions {
 		let width = self.width() as usize;
 		let mut options = self.options;
 		if options.len() < new_height as usize {
-			options.resize_with(new_height as usize, || {
-				vec![CellOption::Available; width]
-			});
+			options.resize_with(new_height as usize, || vec![CellOption::Available; width]);
 		} else {
 			options.truncate(new_height as usize);
 		}
@@ -319,7 +322,13 @@ impl BoardOptions {
 	}
 
 	pub fn get_description(&self) -> String {
-		format!("{}x{} board with {} cells available (and {} cells disabled)", self.height(), self.width(), self.get_available_points().len(), self.get_unavailable_points().len())
+		format!(
+			"{}x{} board with {} cells available (and {} cells disabled)",
+			self.height(),
+			self.width(),
+			self.get_available_points().len(),
+			self.get_unavailable_points().len()
+		)
 	}
 }
 
@@ -337,4 +346,3 @@ impl Display for BoardOptions {
 		Ok(())
 	}
 }
-
