@@ -2,7 +2,7 @@ use itertools::Itertools;
 use std::{
 	collections::{HashMap, HashSet},
 };
-use tracing::{debug, info, trace};
+use tracing::{debug, trace};
 
 use crate::{
 	solver::{pieces::ChessPiece, BoardOptions, Move, Moves},

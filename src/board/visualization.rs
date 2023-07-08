@@ -1,8 +1,8 @@
 use super::{
-	compute::{begin_background_compute, ComputationResult},
+	compute::{ComputationResult},
 	*,
 };
-use crate::solver::{algs::Computation, pieces::StandardKnight, Move, Moves};
+use crate::solver::{algs::Computation, Move, Moves};
 
 #[derive(Component, Debug, Clone)]
 pub struct VisualizationComponent {
@@ -16,7 +16,7 @@ pub fn handle_spawning_visualization(
 	mut solutions: EventReader<ComputationResult>,
 	current_options: Res<CurrentOptions>,
 
-	viz: Query<Entity, With<VisualizationComponent>>,
+	_viz: Query<Entity, With<VisualizationComponent>>,
 
 	mut mma: ResSpawning,
 ) {

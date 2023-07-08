@@ -13,7 +13,7 @@
 use crate::solver::algs::*;
 use crate::solver::pieces::StandardKnight;
 use crate::solver::{pieces::ChessPiece, BoardOptions, ChessPoint};
-use bevy::ecs::event::ManualEventIterator;
+
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 use std::f32::consts::TAU;
@@ -299,7 +299,7 @@ mod compute {
 		alg: Algorithm,
 		piece: &P,
 		options: Options,
-		commands: &mut Commands,
+		_commands: &mut Commands,
 	) {
 		let state = options.clone();
 		if let Some(start) = options.selected_start {
@@ -438,7 +438,7 @@ mod cached_info {
 		mut computations: EventReader<ComputationResult>,
 		mut commands: Commands,
 
-		markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
+		_markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
 		mut mma: ResSpawning,
 	) {
 		// if !computations.is_empty() {
@@ -474,13 +474,13 @@ mod ui {
 	use strum::IntoEnumIterator;
 
 	pub fn left_sidebar_ui(
-		commands: Commands,
+		_commands: Commands,
 		mut contexts: EguiContexts,
 
 		mut cam: Query<&mut Transform, With<MainCamera>>,
 		mut next_state: ResMut<NextState<ProgramState>>,
 		state: Res<State<ProgramState>>,
-		mut current_level: ResMut<ManualFreedom>,
+		current_level: ResMut<ManualFreedom>,
 
 		options: ResMut<CurrentOptions>,
 		mut new_board_event: EventWriter<NewOptions>,
@@ -599,7 +599,7 @@ mod ui {
 		options: Res<CurrentOptions>,
 		computation: Option<Res<ComputationResult>>,
 
-		mut commands: Commands,
+		_commands: Commands,
 		mut contexts: EguiContexts,
 	) {
 		let options = &options.current;
@@ -643,7 +643,7 @@ mod ui {
 			}
 
 			if let Some(start) = &options.selected_start {
-				let alg_selected: &str = options.selected_algorithm.clone().into();
+				let alg_selected: &str = options.selected_algorithm.into();
 				ui.label(format!(
 					"Current info: Starting at {start} with {} algorithm {}",
 					alg_selected,
