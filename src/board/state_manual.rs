@@ -1,6 +1,10 @@
-use crate::solver::Moves;
-use crate::solver::Move;
+use strum::Display;
+use strum::EnumIs;
+use strum::EnumIter;
+
 use super::*;
+use crate::solver::Move;
+use crate::solver::Moves;
 
 #[derive(
 	derive_more::Into,
@@ -25,38 +29,94 @@ pub struct ManualMoves {
 	pub moves: Moves,
 }
 
+#[derive(Resource, Display, EnumIs, EnumIter, Default, Debug, Clone, PartialEq, Eq)]
+pub enum ManualFreedom {
+	#[strum(serialize = "Completely free")]
+	Free,
+
+	#[strum(serialize = "Any possible knights move")]
+	AnyPossible,
+
+	#[strum(serialize = "Only valid knights moves")]
+	#[default]
+	ValidOnly,
+}
+
+impl ManualFreedom {
+	pub fn get_description(&self) -> &'static str {
+		match self {
+			ManualFreedom::Free => "Chose any move that is on the board and not disabled. The most free option available.",
+			ManualFreedom::AnyPossible => "Chose only moves that are valid knight moves. Can still jump onto squares multiple times",
+			ManualFreedom::ValidOnly => "Chose only moves that are valid knight moves and have not been visited yet. The most restrictive option available."
+		}
+	}
+}
+
 pub fn handle_manual_visualization(
 	mut commands: Commands,
 	options: Res<CurrentOptions>,
 
-	mut manual_moves: ResMut<ManualMoves>,
+	manual_moves: ResMut<ManualMoves>,
 
 	visualization: Query<Entity, With<VisualizationComponent>>,
 	mut mma: ResSpawning,
 ) {
 	let moves = manual_moves.moves.clone();
 	super::visualization::despawn_visualization(&mut commands, visualization);
-	spawn_visualization(moves, options.into_inner().current.options.clone(), &mut commands, &mut mma);
+	spawn_visualization(
+		moves,
+		options.into_inner().current.options.clone(),
+		&mut commands,
+		&mut mma,
+	);
 }
 
 pub fn handle_new_manual_selected(
 	mut events: EventReader<ManualNextCell>,
 	mut manual_moves: ResMut<ManualMoves>,
+	current_level: Res<ManualFreedom>,
 ) {
+	let current_level = current_level.into_inner();
 	for ManualNextCell { cell } in events.iter() {
 		if manual_moves.start.is_none() {
 			manual_moves.start = Some(*cell);
 			info!("Manually adding start cell: {:?}", manual_moves.start);
-		} else if manual_moves.moves.last().is_none() {
-			let from = manual_moves.start.unwrap();
-			manual_moves.moves.push(Move::new(from, *cell));
 		} else {
-			let from = manual_moves.moves.last().unwrap().to;
-			manual_moves.moves.push(Move::new(from, *cell));
+			let from = if manual_moves.moves.last().is_none() {
+				manual_moves.start.unwrap()
+			} else {
+				manual_moves.moves.last().unwrap().to
+			};
+
+			match current_level {
+				ManualFreedom::Free => {
+					manual_moves.moves.push(Move::new(from, *cell));
+				}
+				ManualFreedom::AnyPossible => {
+					let piece = StandardKnight;
+					if piece.is_valid_move(from, *cell) {
+						manual_moves.moves.push(Move::new(from, *cell));
+					} else {
+						warn!(
+							"Invalid move: {:?} -> {:?}; A knight can never make that move",
+							from, *cell
+						);
+					}
+				}
+				ManualFreedom::ValidOnly => {
+					let piece = StandardKnight;
+					if piece.is_valid_move(from, *cell) && !manual_moves.moves.iter().any(|m| m.to == *cell) {
+						manual_moves.moves.push(Move::new(from, *cell));
+					} else {
+						warn!("Invalid move: {:?} -> {:?}; A knight can never make that move, OR the square you are moving to has already been occupied", from, *cell);
+					}
+				}
+			}
 		}
 	}
 }
 
+/// overwrites / resets manual moves
 pub fn add_empty_manual_moves(mut commands: Commands) {
 	commands.insert_resource(ManualMoves::default());
 }
