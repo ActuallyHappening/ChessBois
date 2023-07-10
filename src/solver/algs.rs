@@ -98,6 +98,7 @@ impl Algorithm {
 			This algorithm applies Warnsdorf's Rule, which tells you to always move to the square with the fewest available moves. \
 			This algorithm is a fuller implementation of Warnsdorf's Rule, including backtracking when Warnsdorf's Rule doesn't fully specify what to do.\
 			HOWEVER, it does not check every possible state, so its completeness / correctness still depends on the completeness of the Warnsdorf algorithm!
+			i.e., I am not certain this algorithm is ALWAYS correct!
 			",
 			// Algorithm::HamiltonianPath => "A standard knights tour.\
 			// This algorithm attempts to find a hamiltonian path from the start to any end point with brute force.\
@@ -106,6 +107,7 @@ impl Algorithm {
 			Algorithm::HamiltonianCycle => "NOT a knights tour!\
 			This algorithm tries to find a hamiltonian cycle, as in a path starting and ending at the same point.\
 			This is significantly slower than other algorithms, but when found it provides solutions to knights tour for every start point.\
+			I believe this is guarenteed to give the correct answer, although I have not tested it thoroughly.\
 			"
 		}
 	}
