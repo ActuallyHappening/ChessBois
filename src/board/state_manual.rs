@@ -3,6 +3,7 @@ use strum::EnumIs;
 use strum::EnumIter;
 
 use super::*;
+use super::viz_colours::ManualVizColour;
 use crate::solver::Move;
 use crate::solver::Moves;
 
@@ -133,4 +134,8 @@ pub fn despawn_markers(
 	markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
 ) {
 	super::cells::despawn_markers(&mut commands, markers);
+}
+
+pub fn add_default_manual_viz_colour(mut commands: Commands) {
+	commands.insert_resource(ManualVizColour::default());
 }
