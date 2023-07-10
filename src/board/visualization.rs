@@ -1,7 +1,4 @@
-use super::{
-	compute::{ComputationResult},
-	*,
-};
+use super::{compute::ComputationResult, *};
 use crate::solver::{algs::Computation, Move, Moves};
 
 #[derive(Component, Debug, Clone)]
@@ -73,8 +70,6 @@ fn spawn_path_line(
 	colour: Color,
 
 	commands: &mut Commands,
-	// meshes: &mut ResMut<Assets<Mesh>>,
-	// materials: &mut ResMut<Assets<StandardMaterial>>,
 	mma: &mut ResSpawning,
 ) {
 	let start_pos = get_spacial_coord_2d(options, *from);
@@ -102,10 +97,11 @@ fn spawn_path_line(
 		.into(),
 	);
 
+	let material = mma.1.add(colour.into());
 	commands.spawn((
 		PbrBundle {
 			mesh: mesh_thin_rectangle,
-			material: mma.1.add(colour.into()),
+			material: material.clone(),
 			transform,
 			..default()
 		},
@@ -114,4 +110,22 @@ fn spawn_path_line(
 			to: *to,
 		},
 	));
+
+	// small dot at start
+	let start_transform = Transform::from_translation(Vec3::new(start_pos.x, VISUALIZATION_HEIGHT, start_pos.y))
+		.with_rotation(Quat::from_rotation_y(angle));
+	commands
+		.spawn(PbrBundle {
+			transform: start_transform,
+			material,
+			mesh: mma.0.add(shape::Icosphere {
+				radius: VISUALIZATION_DIMENSIONS.length(),
+				subdivisions: 1,
+			}.try_into().unwrap()),
+			..default()
+		})
+		.insert(VisualizationComponent {
+			from: *from,
+			to: *to,
+		});
 }
