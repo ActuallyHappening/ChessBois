@@ -1,5 +1,5 @@
 
-	use super::{compute::ComputationResult, *, state_manual::ManualFreedom, viz_colours::ManualVizColour};
+	use super::{compute::ComputationResult, *, state_manual::ManualFreedom, viz_colours::VizColour};
 	use crate::{solver::algs::Computation, ProgramState};
 	use bevy_egui::{
 		egui::{Color32, RichText},
@@ -15,7 +15,7 @@
 		mut next_state: ResMut<NextState<ProgramState>>,
 		state: Res<State<ProgramState>>,
 		current_level: ResMut<ManualFreedom>,
-		mut viz_colour: ResMut<viz_colours::ManualVizColour>,
+		mut viz_colour: ResMut<viz_colours::VizColour>,
 
 		options: ResMut<CurrentOptions>,
 		mut new_board_event: EventWriter<NewOptions>,
@@ -130,8 +130,8 @@
 
 					ui.label("Pick a manual visualization colour");
 					ui.horizontal_wrapped(|ui| {
-						for col in ManualVizColour::iter() {
-							let str = format!("{}", current_colour);
+						for col in VizColour::iter() {
+							let str = format!("{}", col);
 							let mut text = RichText::new(str);
 							if &col == current_colour {
 								text = text.color(UI_ALG_ENABLED_COLOUR);

@@ -30,15 +30,45 @@ impl Plugin for BoardPlugin {
 			.add_event::<ComputationResult>()
 			.add_startup_system(setup)
 			// normal state: Automatic
-			.add_systems((handle_automatic_computation, update_cache_from_computation, handle_spawning_visualization, handle_new_options, right_sidebar_ui).in_set(OnUpdate(ProgramState::Automatic)))
+			.add_systems(
+				(
+					handle_automatic_computation,
+					update_cache_from_computation,
+					handle_spawning_visualization,
+					handle_new_options,
+					right_sidebar_ui,
+				)
+					.in_set(OnUpdate(ProgramState::Automatic)),
+			)
 			// state changes
-			.add_systems((state_manual::despawn_visualization, state_manual::despawn_markers, state_manual::add_empty_manual_moves, state_manual::add_default_manual_viz_colour).in_schedule(OnExit(ProgramState::Automatic)))
-			.add_systems((state_manual::despawn_visualization, state_manual::despawn_markers, state_manual::add_empty_manual_moves).in_schedule(OnEnter(ProgramState::Automatic)))
+			.add_systems(
+				(
+					state_manual::despawn_visualization,
+					state_manual::despawn_markers,
+					state_manual::add_empty_manual_moves,
+				)
+					.in_schedule(OnExit(ProgramState::Automatic)),
+			)
+			.add_systems(
+				(
+					state_manual::despawn_visualization,
+					state_manual::despawn_markers,
+					state_manual::add_empty_manual_moves,
+					state_manual::add_default_manual_viz_colour,
+				)
+					.in_schedule(OnEnter(ProgramState::Automatic)),
+			)
 			// manual state:
 			.add_event::<ManualNextCell>()
 			.init_resource::<ManualFreedom>()
-			.init_resource::<ManualVizColour>()
-			.add_systems((state_manual::handle_manual_visualization, state_manual::handle_new_manual_selected).in_set(OnUpdate(ProgramState::Manual)))
+			.init_resource::<VizColour>()
+			.add_systems(
+				(
+					state_manual::handle_manual_visualization,
+					state_manual::handle_new_manual_selected,
+				)
+					.in_set(OnUpdate(ProgramState::Manual)),
+			)
 			// end manual state
 			.add_system(left_sidebar_ui)
 			.add_plugins(
@@ -466,6 +496,6 @@ use ui::*;
 
 use self::cached_info::update_cache_from_computation;
 use self::compute::{begin_background_compute, handle_automatic_computation, ComputationResult};
-use self::state_manual::{ManualNextCell, ManualFreedom};
-use self::viz_colours::ManualVizColour;
+use self::state_manual::{ManualFreedom, ManualNextCell};
+use self::viz_colours::VizColour;
 mod ui;

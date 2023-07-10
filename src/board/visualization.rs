@@ -7,13 +7,15 @@ pub struct VisualizationComponent {
 	to: ChessPoint,
 }
 
-/// Consumes [EventReader<ComputationResult>] and actually spawns concrete visualization if state is correct
+/// Consumes [EventReader<ComputationResult>] and actually spawns concrete visualization if state is correct.
+/// ONLY in AUTOMATIC state!
 pub fn handle_spawning_visualization(
 	mut commands: Commands,
 	mut solutions: EventReader<ComputationResult>,
 	current_options: Res<CurrentOptions>,
 
 	_viz: Query<Entity, With<VisualizationComponent>>,
+	viz_col: Res<VizColour>,
 
 	mut mma: ResSpawning,
 ) {
@@ -28,7 +30,7 @@ pub fn handle_spawning_visualization(
 			solution: moves, ..
 		} = solution
 		{
-			spawn_visualization(moves, options.options, &mut commands, &mut mma);
+			spawn_visualization(moves.clone(), options.options, &mut commands, &mut mma, vec![*viz_col.into_inner(); moves.len()]);
 		}
 
 		solutions.clear()
@@ -41,13 +43,15 @@ pub fn spawn_visualization(
 	options: BoardOptions,
 	commands: &mut Commands,
 	mma: &mut ResSpawning,
+	viz_cols: Vec<VizColour>,
 ) {
-	for Move { from, to } in moves.iter() {
+	for (i, Move { from, to }) in moves.iter().enumerate() {
+		let colour = (*viz_cols.get(i).expect("Colour to have index")).into();
 		spawn_path_line(
 			from,
 			to,
 			&options,
-			VISUALIZATION_SELECTED_COLOUR,
+			colour,
 			commands,
 			mma,
 		)

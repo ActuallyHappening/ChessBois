@@ -2,8 +2,8 @@ use strum::Display;
 use strum::EnumIs;
 use strum::EnumIter;
 
+use super::viz_colours::VizColour;
 use super::*;
-use super::viz_colours::ManualVizColour;
 use crate::solver::Move;
 use crate::solver::Moves;
 
@@ -28,6 +28,7 @@ pub struct ManualNextCell {
 pub struct ManualMoves {
 	pub start: Option<ChessPoint>,
 	pub moves: Moves,
+	pub colours: Vec<VizColour>,
 }
 
 #[derive(Resource, Display, EnumIs, EnumIter, Default, Debug, Clone, PartialEq, Eq)]
@@ -69,6 +70,7 @@ pub fn handle_manual_visualization(
 		options.into_inner().current.options.clone(),
 		&mut commands,
 		&mut mma,
+		manual_moves.colours.clone(),
 	);
 }
 
@@ -76,8 +78,10 @@ pub fn handle_new_manual_selected(
 	mut events: EventReader<ManualNextCell>,
 	mut manual_moves: ResMut<ManualMoves>,
 	current_level: Res<ManualFreedom>,
+	viz_col: Res<VizColour>,
 ) {
 	let current_level = current_level.into_inner();
+	let viz_col = viz_col.into_inner();
 	for ManualNextCell { cell } in events.iter() {
 		if manual_moves.start.is_none() {
 			manual_moves.start = Some(*cell);
@@ -92,11 +96,13 @@ pub fn handle_new_manual_selected(
 			match current_level {
 				ManualFreedom::Free => {
 					manual_moves.moves.push(Move::new(from, *cell));
+					manual_moves.colours.push(*viz_col);
 				}
 				ManualFreedom::AnyPossible => {
 					let piece = StandardKnight;
 					if piece.is_valid_move(from, *cell) {
 						manual_moves.moves.push(Move::new(from, *cell));
+						manual_moves.colours.push(*viz_col);
 					} else {
 						warn!(
 							"Invalid move: {:?} -> {:?}; A knight can never make that move",
@@ -108,6 +114,7 @@ pub fn handle_new_manual_selected(
 					let piece = StandardKnight;
 					if piece.is_valid_move(from, *cell) && !manual_moves.moves.iter().any(|m| m.to == *cell) {
 						manual_moves.moves.push(Move::new(from, *cell));
+						manual_moves.colours.push(*viz_col);
 					} else {
 						warn!("Invalid move: {:?} -> {:?}; A knight can never make that move, OR the square you are moving to has already been occupied", from, *cell);
 					}
@@ -137,5 +144,5 @@ pub fn despawn_markers(
 }
 
 pub fn add_default_manual_viz_colour(mut commands: Commands) {
-	commands.insert_resource(ManualVizColour::default());
+	commands.insert_resource(VizColour::default());
 }

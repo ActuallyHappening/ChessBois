@@ -2,8 +2,8 @@ use strum::{Display, EnumIter};
 
 use super::*;
 
-#[derive(Resource, Default, Display, EnumIter, PartialEq, Eq)]
-pub enum ManualVizColour {
+#[derive(Resource, Copy, Clone, Default, Display, EnumIter, PartialEq, Eq, Debug)]
+pub enum VizColour {
 	#[default]
 	Green,
 
@@ -12,13 +12,13 @@ pub enum ManualVizColour {
 	Orange,
 }
 
-impl From<ManualVizColour> for Color {
-	fn from(colour: ManualVizColour) -> Self {
+impl From<VizColour> for Color {
+	fn from(colour: VizColour) -> Self {
 		match colour {
-			ManualVizColour::Green => Color::GREEN,
-			ManualVizColour::Red => Color::RED,
-			ManualVizColour::Blue => Color::BLUE,
-			ManualVizColour::Orange => Color::ORANGE,
+			VizColour::Green => Color::GREEN,
+			VizColour::Red => Color::RED,
+			VizColour::Blue => Color::BLUE,
+			VizColour::Orange => Color::ORANGE,
 		}
 	}
 }
