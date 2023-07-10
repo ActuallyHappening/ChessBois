@@ -15,7 +15,10 @@
 		mut next_state: ResMut<NextState<ProgramState>>,
 		state: Res<State<ProgramState>>,
 		current_level: ResMut<ManualFreedom>,
-		mut viz_colour: ResMut<viz_colours::VizColour>,
+		viz_colour: ResMut<viz_colours::VizColour>,
+
+		// mut commands: Commands,
+		// markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
 
 		options: ResMut<CurrentOptions>,
 		mut new_board_event: EventWriter<NewOptions>,
@@ -94,6 +97,10 @@
 					}
 				}).text("Camera zoom"));
 				ui.label("You can change the camera zoom to see larger boards");
+
+				// if ui.button("Hide visual icons").clicked() {
+				// 	despawn_markers(&mut commands, markers);
+				// }
 			}
 
 			// states
