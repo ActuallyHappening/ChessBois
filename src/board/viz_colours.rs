@@ -10,6 +10,8 @@ pub enum VizColour {
 	Red,
 	Blue,
 	Orange,
+
+	Invisible,
 }
 
 impl From<VizColour> for Color {
@@ -19,6 +21,8 @@ impl From<VizColour> for Color {
 			VizColour::Red => Color::RED,
 			VizColour::Blue => Color::BLUE,
 			VizColour::Orange => Color::ORANGE,
+
+			VizColour::Invisible => Color::rgba(0., 0., 0., 0.),
 		}
 	}
 }
