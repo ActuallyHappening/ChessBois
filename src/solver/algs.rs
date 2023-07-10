@@ -77,8 +77,8 @@ pub enum Algorithm {
 	// #[strum(serialize = "Warnsdorf (Unreliable)")]
 	// WarnsdorfUnreliable,
 
-	#[strum(serialize = "Brute Force (SLOW)")]
-	HamiltonianPath,
+	// #[strum(serialize = "Brute Force (SLOW)")]
+	// HamiltonianPath,
 
 	#[strum(serialize = "Hamiltonian Cycle")]
 	HamiltonianCycle,
@@ -99,10 +99,10 @@ impl Algorithm {
 			This algorithm is a fuller implementation of Warnsdorf's Rule, including backtracking when Warnsdorf's Rule doesn't fully specify what to do.\
 			HOWEVER, it does not check every possible state, so its completeness / correctness still depends on the completeness of the Warnsdorf algorithm!
 			",
-			Algorithm::HamiltonianPath => "A standard knights tour.\
-			This algorithm attempts to find a hamiltonian path from the start to any end point with brute force.\
-			Therefore, if there is a knights tour it is guarenteed to find it, just not as fast as the Warnsdorf algorithm!\
-			",
+			// Algorithm::HamiltonianPath => "A standard knights tour.\
+			// This algorithm attempts to find a hamiltonian path from the start to any end point with brute force.\
+			// Therefore, if there is a knights tour it is guarenteed to find it, just not as fast as the Warnsdorf algorithm!\
+			// ",
 			Algorithm::HamiltonianCycle => "NOT a knights tour!\
 			This algorithm tries to find a hamiltonian cycle, as in a path starting and ending at the same point.\
 			This is significantly slower than other algorithms, but when found it provides solutions to knights tour for every start point.\
@@ -145,7 +145,7 @@ impl Algorithm {
 		match self {
 			// Algorithm::WarnsdorfUnreliable => warnsdorf_tour_repeatless(piece, options, start),
 			Algorithm::WarnsdorfBacktrack => brute_recursive_tour_repeatless(piece, options, start),
-			Algorithm::HamiltonianPath => hamiltonian_tour_repeatless(piece, options, start, false),
+			// Algorithm::HamiltonianPath => hamiltonian_tour_repeatless(piece, options, start, false),
 			Algorithm::HamiltonianCycle => hamiltonian_tour_repeatless(piece, options, start, true),
 		}
 	}

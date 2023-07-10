@@ -33,15 +33,15 @@ pub struct ManualMoves {
 
 #[derive(Resource, Display, EnumIs, EnumIter, Default, Debug, Clone, PartialEq, Eq)]
 pub enum ManualFreedom {
-	#[strum(serialize = "Completely free")]
-	Free,
+	#[strum(serialize = "Only valid knights moves")]
+	#[default]
+	ValidOnly,
 
 	#[strum(serialize = "Any possible knights move")]
 	AnyPossible,
 
-	#[strum(serialize = "Only valid knights moves")]
-	#[default]
-	ValidOnly,
+	#[strum(serialize = "Completely free")]
+	Free,
 }
 
 impl ManualFreedom {

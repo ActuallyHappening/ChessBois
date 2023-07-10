@@ -60,7 +60,7 @@ impl ChessPoint {
 	}
 }
 
-/// only_cycle: If false, representing hamiltonian cycle
+/// cycle paramter: whether to find Hamiltonian Cycle or Path
 pub fn hamiltonian_tour_repeatless<P: ChessPiece + 'static>(
 	piece: &P,
 	options: BoardOptions,
