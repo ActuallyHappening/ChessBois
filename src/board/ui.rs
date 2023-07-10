@@ -117,7 +117,7 @@
 
 					ui.label("Manual mode allows you to plot that path that you want. It has varying levels of freedom, from completely free which allows you to jump from any available square to any other available square\
 					to only allowing you to move to squares that are one knight move away from the current square. If you want to disable/re-enable a square, switch back to automatic then back to manual.\
-					To reset your drawing, press the reset button
+					To reset your drawing, change modes then change back.
 					");
 
 					ui.label("Select a freedom level:");
