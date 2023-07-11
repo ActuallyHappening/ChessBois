@@ -168,7 +168,7 @@ pub fn left_sidebar_ui(
 
 				// undo button
 				if ui.button("Undo").clicked() {
-					// current_moves.undo();
+					current_moves.undo_move();
 				}
 			},
 		}

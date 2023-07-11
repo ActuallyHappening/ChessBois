@@ -1,3 +1,5 @@
+use derive_more::From;
+use derive_more::Into;
 use serde::Deserialize;
 use serde::Serialize;
 use strum::Display;
@@ -26,18 +28,7 @@ pub struct ManualNextCell {
 }
 
 /// Resource for storing manual moves to present visualization
-#[derive(
-	Resource,
-	Default,
-	derive_more::Into,
-	derive_more::From,
-	Debug,
-	Clone,
-	PartialEq,
-	Eq,
-	Serialize,
-	Deserialize,
-)]
+#[derive(Resource, Default, Into, From, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ManualMoves {
 	pub start: Option<ChessPoint>,
 	moves: Moves,
@@ -70,7 +61,7 @@ impl ManualFreedom {
 impl ManualMoves {
 	pub fn to_json(&self) -> String {
 		// using serde_json
-		serde_json::to_string(self).expect("To be able to convert moves to string")
+		serde_json::to_string(self).expect("To be able to convert moves to JSON")
 	}
 
 	pub fn add_move(&mut self, from: ChessPoint, to: ChessPoint, colour: VizColour) {
