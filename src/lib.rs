@@ -49,7 +49,7 @@ const VISUALIZATION_DIMENSIONS: Vec2 = Vec2::new(0.2, 0.2);
 
 static mut ALG_STATES_CAP: u128 = 1_000;
 
-const UI_ALG_ENABLED_COLOUR: Color32 = Color32::GREEN;
+const UI_ENABLED_COLOUR: Color32 = Color32::GREEN;
 
 #[derive(Component)]
 pub struct MainCamera;

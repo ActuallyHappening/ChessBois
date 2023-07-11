@@ -68,7 +68,7 @@
 						let str: &'static str = alg.into();
 						let mut text = RichText::new(str);
 						if &alg == current_alg {
-							text = text.color(UI_ALG_ENABLED_COLOUR);
+							text = text.color(UI_ENABLED_COLOUR);
 						}
 						if ui.button(text).clicked() {
 							new_board_event.send(NewOptions::from_options(Options {
@@ -129,7 +129,7 @@
 							let name = format!("{}", level);
 							let mut text = RichText::new(name);
 							if &level == current_level {
-								text = text.color(UI_ALG_ENABLED_COLOUR);
+								text = text.color(UI_ENABLED_COLOUR);
 							}
 							if ui.button(text).clicked() {
 								*current_level = level;
@@ -144,7 +144,7 @@
 							let str = format!("{}", col);
 							let mut text = RichText::new(str);
 							if &col == current_colour {
-								text = text.color(UI_ALG_ENABLED_COLOUR);
+								text = text.color(UI_ENABLED_COLOUR);
 							}
 							if ui.button(text).clicked() {
 								*current_colour = col;
