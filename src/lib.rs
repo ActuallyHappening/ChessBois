@@ -11,7 +11,10 @@ mod board;
 pub mod solver;
 
 use board::*;
+use errors::display_error;
 pub use solver::ChessPoint;
+
+mod errors;
 
 #[derive(Default)]
 pub struct ChessSolverPlugin;
@@ -19,6 +22,7 @@ impl Plugin for ChessSolverPlugin {
 	fn build(&self, app: &mut App) {
 		app
 			.add_startup_system(setup)
+			.add_system(display_error)
 			.add_state::<ProgramState>()
 			.add_plugin(BoardPlugin);
 	}

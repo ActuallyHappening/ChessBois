@@ -178,12 +178,9 @@ pub fn left_sidebar_ui(
 pub fn right_sidebar_ui(
 	options: Res<CurrentOptions>,
 	computation: Option<Res<ComputationResult>>,
-
-	_commands: Commands,
 	mut contexts: EguiContexts,
 ) {
 	let options = &options.current;
-
 	let solution = computation.map(|comp| comp.into_comp());
 
 	egui::SidePanel::right("right_sidebar").show(contexts.ctx_mut(), |ui| {
