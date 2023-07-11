@@ -133,14 +133,12 @@ pub fn handle_new_manual_selected(
 
 			match current_level {
 				ManualFreedom::Free => {
-					manual_moves.moves.push(Move::new(from, *cell));
-					manual_moves.colours.push(*viz_col);
+					manual_moves.add_move(from, *cell, *viz_col);
 				}
 				ManualFreedom::AnyPossible => {
 					let piece = StandardKnight;
 					if piece.is_valid_move(from, *cell) {
-						manual_moves.moves.push(Move::new(from, *cell));
-						manual_moves.colours.push(*viz_col);
+						manual_moves.add_move(from, *cell, *viz_col);
 					} else {
 						warn!(
 							"Invalid move: {:?} -> {:?}; A knight can never make that move",
@@ -151,8 +149,7 @@ pub fn handle_new_manual_selected(
 				ManualFreedom::ValidOnly => {
 					let piece = StandardKnight;
 					if piece.is_valid_move(from, *cell) && !manual_moves.moves.iter().any(|m| m.to == *cell) {
-						manual_moves.moves.push(Move::new(from, *cell));
-						manual_moves.colours.push(*viz_col);
+						manual_moves.add_move(from, *cell, *viz_col);
 					} else {
 						warn!("Invalid move: {:?} -> {:?}; A knight can never make that move, OR the square you are moving to has already been occupied", from, *cell);
 					}
