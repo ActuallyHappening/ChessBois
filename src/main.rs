@@ -3,7 +3,8 @@ use bevy_solver::ChessPoint;
 use bevy_solver::*;
 
 fn main() {
-	App::new()
+	let mut app = App::new();
+	app
 		.register_type::<ChessPoint>()
 		.add_plugins(
 			DefaultPlugins
@@ -18,7 +19,10 @@ fn main() {
 				})
 				.build(),
 		)
-		.add_plugin(bevy_editor_pls::prelude::EditorPlugin::default())
-		.add_plugin(ChessSolverPlugin)
-		.run();
+		.add_plugin(ChessSolverPlugin);
+
+	#[cfg(feature = "dev")]
+	app.add_plugin(bevy_editor_pls::prelude::EditorPlugin::default());
+	
+	app.run();
 }
