@@ -1,7 +1,5 @@
 use itertools::Itertools;
-use std::{
-	collections::{HashMap, HashSet},
-};
+use std::collections::{HashMap, HashSet};
 use tracing::{debug, trace};
 
 use crate::{

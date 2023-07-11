@@ -80,6 +80,9 @@ pub enum Algorithm {
 	// #[strum(serialize = "Brute Force (SLOW)")]
 	// HamiltonianPath,
 
+	#[strum(serialize = "Brute Force (slow)")]
+	BruteForceWarnsford,
+
 	#[strum(serialize = "Hamiltonian Cycle")]
 	HamiltonianCycle,
 }
@@ -88,7 +91,6 @@ impl Algorithm {
 	pub fn get_description(&self) -> &'static str {
 		match self {
 			// Algorithm::WarnsdorfUnreliable => "A standard knights tour.\
-			
 			// This algorithm is always guaranteed to terminate in finite time, however it sometimes misses solutions e.g. 8x8 board @ (5, 3).\
 			// Warnsdorf's Rule is very easy to implement and is very popular because of its simplicity. The implementation used is sub-optimal, but should suffice.\
 			// Also, in the case that Warnsdorf's Rule doesn't fully specify what to do, as in where you have to guess, this algorithm acts *deterministically* but\
@@ -108,7 +110,12 @@ impl Algorithm {
 			This algorithm tries to find a hamiltonian cycle, as in a path starting and ending at the same point.\
 			This is significantly slower than other algorithms, but when found it provides solutions to knights tour for every start point.\
 			I believe this is guarenteed to give the correct answer, although I have not tested it thoroughly.\
-			"
+			",
+			Algorithm::BruteForceWarnsford => "A standard knights tour.\
+			This algorithm applies Warnsdorf's Rule, which tells you to always move to the square with the fewest available moves. \
+			This algorithm is a fuller implementation of Warnsdorf's Rule, including backtracking when Warnsdorf's Rule doesn't fully specify what to do.\
+			AND, it checks every possible state, so it is complete and GUARENTEED to find a solution if one exists.\
+			",
 		}
 	}
 
@@ -146,7 +153,8 @@ impl Algorithm {
 	) -> Computation {
 		match self {
 			// Algorithm::WarnsdorfUnreliable => warnsdorf_tour_repeatless(piece, options, start),
-			Algorithm::WarnsdorfBacktrack => brute_recursive_tour_repeatless(piece, options, start),
+			Algorithm::WarnsdorfBacktrack => brute_recursive_tour_repeatless(piece, options, start, TourType::Weak),
+			Algorithm::BruteForceWarnsford => brute_recursive_tour_repeatless(piece, options, start, TourType::BruteForce),
 			// Algorithm::HamiltonianPath => hamiltonian_tour_repeatless(piece, options, start, false),
 			Algorithm::HamiltonianCycle => hamiltonian_tour_repeatless(piece, options, start, true),
 		}
@@ -245,60 +253,64 @@ impl Board {
 	}
 }
 
-fn warnsdorf_tour_repeatless<P: ChessPiece>(
-	piece: &P,
-	options: BoardOptions,
-	start: ChessPoint,
-) -> Computation {
-	let mut board = Board::from_options(options);
-	let mut moves = Vec::new();
-	let mut current = start;
 
-	let num_available_cells = board.cell_states.len();
-	let mut state_counter = 0_u128;
+/*  #region old alg */
+// fn warnsdorf_tour_repeatless<P: ChessPiece>(
+// 	piece: &P,
+// 	options: BoardOptions,
+// 	start: ChessPoint,
+// ) -> Computation {
+// 	let mut board = Board::from_options(options);
+// 	let mut moves = Vec::new();
+// 	let mut current = start;
 
-	for _ in 1..num_available_cells {
-		if !board.cell_states.contains_key(&current) {
-			return Computation::Failed {
-				total_states: board.cell_states.len() as u128,
-			};
-		}
+// 	let num_available_cells = board.cell_states.len();
+// 	let mut state_counter = 0_u128;
 
-		board.set(current, CellState::PreviouslyOccupied);
+// 	for _ in 1..num_available_cells {
+// 		if !board.cell_states.contains_key(&current) {
+// 			return Computation::Failed {
+// 				total_states: board.cell_states.len() as u128,
+// 			};
+// 		}
 
-		let mut next = None;
-		let mut min_degree = u16::MAX;
-		for &(dx, dy) in piece.relative_moves() {
-			if let Some(p) = current.displace(&(dx, dy)) {
-				if board.get(&p) == Some(CellState::NeverOccupied) {
-					state_counter += 1;
+// 		board.set(current, CellState::PreviouslyOccupied);
 
-					let degree = board.get_degree(&p, piece);
-					if degree < min_degree {
-						min_degree = degree;
-						next = Some(p);
-					}
-				}
-			}
-		}
+// 		let mut next = None;
+// 		let mut min_degree = u16::MAX;
+// 		for &(dx, dy) in piece.relative_moves() {
+// 			if let Some(p) = current.displace(&(dx, dy)) {
+// 				if board.get(&p) == Some(CellState::NeverOccupied) {
+// 					state_counter += 1;
 
-		if let Some(next) = next {
-			moves.push(Move::new(current, next));
-			current = next;
-		} else {
-			return Computation::Failed {
-				total_states: state_counter,
-			};
-		}
-	}
+// 					let degree = board.get_degree(&p, piece);
+// 					if degree < min_degree {
+// 						min_degree = degree;
+// 						next = Some(p);
+// 					}
+// 				}
+// 			}
+// 		}
 
-	Computation::Successful {
-		solution: moves.into(),
-		explored_states: state_counter,
-	}
-}
+// 		if let Some(next) = next {
+// 			moves.push(Move::new(current, next));
+// 			current = next;
+// 		} else {
+// 			return Computation::Failed {
+// 				total_states: state_counter,
+// 			};
+// 		}
+// 	}
+
+// 	Computation::Successful {
+// 		solution: moves.into(),
+// 		explored_states: state_counter,
+// 	}
+// }
+/* #endregion */
 
 fn try_move_recursive(
+	tour_type: TourType,
 	num_moves_required: u16,
 	piece: &impl ChessPiece,
 	attempting_board: Board,
@@ -327,9 +339,18 @@ fn try_move_recursive(
 	// sort by degree
 	available_moves.sort_by_cached_key(|p| attempting_board.get_degree(p, piece));
 
-	// IMPORTANT: Only considers moves with the lowest degree. To make brute force, remove this
-	let lowest_degree = attempting_board.get_degree(&available_moves[0], piece);
-	available_moves.retain(|p| attempting_board.get_degree(p, piece) == lowest_degree);
+	// todo();
+	match tour_type {
+		TourType::Weak => {
+			// IMPORTANT: Only considers moves with the lowest degree. To make brute force, remove this
+			let lowest_degree = attempting_board.get_degree(&available_moves[0], piece);
+			available_moves.retain(|p| attempting_board.get_degree(p, piece) == lowest_degree);
+		}
+		TourType::BruteForce => {}
+	}
+	// // IMPORTANT: Only considers moves with the lowest degree. To make brute force, remove this
+	// let lowest_degree = attempting_board.get_degree(&available_moves[0], piece);
+	// available_moves.retain(|p| attempting_board.get_degree(p, piece) == lowest_degree);
 
 	let mut moves = None;
 
@@ -339,6 +360,7 @@ fn try_move_recursive(
 		board_with_potential_move.set(current_pos, CellState::PreviouslyOccupied);
 
 		let result = try_move_recursive(
+			tour_type.clone(),
 			num_moves_required - 1,
 			piece,
 			board_with_potential_move,
@@ -368,10 +390,17 @@ fn try_move_recursive(
 	PartialComputation::from(moves)
 }
 
+#[derive(Clone)]
+enum TourType {
+	Weak,
+	BruteForce,
+}
+
 fn brute_recursive_tour_repeatless<P: ChessPiece + 'static>(
 	piece: &P,
 	options: BoardOptions,
 	start: ChessPoint,
+	tour_type: TourType,
 ) -> Computation {
 	let all_available_points = options.get_available_points();
 	let num_moves_required = all_available_points.len() as u16 - 1;
@@ -379,7 +408,7 @@ fn brute_recursive_tour_repeatless<P: ChessPiece + 'static>(
 	let mut state_counter = 0_u128;
 
 	let board = Board::from_options(options);
-	try_move_recursive(num_moves_required, piece, board, start, &mut state_counter)
+	try_move_recursive(tour_type, num_moves_required, piece, board, start, &mut state_counter)
 		.map(|moves| {
 			let mut moves = moves.into_iter().rev().collect::<Vec<Move>>();
 			moves.push(Move::new(start, start));

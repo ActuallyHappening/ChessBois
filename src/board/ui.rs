@@ -160,7 +160,7 @@
 
 					// undo button
 					if ui.button("Undo").clicked() {
-						current_moves.undo();
+						// current_moves.undo();
 					}
 				},
 			}
