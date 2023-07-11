@@ -1,4 +1,7 @@
-use crate::{solver::{pieces::ChessPiece, *}, ALG_STATES_CAP};
+use crate::{
+	solver::{pieces::ChessPiece, *},
+	ALG_STATES_CAP,
+};
 use strum::{EnumIter, IntoStaticStr};
 
 mod hamiltonian;
@@ -19,7 +22,7 @@ pub enum Computation {
 
 	GivenUp {
 		explored_states: u128,
-	}
+	},
 }
 
 #[derive(Clone)]
@@ -79,7 +82,6 @@ pub enum Algorithm {
 
 	// #[strum(serialize = "Brute Force (SLOW)")]
 	// HamiltonianPath,
-
 	#[strum(serialize = "Brute Force (slow)")]
 	BruteForceWarnsford,
 
@@ -153,8 +155,12 @@ impl Algorithm {
 	) -> Computation {
 		match self {
 			// Algorithm::WarnsdorfUnreliable => warnsdorf_tour_repeatless(piece, options, start),
-			Algorithm::WarnsdorfBacktrack => brute_recursive_tour_repeatless(piece, options, start, TourType::Weak),
-			Algorithm::BruteForceWarnsford => brute_recursive_tour_repeatless(piece, options, start, TourType::BruteForce),
+			Algorithm::WarnsdorfBacktrack => {
+				brute_recursive_tour_repeatless(piece, options, start, TourType::Weak)
+			}
+			Algorithm::BruteForceWarnsford => {
+				brute_recursive_tour_repeatless(piece, options, start, TourType::BruteForce)
+			}
 			// Algorithm::HamiltonianPath => hamiltonian_tour_repeatless(piece, options, start, false),
 			Algorithm::HamiltonianCycle => hamiltonian_tour_repeatless(piece, options, start, true),
 		}
@@ -176,10 +182,14 @@ impl Algorithm {
 				if let Computation::GivenUp { explored_states } = comp {
 					if explored_states != *ALG_STATES_CAP.lock().unwrap() {
 						// must recompute
-						info!("Cache hit and recomputing because {} != {}", explored_states, *ALG_STATES_CAP.lock().unwrap() );
+						info!(
+							"Cache hit and recomputing because {} != {}",
+							explored_states,
+							*ALG_STATES_CAP.lock().unwrap()
+						);
 						let comp = self.tour_computation(piece, options.options.clone(), start);
 						add_solution_to_cache::<P>(options, comp.clone());
-						return Some(comp)
+						return Some(comp);
 					} else {
 						info!("Cache hit on GivenUp and same states limit")
 					}
@@ -252,7 +262,6 @@ impl Board {
 		degree
 	}
 }
-
 
 /*  #region old alg */
 // fn warnsdorf_tour_repeatless<P: ChessPiece>(
@@ -408,13 +417,20 @@ fn brute_recursive_tour_repeatless<P: ChessPiece + 'static>(
 	let mut state_counter = 0_u128;
 
 	let board = Board::from_options(options);
-	try_move_recursive(tour_type, num_moves_required, piece, board, start, &mut state_counter)
-		.map(|moves| {
-			let mut moves = moves.into_iter().rev().collect::<Vec<Move>>();
-			moves.push(Move::new(start, start));
-			moves.into()
-		})
-		.add_state_count(state_counter)
+	try_move_recursive(
+		tour_type,
+		num_moves_required,
+		piece,
+		board,
+		start,
+		&mut state_counter,
+	)
+	.map(|moves| {
+		let mut moves = moves.into_iter().rev().collect::<Vec<Move>>();
+		moves.push(Move::new(start, start));
+		moves.into()
+	})
+	.add_state_count(state_counter)
 }
 
 use cache::{add_solution_to_cache, try_get_cached_solution};

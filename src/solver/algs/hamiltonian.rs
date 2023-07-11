@@ -126,8 +126,12 @@ pub fn hamiltonian_tour_repeatless<P: ChessPiece + 'static>(
 	} else {
 		let mut state_counter: u128 = 0;
 		match find_hamiltonian_path(start, &start_vec, &graph, &mut state_counter) {
-			Err(_) => Computation::GivenUp { explored_states: state_counter },
-			Ok(None) => Computation::Failed { total_states: state_counter },
+			Err(_) => Computation::GivenUp {
+				explored_states: state_counter,
+			},
+			Ok(None) => Computation::Failed {
+				total_states: state_counter,
+			},
 			Ok(Some(path)) => {
 				// show only cycle
 				assert_eq!(available_points.len(), path.len() - 1);

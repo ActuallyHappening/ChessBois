@@ -1,6 +1,6 @@
 use super::{cached_info::CellMark, *};
-use crate::CELL_DISABLED_COLOUR;
 use crate::solver::CellOption;
+use crate::CELL_DISABLED_COLOUR;
 
 /// Marker for Markers lol
 #[derive(Component)]
@@ -22,17 +22,29 @@ pub fn spawn_cells(options: &Options, commands: &mut Commands, mma: &mut ResSpaw
 
 pub fn spawn_markers(options: &Options, commands: &mut Commands, mma: &mut ResSpawning) {
 	for point in options.options.get_all_points() {
-		spawn_mark(point, options, cell_get_transform(point, &options.options), commands, mma);
+		spawn_mark(
+			point,
+			options,
+			cell_get_transform(point, &options.options),
+			commands,
+			mma,
+		);
 	}
 }
 
-pub fn despawn_cells(commands: &mut Commands, cells: Query<Entity, (With<CellMarker>, With<ChessPoint>)>) {
+pub fn despawn_cells(
+	commands: &mut Commands,
+	cells: Query<Entity, (With<CellMarker>, With<ChessPoint>)>,
+) {
 	for cell in cells.iter() {
 		commands.entity(cell).despawn_recursive();
 	}
 }
 
-pub fn despawn_markers(commands: &mut Commands, markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>) {
+pub fn despawn_markers(
+	commands: &mut Commands,
+	markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
+) {
 	for mark in markers.iter() {
 		commands.entity(mark).despawn_recursive();
 	}

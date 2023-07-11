@@ -26,7 +26,18 @@ pub struct ManualNextCell {
 }
 
 /// Resource for storing manual moves to present visualization
-#[derive(Resource, Default, derive_more::Into, derive_more::From, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(
+	Resource,
+	Default,
+	derive_more::Into,
+	derive_more::From,
+	Debug,
+	Clone,
+	PartialEq,
+	Eq,
+	Serialize,
+	Deserialize,
+)]
 pub struct ManualMoves {
 	pub start: Option<ChessPoint>,
 	moves: Moves,
@@ -58,8 +69,8 @@ impl ManualFreedom {
 
 impl ManualMoves {
 	pub fn to_json(&self) -> String {
-			// using serde_json
-			serde_json::to_string(self).expect("To be able to convert moves to string")
+		// using serde_json
+		serde_json::to_string(self).expect("To be able to convert moves to string")
 	}
 
 	pub fn add_move(&mut self, from: ChessPoint, to: ChessPoint, colour: VizColour) {
@@ -67,7 +78,7 @@ impl ManualMoves {
 		self.colours.push(colour);
 	}
 
-	pub fn undo_move(&mut self,) {
+	pub fn undo_move(&mut self) {
 		self.moves.pop();
 		self.colours.pop();
 	}

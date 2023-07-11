@@ -20,8 +20,8 @@ use std::f32::consts::TAU;
 
 use crate::*;
 
-mod viz_colours;
 mod state_manual;
+mod viz_colours;
 
 use cells::*;
 mod cells;
@@ -32,11 +32,11 @@ mod cached_info;
 use visualization::*;
 mod visualization;
 
-use ui::*;
 use self::cached_info::update_cache_from_computation;
 use self::compute::{begin_background_compute, handle_automatic_computation, ComputationResult};
 use self::state_manual::{ManualFreedom, ManualNextCell};
 use self::viz_colours::VizColour;
+use ui::*;
 mod ui;
 
 use coords::*;
@@ -153,8 +153,6 @@ mod top_level_types {
 	}
 }
 
-
-
 type ResSpawning<'a> = (
 	ResMut<'a, Assets<Mesh>>,
 	ResMut<'a, Assets<StandardMaterial>>,
@@ -254,5 +252,3 @@ pub fn handle_plane_clicked<T: IsPointerEvent>(
 
 	Bubble::Up
 }
-
-

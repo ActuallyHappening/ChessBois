@@ -30,7 +30,13 @@ pub fn handle_spawning_visualization(
 			solution: moves, ..
 		} = solution
 		{
-			spawn_visualization(moves.clone(), options.options, &mut commands, &mut mma, vec![*viz_col.into_inner(); moves.len()]);
+			spawn_visualization(
+				moves.clone(),
+				options.options,
+				&mut commands,
+				&mut mma,
+				vec![*viz_col.into_inner(); moves.len()],
+			);
 		}
 
 		solutions.clear()
@@ -47,14 +53,7 @@ pub fn spawn_visualization(
 ) {
 	for (i, Move { from, to }) in moves.iter().enumerate() {
 		let colour = (*viz_cols.get(i).expect("Colour to have index")).into();
-		spawn_path_line(
-			from,
-			to,
-			&options,
-			colour,
-			commands,
-			mma,
-		)
+		spawn_path_line(from, to, &options, colour, commands, mma)
 	}
 }
 
@@ -116,16 +115,21 @@ fn spawn_path_line(
 	));
 
 	// small dot at start
-	let start_transform = Transform::from_translation(Vec3::new(start_pos.x, VISUALIZATION_HEIGHT, start_pos.y))
-		.with_rotation(Quat::from_rotation_y(angle));
+	let start_transform =
+		Transform::from_translation(Vec3::new(start_pos.x, VISUALIZATION_HEIGHT, start_pos.y))
+			.with_rotation(Quat::from_rotation_y(angle));
 	commands
 		.spawn(PbrBundle {
 			transform: start_transform,
 			material,
-			mesh: mma.0.add(shape::Icosphere {
-				radius: VISUALIZATION_DIMENSIONS.length(),
-				subdivisions: 1,
-			}.try_into().unwrap()),
+			mesh: mma.0.add(
+				shape::Icosphere {
+					radius: VISUALIZATION_DIMENSIONS.length(),
+					subdivisions: 1,
+				}
+				.try_into()
+				.unwrap(),
+			),
 			..default()
 		})
 		.insert(VisualizationComponent {

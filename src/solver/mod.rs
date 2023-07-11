@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::{
 	fmt::{self, Display},
 	ops::{Deref, DerefMut},
@@ -9,7 +9,20 @@ pub mod algs;
 pub mod pieces;
 
 // 1 indexed
-#[derive(Copy, Component, Reflect, Hash, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(
+	Copy,
+	Component,
+	Reflect,
+	Hash,
+	Clone,
+	Debug,
+	Eq,
+	PartialEq,
+	PartialOrd,
+	Ord,
+	Serialize,
+	Deserialize,
+)]
 pub struct ChessPoint {
 	// Between 1 and COLUMN_SIZE.
 	/// Corresponds to x axis
