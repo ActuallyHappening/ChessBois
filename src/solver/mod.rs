@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use serde::{Serialize, Deserialize};
 use std::{
 	fmt::{self, Display},
 	ops::{Deref, DerefMut},
@@ -8,7 +9,7 @@ pub mod algs;
 pub mod pieces;
 
 // 1 indexed
-#[derive(Copy, Component, Reflect, Hash, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Component, Reflect, Hash, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct ChessPoint {
 	// Between 1 and COLUMN_SIZE.
 	/// Corresponds to x axis
@@ -80,7 +81,7 @@ impl std::ops::Add for ChessPoint {
 }
 
 /// Represents move from one point to another
-#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct Move {
 	pub from: ChessPoint,
 	pub to: ChessPoint,
@@ -105,7 +106,7 @@ impl Move {
 }
 
 /// Wrapper around `Vec<Move>` with some extra functionality
-#[derive(Debug, Clone, Hash, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct Moves {
 	moves: Vec<Move>,
 }

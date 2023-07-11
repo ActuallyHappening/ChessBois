@@ -1,3 +1,5 @@
+use serde::Deserialize;
+use serde::Serialize;
 use strum::Display;
 use strum::EnumIs;
 use strum::EnumIter;
@@ -24,11 +26,11 @@ pub struct ManualNextCell {
 }
 
 /// Resource for storing manual moves to present visualization
-#[derive(Resource, Default, derive_more::Into, derive_more::From, Debug, Clone, PartialEq, Eq)]
+#[derive(Resource, Default, derive_more::Into, derive_more::From, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ManualMoves {
 	pub start: Option<ChessPoint>,
-	pub moves: Moves,
-	pub colours: Vec<VizColour>,
+	moves: Moves,
+	colours: Vec<VizColour>,
 }
 
 #[derive(Resource, Display, EnumIs, EnumIter, Default, Debug, Clone, PartialEq, Eq)]
@@ -51,6 +53,31 @@ impl ManualFreedom {
 			ManualFreedom::AnyPossible => "Chose only moves that are valid knight moves. Can still jump onto squares multiple times",
 			ManualFreedom::ValidOnly => "Chose only moves that are valid knight moves and have not been visited yet. The most restrictive option available."
 		}
+	}
+}
+
+impl ManualMoves {
+	pub fn to_json(&self) -> String {
+			// using serde_json
+			serde_json::to_string(self).expect("To be able to convert moves to string")
+	}
+
+	pub fn add_move(&mut self, from: ChessPoint, to: ChessPoint, colour: VizColour) {
+		self.moves.push(Move::new(from, to));
+		self.colours.push(colour);
+	}
+
+	pub fn undo_move(&mut self,) {
+		self.moves.pop();
+		self.colours.pop();
+	}
+}
+
+impl TryFrom<String> for ManualMoves {
+	type Error = serde_json::Error;
+
+	fn try_from(value: String) -> Result<Self, Self::Error> {
+		serde_json::from_str(&value)
 	}
 }
 

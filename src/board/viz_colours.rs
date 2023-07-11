@@ -1,8 +1,9 @@
+use serde::{Serialize, Deserialize};
 use strum::{Display, EnumIter, IntoEnumIterator};
 
 use super::*;
 
-#[derive(Resource, Copy, Clone, Default, Display, EnumIter, PartialEq, Eq, Debug)]
+#[derive(Resource, Copy, Clone, Default, Display, EnumIter, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub enum VizColour {
 	#[default]
 	Green,

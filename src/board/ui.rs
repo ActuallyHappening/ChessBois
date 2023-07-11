@@ -1,5 +1,5 @@
 
-	use super::{compute::ComputationResult, *, state_manual::ManualFreedom, viz_colours::VizColour};
+	use super::{compute::ComputationResult, *, state_manual::{ManualFreedom, ManualMoves}, viz_colours::VizColour};
 	use crate::{solver::algs::Computation, ProgramState};
 	use bevy_egui::{
 		egui::{Color32, RichText},
@@ -17,6 +17,8 @@
 		current_level: ResMut<ManualFreedom>,
 		viz_colour: ResMut<viz_colours::VizColour>,
 
+		moves: ResMut<ManualMoves>,
+
 		// mut commands: Commands,
 		// markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
 
@@ -29,6 +31,7 @@
 			let current_level = current_level.into_inner();
 			let current_state = &state.into_inner().0;
 			let current_colour = viz_colour.into_inner();
+			let current_moves = moves.into_inner();
 
 			ui.heading("Controls Panel");
 
@@ -148,6 +151,17 @@
 							}
 						}
 					});
+
+						// copy + paste functionality
+					let mut state_str = current_moves.to_json();
+					if ui.text_edit_singleline(&mut state_str).changed() {
+						*current_moves = ManualMoves::try_from(state_str).expect("To be able to convert string to moves");
+					}
+
+					// undo button
+					if ui.button("Undo").clicked() {
+						current_moves.undo();
+					}
 				},
 			}
 		});
