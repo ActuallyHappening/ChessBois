@@ -156,7 +156,14 @@ pub fn left_sidebar_ui(
 					// copy + paste functionality
 				let mut state_str = current_moves.to_json();
 				if ui.text_edit_singleline(&mut state_str).changed() {
-					*current_moves = ManualMoves::try_from(state_str).expect("To be able to convert string to moves");
+					match ManualMoves::try_from(state_str) {
+						Ok(moves) => {
+							*current_moves = moves;
+						}
+						Err(e) => {
+							warn!("Could not parse state JSON string: {}", e);
+						}
+					}
 				}
 
 				// undo button
