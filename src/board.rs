@@ -66,6 +66,7 @@ impl Plugin for BoardPlugin {
 				(
 					state_manual::handle_manual_visualization,
 					state_manual::handle_new_manual_selected,
+					viz_colours::colour_hotkeys,
 				)
 					.in_set(OnUpdate(ProgramState::Manual)),
 			)
