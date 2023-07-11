@@ -1,3 +1,5 @@
+use std::sync::Mutex;
+
 use bevy::prelude::*;
 use bevy_egui::egui::Color32;
 use bevy_mod_picking::{
@@ -47,7 +49,7 @@ const CELL_DISABLED_COLOUR: Color = Color::RED;
 const VISUALIZATION_HEIGHT: f32 = 3.;
 const VISUALIZATION_DIMENSIONS: Vec2 = Vec2::new(0.2, 0.2);
 
-static mut ALG_STATES_CAP: u128 = 1_000;
+static ALG_STATES_CAP: Mutex<u128> = Mutex::new(1_000);
 
 const UI_ENABLED_COLOUR: Color32 = Color32::GREEN;
 

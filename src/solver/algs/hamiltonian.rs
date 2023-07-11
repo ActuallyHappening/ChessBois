@@ -21,7 +21,7 @@ fn find_hamiltonian_path(
 	state_counter: &mut u128,
 ) -> Result<Option<Path>, ()> {
 	*state_counter += 1;
-	if *state_counter >= unsafe { ALG_STATES_CAP } {
+	if *state_counter >= *ALG_STATES_CAP.lock().unwrap() {
 		return Err(());
 	}
 

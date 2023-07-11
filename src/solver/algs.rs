@@ -174,9 +174,9 @@ impl Algorithm {
 				debug!("Solution cache hit!");
 
 				if let Computation::GivenUp { explored_states } = comp {
-					if explored_states != unsafe { ALG_STATES_CAP } {
+					if explored_states != *ALG_STATES_CAP.lock().unwrap() {
 						// must recompute
-						info!("Cache hit and recomputing because {} != {}", explored_states, unsafe { ALG_STATES_CAP });
+						info!("Cache hit and recomputing because {} != {}", explored_states, *ALG_STATES_CAP.lock().unwrap() );
 						let comp = self.tour_computation(piece, options.options.clone(), start);
 						add_solution_to_cache::<P>(options, comp.clone());
 						return Some(comp)
@@ -318,7 +318,7 @@ fn try_move_recursive(
 	state_counter: &mut u128,
 ) -> PartialComputation {
 	*state_counter += 1;
-	if *state_counter >= unsafe { ALG_STATES_CAP } {
+	if *state_counter >= *ALG_STATES_CAP.lock().unwrap() {
 		return PartialComputation::GivenUp;
 	}
 
