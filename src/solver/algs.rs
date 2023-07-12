@@ -361,10 +361,12 @@ fn try_move_recursive(
 ) -> PartialComputation {
 	*state_counter += 1;
 	if *state_counter >= *ALG_STATES_CAP.lock().unwrap() {
+		// base case to avoid excessive computation
 		return PartialComputation::GivenUp;
 	}
 
 	if num_moves_required == 0 {
+		// base case
 		// println!("Found solution!");
 		// return Some(Vec::new().into());
 		return PartialComputation::Successful {
@@ -381,7 +383,6 @@ fn try_move_recursive(
 	// sort by degree
 	available_moves.sort_by_cached_key(|p| attempting_board.get_degree(p, piece));
 
-	// todo();
 	match tour_type {
 		TourType::Weak => {
 			// IMPORTANT: Only considers moves with the lowest degree. To make brute force, remove this
@@ -390,9 +391,6 @@ fn try_move_recursive(
 		}
 		TourType::BruteForce => {}
 	}
-	// // IMPORTANT: Only considers moves with the lowest degree. To make brute force, remove this
-	// let lowest_degree = attempting_board.get_degree(&available_moves[0], piece);
-	// available_moves.retain(|p| attempting_board.get_degree(p, piece) == lowest_degree);
 
 	let mut moves = None;
 
@@ -411,7 +409,7 @@ fn try_move_recursive(
 		);
 
 		match result {
-			PartialComputation::Failed => {}
+			PartialComputation::Failed => {/* Continue looping */}
 			PartialComputation::Successful {
 				solution: mut working_moves,
 			} => {
@@ -434,7 +432,9 @@ fn try_move_recursive(
 
 #[derive(Clone)]
 enum TourType {
+	/// Does not always find solution but is significantly faster
 	Weak,
+	/// Always finds solution but is significantly slower
 	BruteForce,
 }
 
