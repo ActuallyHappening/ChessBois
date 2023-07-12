@@ -4,7 +4,7 @@ use super::{
 	viz_colours::VizColour,
 	*,
 };
-use crate::{solver::algs::Computation, ProgramState};
+use crate::{errors::Error, solver::algs::Computation, ProgramState};
 use bevy_egui::{
 	egui::{Color32, RichText},
 	*,
@@ -24,7 +24,7 @@ pub fn left_sidebar_ui(
 
 	moves: ResMut<ManualMoves>,
 
-	// mut commands: Commands,
+	mut commands: Commands,
 	// markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
 	options: ResMut<CurrentOptions>,
 	mut new_board_event: EventWriter<NewOptions>,
@@ -162,6 +162,7 @@ pub fn left_sidebar_ui(
 						}
 						Err(e) => {
 							warn!("Could not parse state JSON string: {}", e);
+							commands.insert_resource(Error::new("Could not parse your data".into(), format!("Parsing str failed with err: {} ; {:?}", e, e)));
 						}
 					}
 				}

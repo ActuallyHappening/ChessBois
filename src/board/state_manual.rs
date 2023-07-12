@@ -8,6 +8,7 @@ use strum::EnumIter;
 
 use super::viz_colours::VizColour;
 use super::*;
+use crate::errors::Error;
 use crate::solver::Move;
 use crate::solver::Moves;
 
@@ -108,6 +109,7 @@ pub fn handle_new_manual_selected(
 	mut manual_moves: ResMut<ManualMoves>,
 	current_level: Res<ManualFreedom>,
 	viz_col: Res<VizColour>,
+	mut commands: Commands,
 ) {
 	let current_level = current_level.into_inner();
 	let viz_col = viz_col.into_inner();
@@ -131,18 +133,40 @@ pub fn handle_new_manual_selected(
 					if piece.is_valid_move(from, *cell) {
 						manual_moves.add_move(from, *cell, *viz_col);
 					} else {
-						warn!(
+						let err_msg = format!(
 							"Invalid move: {:?} -> {:?}; A knight can never make that move",
 							from, *cell
 						);
+						warn!("{err_msg}");
+						commands.insert_resource(Error::new(
+							err_msg.clone(),
+							format!("From: {:?}, to: {:?}", from, *cell),
+						));
 					}
 				}
 				ManualFreedom::ValidOnly => {
 					let piece = StandardKnight;
-					if piece.is_valid_move(from, *cell) && !manual_moves.moves.iter().any(|m| m.to == *cell) {
-						manual_moves.add_move(from, *cell, *viz_col);
+					if piece.is_valid_move(from, *cell) {
+						if !manual_moves.moves.iter().any(|m| m.to == *cell) && manual_moves.start != Some(*cell) {
+							manual_moves.add_move(from, *cell, *viz_col);
+						} else {
+							let err_msg = format!(
+								"Invalid move: {:?} -> {:?}; The square you are moving to has already been occupied",
+								from, *cell
+							);
+							warn!("{err_msg}");
+							commands.insert_resource(Error::new(
+								err_msg.clone(),
+								format!("From: {:?}, to: {:?}", from, *cell),
+							));
+						}
 					} else {
-						warn!("Invalid move: {:?} -> {:?}; A knight can never make that move, OR the square you are moving to has already been occupied", from, *cell);
+						let err_msg = format!("Invalid move: {:?} -> {:?}; A knight can never make that move", from, *cell);
+						warn!("{err_msg}");
+						commands.insert_resource(Error::new(
+							err_msg.clone(),
+							format!("From: {:?}, to: {:?}", from, *cell),
+						));
 					}
 				}
 			}

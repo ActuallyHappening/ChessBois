@@ -23,6 +23,6 @@ fn main() {
 
 	#[cfg(feature = "dev")]
 	app.add_plugin(bevy_editor_pls::prelude::EditorPlugin::default());
-	
+
 	app.run();
 }

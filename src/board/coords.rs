@@ -1,4 +1,3 @@
-
 use super::*;
 
 /// Returns spacial coordinates of center of cell mesh
