@@ -35,7 +35,7 @@ impl Plugin for BoardPlugin {
 }
 
 /// What [Options] are currently selected / rendered
-#[derive(Resource, Debug, Clone)]
+#[derive(Resource, Debug, Clone, Deref, DerefMut, PartialEq, Eq)]
 pub struct CurrentOptions {
 	pub current: Options,
 }
@@ -53,9 +53,9 @@ fn setup(mut commands: Commands) {
 		options: board,
 		selected_start: None,
 		selected_algorithm: Algorithm::default(),
-		force_update: true,
+		requires_updating: true,
 	};
-	let current_options = CurrentOptions::from_options(options.clone());
+	let current_options = CurrentOptions::from_options(options);
 
 	commands.insert_resource(current_options);
 }

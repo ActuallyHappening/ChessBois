@@ -1,5 +1,5 @@
 use crate::{
-	solver::{algs::Computation, pieces::StandardKnight, CellOption},
+	solver::{algs::Computation, pieces::StandardKnight},
 	ChessPoint, GroundClicked, ProgramState,
 };
 
@@ -8,7 +8,7 @@ use super::{
 		despawn_cells, despawn_markers, spawn_cells, spawn_markers, sys_despawn_markers, CellClicked,
 		CellMarker, MarkerMarker,
 	},
-	manual::{add_default_manual_viz_colour, add_empty_manual_moves, ManualNextCell},
+	manual::{add_default_manual_viz_colour, add_empty_manual_moves},
 	visualization::{
 		despawn_visualization, spawn_visualization, sys_despawn_visualization, VisualizationComponent,
 	},
@@ -76,31 +76,30 @@ fn handle_new_options(
 	if options.is_changed() {
 		let options = &mut options.into_inner().current;
 
-		if options.force_update {
-			info!("Force updating ...")
+		if options.requires_updating {
+			info!("Automatic updating ...")
 		}
 
 		despawn_visualization(&mut commands, viz);
 
 		// markers
 		despawn_markers(&mut commands, markers);
-		spawn_markers(&options, &mut commands, &mut mma);
+		spawn_markers(options, &mut commands, &mut mma);
 
 		// cells
 		despawn_cells(&mut commands, cells);
-		spawn_cells(&options, &mut commands, &mut mma);
+		spawn_cells(options, &mut commands, &mut mma);
 
 		// begin recomputing visualization
 		begin_background_compute(
 			options.selected_algorithm,
 			&StandardKnight {},
 			options.clone(),
-			&mut commands,
 		);
 
 		// add new options as current
 		commands.insert_resource(CurrentOptions::from_options(Options {
-			force_update: false,
+			requires_updating: false,
 			..options.clone()
 		}));
 	}

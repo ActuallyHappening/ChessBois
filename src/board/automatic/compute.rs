@@ -23,6 +23,7 @@ impl ComputationResult {
 // }
 
 impl ComputationResult {
+	#[allow(clippy::wrong_self_convention)]
 	pub fn into_comp(&self) -> Computation {
 		self.0.clone()
 	}
@@ -32,19 +33,16 @@ pub fn begin_background_compute<P: ChessPiece + Copy + Send + Sync + 'static>(
 	alg: Algorithm,
 	piece: &P,
 	options: Options,
-	_commands: &mut Commands,
 ) {
 	let state = options.clone();
-	if let Some(start) = options.selected_start {
-		if options.options.get_available_points().contains(&start) {
-			let piece: P = *piece;
-			start_executing_task(state, move || {
-				trace!("About to compute");
-				alg
-					.tour_computation_cached(&piece, options.clone())
-					.unwrap()
-			})
-		}
+	if options.selected_start.is_some() {
+		let piece: P = *piece;
+		start_executing_task(state, move || {
+			trace!("About to compute");
+			alg
+				.tour_computation_cached(&piece, options.clone())
+				.unwrap()
+		})
 	}
 }
 
@@ -111,6 +109,8 @@ pub fn handle_automatic_computation(
 		if &comp.1 == state {
 			// only set as current if state is valid
 			commands.insert_resource(comp.clone());
+		} else {
+			// warn!("Computation with invalid / changed state ignored")
 		}
 
 		// let message get out to everybody, even if state is invalid

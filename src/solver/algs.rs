@@ -134,7 +134,7 @@ pub struct Options {
 	pub selected_start: Option<ChessPoint>,
 	pub selected_algorithm: Algorithm,
 
-	pub force_update: bool,
+	pub requires_updating: bool,
 }
 
 impl Options {
@@ -143,6 +143,11 @@ impl Options {
 			selected_start: Some(start),
 			..self.clone()
 		}
+	}
+
+	pub fn requires_updating(&mut self) -> &mut Self {
+		self.requires_updating = true;
+		self
 	}
 }
 
@@ -191,7 +196,10 @@ impl Algorithm {
 						add_solution_to_cache::<P>(options, comp.clone());
 						return Some(comp);
 					} else {
-						info!("Cache hit on GivenUp and same states limit")
+						info!(
+							"Cache hit on GivenUp and same states limit ({})",
+							explored_states
+						);
 					}
 				}
 

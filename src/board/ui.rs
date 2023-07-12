@@ -31,10 +31,10 @@ pub fn left_ui_auto(
 	mut contexts: EguiContexts,
 	mut cam: Query<&mut Transform, With<MainCamera>>,
 	mut next_state: ResMut<NextState<ProgramState>>,
-	options: ResMut<CurrentOptions>,
+	mut options: ResMut<CurrentOptions>,
 ) {
 	egui::SidePanel::left("left_ui_auto").show(contexts.ctx_mut(), |ui| {
-		let options = &mut options.into_inner().current;
+		let options = &mut options.current;
 
 		ui.heading("Controls Panel");
 				if ui.button("Switch to manual mode").clicked() {
@@ -46,8 +46,13 @@ pub fn left_ui_auto(
 				const SIZE_CAP: f64 = 20.;
 				ui.add(egui::Slider::from_get_set((2.)..=SIZE_CAP, |val| {
 					if let Some(new_val) = val {
-						options.options = options.options.clone().update_width(new_val as u16);
-						options.selected_start = None;
+						let new = options.options.clone().update_height(new_val as u16);
+						if new != options.options {
+							options.options = new;
+							options.selected_start = None;
+							options.requires_updating();
+						}
+						
 						new_val
 					} else {
 						options.options.width() as f64
@@ -55,8 +60,12 @@ pub fn left_ui_auto(
 				}).text("Width"));
 				ui.add(egui::Slider::from_get_set((2.)..=SIZE_CAP, |val| {
 					if let Some(new_val) = val {
-						options.options = options.options.clone().update_height(new_val as u16);
-						options.selected_start = None;
+						let new = options.options.clone().update_height(new_val as u16);
+						if new != options.options {
+							options.options = new;
+							options.selected_start = None;
+							options.requires_updating();
+						}
 						new_val
 					} else {
 						options.options.height() as f64
@@ -72,8 +81,10 @@ pub fn left_ui_auto(
 							text = text.color(UI_ENABLED_COLOUR);
 						}
 						if ui.button(text).clicked() {
+							info!("Changing algorithm from {:?} to {:?}", options.selected_algorithm, alg);
 							options.selected_algorithm = alg;
 							options.selected_start = None;
+							options.requires_updating();
 						}
 					}
 				});
