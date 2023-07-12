@@ -1,4 +1,3 @@
-use super::cells::MarkerMarker;
 use super::visualization::spawn_visualization;
 use super::visualization::VisualizationComponent;
 use super::viz_colours::VizColour;
@@ -22,7 +21,6 @@ pub struct ManualState;
 impl Plugin for ManualState {
 	fn build(&self, app: &mut App) {
 		app
-			.add_event::<ManualNextCell>()
 			.init_resource::<ManualFreedom>()
 			.init_resource::<VizColour>()
 			.add_systems(
@@ -34,22 +32,6 @@ impl Plugin for ManualState {
 					.in_set(OnUpdate(ProgramState::Manual)),
 			);
 	}
-}
-
-#[derive(
-	derive_more::Into,
-	derive_more::From,
-	derive_more::Deref,
-	derive_more::DerefMut,
-	Debug,
-	Clone,
-	PartialEq,
-	Eq,
-	PartialOrd,
-	Ord,
-)]
-pub struct ManualNextCell {
-	pub cell: ChessPoint,
 }
 
 /// Resource for storing manual moves to present visualization
@@ -129,7 +111,7 @@ pub fn handle_manual_visualization(
 }
 
 pub fn handle_new_manual_selected(
-	mut events: EventReader<ManualNextCell>,
+	mut events: EventReader<CellClicked>,
 	mut manual_moves: ResMut<ManualMoves>,
 	current_level: Res<ManualFreedom>,
 	viz_col: Res<VizColour>,
@@ -137,7 +119,7 @@ pub fn handle_new_manual_selected(
 ) {
 	let current_level = current_level.into_inner();
 	let viz_col = viz_col.into_inner();
-	for ManualNextCell { cell } in events.iter() {
+	for CellClicked { 0: cell } in events.iter() {
 		if manual_moves.start.is_none() {
 			manual_moves.start = Some(*cell);
 			info!("Manually adding start cell: {:?}", manual_moves.start);
@@ -151,11 +133,13 @@ pub fn handle_new_manual_selected(
 			match current_level {
 				ManualFreedom::Free => {
 					manual_moves.add_move(from, *cell, *viz_col);
+					commands.remove_resource::<Error>();
 				}
 				ManualFreedom::AnyPossible => {
 					let piece = StandardKnight;
 					if piece.is_valid_move(from, *cell) {
 						manual_moves.add_move(from, *cell, *viz_col);
+						commands.remove_resource::<Error>();
 					} else {
 						let err_msg = format!(
 							"Invalid move: {} -> {}; A knight can never make that move",
@@ -172,6 +156,7 @@ pub fn handle_new_manual_selected(
 							&& manual_moves.start != Some(*cell)
 						{
 							manual_moves.add_move(from, *cell, *viz_col);
+							commands.remove_resource::<Error>();
 						} else {
 							let err_msg = format!(
 								"Invalid move: {:?} -> {:?}; The square you are moving to has already been occupied",
