@@ -1,5 +1,5 @@
-use super::{compute::ComputationResult, *};
-use crate::solver::{algs::Computation, Move, Moves};
+use super::{*, viz_colours::VizColour, cells::get_spacial_coord_2d};
+use crate::{solver::{Move, Moves}, ChessPoint, VISUALIZATION_HEIGHT, VISUALIZATION_DIMENSIONS};
 
 #[derive(Component, Debug, Clone)]
 pub struct VisualizationComponent {
@@ -7,41 +7,7 @@ pub struct VisualizationComponent {
 	to: ChessPoint,
 }
 
-/// Consumes [EventReader<ComputationResult>] and actually spawns concrete visualization if state is correct.
-/// ONLY in AUTOMATIC state!
-pub fn handle_spawning_visualization(
-	mut commands: Commands,
-	mut solutions: EventReader<ComputationResult>,
-	current_options: Res<CurrentOptions>,
 
-	_viz: Query<Entity, With<VisualizationComponent>>,
-	viz_col: Res<VizColour>,
-
-	mut mma: ResSpawning,
-) {
-	if let Some(solution) = solutions.iter().next() {
-		let (solution, options) = solution.clone().get();
-		if &options != current_options.as_options() {
-			// warn!("Not rendering visualization for computation of non-valid state");
-			return;
-		}
-
-		if let Computation::Successful {
-			solution: moves, ..
-		} = solution
-		{
-			spawn_visualization(
-				moves.clone(),
-				options.options,
-				&mut commands,
-				&mut mma,
-				vec![*viz_col.into_inner(); moves.len()],
-			);
-		}
-
-		solutions.clear()
-	}
-}
 
 /// Actually spawn entities of new solution
 pub fn spawn_visualization(
@@ -64,6 +30,13 @@ pub fn despawn_visualization(
 	for entity in visualization.iter() {
 		commands.entity(entity).despawn_recursive();
 	}
+}
+
+pub fn sys_despawn_visualization(
+	mut commands: Commands,
+	visualization: Query<Entity, With<VisualizationComponent>>,
+) {
+	super::visualization::despawn_visualization(&mut commands, visualization);
 }
 
 fn spawn_path_line(

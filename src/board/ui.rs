@@ -1,10 +1,10 @@
 use super::{
-	compute::ComputationResult,
-	state_manual::{ManualFreedom, ManualMoves},
+	manual::{ManualFreedom, ManualMoves},
 	viz_colours::VizColour,
-	*,
+	*, automatic::ComputationResult,
 };
-use crate::{errors::Error, solver::algs::Computation, ProgramState};
+use crate::*;
+use crate::{errors::{Error, display_error}, solver::algs::Computation, ProgramState, MainCamera};
 use bevy_egui::{
 	egui::{Color32, RichText},
 	*,
@@ -14,41 +14,25 @@ use strum::IntoEnumIterator;
 pub struct UiPlugin;
 impl Plugin for UiPlugin {
 	fn build(&self, app: &mut App) {
-			// app.add_systems((left_sidebar_ui, right_sidebar_ui).before(display_error));
-			app.add_systems((left_sidebar_ui, right_sidebar_ui, display_error));
+		// app.add_systems((left_sidebar_ui, right_sidebar_ui).before(display_error));
+		app
+			.add_system(display_error.in_set(OnUpdate(ProgramState::Manual)))
+			.add_systems((left_ui_auto, right_ui_auto).in_set(OnUpdate(ProgramState::Automatic)));
 	}
 }
 
-#[allow(clippy::too_many_arguments)]
-pub fn left_sidebar_ui(
-	_commands: Commands,
+pub fn left_ui_auto(
 	mut contexts: EguiContexts,
-
 	mut cam: Query<&mut Transform, With<MainCamera>>,
 	mut next_state: ResMut<NextState<ProgramState>>,
-	state: Res<State<ProgramState>>,
-	current_level: ResMut<ManualFreedom>,
-	viz_colour: ResMut<viz_colours::VizColour>,
-
-	moves: ResMut<ManualMoves>,
-
-	mut commands: Commands,
-	// markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
 	options: ResMut<CurrentOptions>,
 	mut new_board_event: EventWriter<NewOptions>,
 ) {
-	egui::SidePanel::left("general_controls_panel").show(contexts.ctx_mut(), |ui| {
+	egui::SidePanel::left("left_ui_auto").show(contexts.ctx_mut(), |ui| {
 		let options = options.clone().into_options();
 		let current_alg = &options.selected_algorithm;
-		let current_level = current_level.into_inner();
-		let current_state = &state.into_inner().0;
-		let current_colour = viz_colour.into_inner();
-		let current_moves = moves.into_inner();
 
 		ui.heading("Controls Panel");
-
-		match current_state {
-			ProgramState::Automatic => {
 				if ui.button("Switch to manual mode").clicked() {
 					next_state.set(ProgramState::Manual);
 				}
@@ -122,69 +106,84 @@ pub fn left_sidebar_ui(
 				// 	despawn_markers(&mut commands, markers);
 				// }
 			},
-			ProgramState::Manual => {
-				if ui.button("Switch back to automatic mode").clicked() {
-					next_state.set(ProgramState::Automatic);
-				}
+	);
+}
 
-				ui.label("Manual mode allows you to plot that path that you want. It has varying levels of freedom, from completely free which allows you to jump from any available square to any other available square\
+pub fn left_ui_manual(
+	mut next_state: ResMut<NextState<ProgramState>>,
+	mut commands: Commands,
+	mut contexts: EguiContexts,
+	current_level: ResMut<ManualFreedom>,
+	viz_colour: ResMut<viz_colours::VizColour>,
+	moves: ResMut<ManualMoves>,
+) {
+	let current_level = current_level.into_inner();
+	let current_colour = viz_colour.into_inner();
+	let current_moves = moves.into_inner();
+
+	egui::SidePanel::left("left_ui_manual").show(contexts.ctx_mut(), |ui| {
+	if ui.button("Switch back to automatic mode").clicked() {
+		next_state.set(ProgramState::Automatic);
+	}
+
+	ui.label("Manual mode allows you to plot that path that you want. It has varying levels of freedom, from completely free which allows you to jump from any available square to any other available square\
 				to only allowing you to move to squares that are one knight move away from the current square. If you want to disable/re-enable a square, switch back to automatic then back to manual.\
 				To reset your drawing, change modes then change back.
 				");
 
-				ui.label("Select a freedom level:");
-				ui.horizontal_wrapped(|ui| {
-					for level in ManualFreedom::iter() {
-						let name = format!("{}", level);
-						let mut text = RichText::new(name);
-						if &level == current_level {
-							text = text.color(UI_ENABLED_COLOUR);
-						}
-						if ui.button(text).clicked() {
-							*current_level = level;
-						}
-					}
-				});
-				ui.label(current_level.get_description());
-
-				ui.label("Pick a manual visualization colour");
-				ui.horizontal_wrapped(|ui| {
-					for col in VizColour::iter() {
-						let str = format!("{}", col);
-						let mut text = RichText::new(str);
-						if &col == current_colour {
-							text = text.color(UI_ENABLED_COLOUR);
-						}
-						if ui.button(text).clicked() {
-							*current_colour = col;
-						}
-					}
-				});
-
-					// copy + paste functionality
-				let mut state_str = current_moves.to_json();
-				if ui.text_edit_singleline(&mut state_str).changed() {
-					match ManualMoves::try_from(state_str) {
-						Ok(moves) => {
-							*current_moves = moves;
-						}
-						Err(e) => {
-							warn!("Could not parse state JSON string: {}", e);
-							commands.insert_resource(Error::new("Could not parse your data".into(), format!("Parsing str failed with err: {} ; {:?}", e, e)));
-						}
-					}
-				}
-
-				// undo button
-				if ui.button("Undo").clicked() {
-					current_moves.undo_move();
-				}
-			},
+	ui.label("Select a freedom level:");
+	ui.horizontal_wrapped(|ui| {
+		for level in ManualFreedom::iter() {
+			let name = format!("{}", level);
+			let mut text = RichText::new(name);
+			if &level == current_level {
+				text = text.color(UI_ENABLED_COLOUR);
+			}
+			if ui.button(text).clicked() {
+				*current_level = level;
+			}
 		}
 	});
+	ui.label(current_level.get_description());
+
+	ui.label("Pick a manual visualization colour");
+	ui.horizontal_wrapped(|ui| {
+		for col in VizColour::iter() {
+			let str = format!("{}", col);
+			let mut text = RichText::new(str);
+			if &col == current_colour {
+				text = text.color(UI_ENABLED_COLOUR);
+			}
+			if ui.button(text).clicked() {
+				*current_colour = col;
+			}
+		}
+	});
+
+	// copy + paste functionality
+	let mut state_str = current_moves.to_json();
+	if ui.text_edit_singleline(&mut state_str).changed() {
+		match ManualMoves::try_from(state_str) {
+			Ok(moves) => {
+				*current_moves = moves;
+			}
+			Err(e) => {
+				warn!("Could not parse state JSON string: {}", e);
+				commands.insert_resource(Error::new(
+					"Could not parse your data".into(),
+				));
+			}
+		}
+	}
+
+	// undo button
+	if ui.button("Undo").clicked() {
+		current_moves.undo_move();
+	}
+});
 }
 
-pub fn right_sidebar_ui(
+pub fn right_ui_auto(
 	options: Res<CurrentOptions>,
 	computation: Option<Res<ComputationResult>>,
 	mut contexts: EguiContexts,

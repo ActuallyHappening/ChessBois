@@ -1,7 +1,7 @@
 use std::sync::Mutex;
 
 use super::*;
-use crate::solver::algs::Computation;
+use crate::solver::{algs::Computation, pieces::ChessPiece};
 
 /// When sent as an event, indicates that this computation has just finished NOT that it is current!
 /// Check current Options against state to see if it is current.

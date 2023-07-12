@@ -1,6 +1,15 @@
-use super::{cached_info::CellMark, *};
-use crate::solver::CellOption;
-use crate::CELL_DISABLED_COLOUR;
+use std::f32::consts::TAU;
+
+use super::*;
+use super::automatic::cached_info::CellMark;
+use crate::*;
+use crate::errors::Error;
+use crate::{CELL_DISABLED_COLOUR, ChessPoint};
+use derive_more::{From, Into};
+use crate::board::automatic::cached_info;
+
+mod coords;
+pub use coords::{get_spacial_coord, get_spacial_coord_2d};
 
 /// Marker for Markers lol
 #[derive(Component)]
@@ -9,6 +18,9 @@ pub struct MarkerMarker;
 /// Marker for cells
 #[derive(Component)]
 pub struct CellMarker;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, From, Into, Deref, DerefMut)]
+pub struct CellClicked(ChessPoint);
 
 pub fn spawn_cells(options: &Options, commands: &mut Commands, mma: &mut ResSpawning) {
 	let start = options.selected_start;
@@ -48,6 +60,13 @@ pub fn despawn_markers(
 	for mark in markers.iter() {
 		commands.entity(mark).despawn_recursive();
 	}
+}
+
+pub fn sys_despawn_markers(
+	mut commands: Commands,
+	markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
+) {
+	super::cells::despawn_markers(&mut commands, markers);
 }
 
 /// Takes as much information as it can get and returns the colour the cell should be.
@@ -228,32 +247,20 @@ fn cell_deselected(
 
 fn toggle_cell_availability(
 	In(event): In<ListenedEvent<Click>>,
-	cells: Query<(&Handle<StandardMaterial>, &ChessPoint)>,
-	options: ResMut<CurrentOptions>,
+	mut send_event: EventWriter<CellClicked>,
 
-	mut update_board: EventWriter<NewOptions>,
-	mut update_manual: EventWriter<ManualNextCell>,
+	cells: Query<&ChessPoint, With<CellMarker>>,
+
+	mut commands: Commands,
 ) -> Bubble {
-	let (_mat, point) = cells.get(event.target).unwrap();
-
-	let mut options = options.current.clone();
-	match options.options.get(point) {
-		Some(CellOption::Available) => {
-			// let material = materials.get_mut(mat).unwrap();
-			// material.base_color = CELL_DISABLED_COLOUR;
-
-			options.options.rm(*point);
-			update_board.send(NewOptions::from_options(options));
-			update_manual.send(ManualNextCell::from(*point));
+	match cells.get(event.target) {
+		Ok(point) => {
+			send_event.send(CellClicked(*point));
 		}
-		Some(CellOption::Unavailable) => {
-			// let material = materials.get_mut(mat).unwrap();
-			// material.base_color = point.get_standard_colour();
-
-			options.options.add(*point);
-			update_board.send(NewOptions::from_options(options));
+		Err(_) => {
+			let err_msg = format!("Cell clicked but no ChessPoint found");
+			commands.insert_resource(Error::new(err_msg));
 		}
-		None => panic!("Tried to change availability of cell that doesn't exist"),
 	}
 	Bubble::Up
 }

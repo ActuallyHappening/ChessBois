@@ -3,17 +3,17 @@ use std::sync::Mutex;
 use bevy::prelude::*;
 use bevy_egui::{egui::Color32, EguiPlugin};
 use bevy_mod_picking::{
-	prelude::{Click, OnPointer, RaycastPickCamera, RaycastPickTarget},
+	prelude::{
+		Click, IsPointerEvent, ListenedEvent, OnPointer, RaycastPickCamera, RaycastPickTarget,
+	},
 	PickableBundle,
 };
 
 mod board;
 pub mod solver;
 
-use board::*;
-use errors::display_error;
+use board::BoardPlugin;
 pub use solver::ChessPoint;
-
 mod errors;
 
 #[derive(Default)]
@@ -23,6 +23,7 @@ impl Plugin for ChessSolverPlugin {
 		app
 			.add_startup_system(setup)
 			.add_state::<ProgramState>()
+			.add_event::<GroundClicked>()
 			.add_plugin(EguiPlugin)
 			.add_plugin(BoardPlugin);
 	}
@@ -59,6 +60,15 @@ const UI_ENABLED_COLOUR: Color32 = Color32::GREEN;
 
 #[derive(Component)]
 pub struct MainCamera;
+
+#[derive(Debug, Clone)]
+pub struct GroundClicked;
+
+impl<T: IsPointerEvent> From<ListenedEvent<T>> for GroundClicked {
+	fn from(_: ListenedEvent<T>) -> Self {
+		GroundClicked
+	}
+}
 
 pub fn setup(
 	mut commands: Commands,
@@ -99,6 +109,6 @@ pub fn setup(
 		},
 		PickableBundle::default(),    // Makes the entity pickable
 		RaycastPickTarget::default(), // Marker for the `bevy_picking_raycast` backend
-		OnPointer::<Click>::run_callback(handle_plane_clicked),
+		OnPointer::<Click>::send_event::<GroundClicked>(),
 	));
 }

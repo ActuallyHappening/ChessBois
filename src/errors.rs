@@ -6,14 +6,12 @@ use super::*;
 #[derive(Resource, Constructor, Debug, Clone, PartialEq, Eq)]
 pub struct Error {
 	pub title: String,
-	pub debug: String,
 }
 
 impl Error {
 	fn render_to_ui(&self, ui: &mut Ui) {
 		// red title
 		ui.colored_label(egui::Color32::RED, self.title.clone());
-		ui.label(&self.debug);
 	}
 }
 
