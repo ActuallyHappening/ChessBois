@@ -1,7 +1,7 @@
 use std::sync::Mutex;
 
 use bevy::prelude::*;
-use bevy_egui::egui::Color32;
+use bevy_egui::{egui::Color32, EguiPlugin};
 use bevy_mod_picking::{
 	prelude::{Click, OnPointer, RaycastPickCamera, RaycastPickTarget},
 	PickableBundle,
@@ -23,8 +23,8 @@ impl Plugin for ChessSolverPlugin {
 		app
 			.add_startup_system(setup)
 			.add_state::<ProgramState>()
-			.add_plugin(BoardPlugin)
-			;
+			.add_plugin(EguiPlugin)
+			.add_plugin(BoardPlugin);
 	}
 }
 
