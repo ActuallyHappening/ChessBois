@@ -41,8 +41,10 @@ pub fn begin_background_compute<P: ChessPiece + Copy + Send + Sync + 'static>(
 			trace!("About to compute");
 			alg
 				.tour_computation_cached(&piece, options.clone())
-				.unwrap()
+				.expect("Computation failed, maybe because the start point was None")
 		})
+	} else {
+		warn!("Not beginning background compute");
 	}
 }
 
@@ -110,7 +112,7 @@ pub fn handle_automatic_computation(
 			// only set as current if state is valid
 			commands.insert_resource(comp.clone());
 		} else {
-			// warn!("Computation with invalid / changed state ignored")
+			warn!("Computation with invalid / changed state ignored")
 		}
 
 		// let message get out to everybody, even if state is invalid

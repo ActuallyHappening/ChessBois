@@ -1,6 +1,6 @@
 use crate::{
-	solver::{algs::Computation, pieces::StandardKnight},
-	ChessPoint, GroundClicked, ProgramState,
+	solver::{algs::Computation, pieces::StandardKnight, CellOption},
+	ChessPoint, GroundClicked, ProgramState, errors::Error,
 };
 
 use super::{
@@ -73,12 +73,10 @@ fn handle_new_options(
 	mut commands: Commands,
 	mut mma: ResSpawning,
 ) {
-	if options.is_changed() {
+	if options.is_changed() && options.requires_updating {
 		let options = &options.into_inner().current;
 
-		if options.requires_updating {
-			info!("Automatic updating ...")
-		}
+		info!("Automatic updating ...");
 
 		despawn_visualization(&mut commands, viz);
 
@@ -91,11 +89,11 @@ fn handle_new_options(
 		spawn_cells(options, &mut commands, &mut mma);
 
 		// begin recomputing visualization
-		begin_background_compute(
-			options.selected_algorithm,
-			&StandardKnight {},
-			options.clone(),
-		);
+		if options.selected_start.is_some() {
+			begin_background_compute(options.selected_algorithm, &StandardKnight, options.clone());
+		} else {
+			warn!("Not beginning background compute")
+		}
 
 		// add new options as current
 		commands.insert_resource(CurrentOptions::from(Options {
@@ -150,12 +148,27 @@ fn handle_plane_clicked(mut click: EventReader<GroundClicked>, options: ResMut<C
 	}
 }
 
-fn handle_cell_clicked(mut event: EventReader<CellClicked>, options: ResMut<CurrentOptions>) {
+fn handle_cell_clicked(mut event: EventReader<CellClicked>, options: ResMut<CurrentOptions>, mut commands: Commands) {
 	if let Some(CellClicked(point)) = event.iter().next() {
-		debug!("Cell clicked in auto mode, disabling: {:?}", point);
+		debug!("Cell clicked in auto mode, toggling: {:?}", point);
 
 		let options = options.into_inner();
-		options.rm(*point);
+		match options.get(point) {
+			Some(CellOption::Available) => {
+				options.rm(*point);
+				if options.current.selected_start == Some(*point) {
+					options.current.selected_start = None;
+				}
+			}
+			Some(CellOption::Unavailable) => {
+				options.add(*point);
+			}
+			None => {
+				let err_msg = format!("Cell {:?} is out of bounds", point);
+				warn!("{}", err_msg);
+				commands.insert_resource(Error::new(err_msg));
+			}
+		}
 		options.requires_updating();
 	}
 }

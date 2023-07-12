@@ -1031,13 +1031,14 @@ dependencies = [
 
 [[package]]
 name = "bevy_solver"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "bevy",
  "bevy_editor_pls",
  "bevy_egui",
  "bevy_mod_picking",
  "console_error_panic_hook",
+ "derivative",
  "derive_more",
  "futures",
  "getrandom",
@@ -1614,6 +1615,17 @@ name = "dasp_sample"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c87e182de0887fd5361989c677c4e8f5000cd9491d6d563161a8f3a5519fc7f"
+
+[[package]]
+name = "derivative"
+version = "2.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fcc3dd5e9e9c0b295d6e1e4d811fb6f157d5ffd784b8d202fc62eac8035a770b"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
 
 [[package]]
 name = "derive_more"

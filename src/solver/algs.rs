@@ -128,14 +128,25 @@ impl Algorithm {
 }
 
 /// Represents information required to display cells + visual solutions
-#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(derivative::Derivative)]
+#[derive(Debug, Clone, Eq, PartialOrd, Ord)]
+#[derivative(PartialEq)]
 pub struct Options {
 	pub options: BoardOptions,
 
 	pub selected_start: Option<ChessPoint>,
 	pub selected_algorithm: Algorithm,
 
+	#[derivative(PartialEq = "ignore")]
 	pub requires_updating: bool,
+}
+
+impl std::hash::Hash for Options {
+	fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+		self.options.hash(state);
+		self.selected_start.hash(state);
+		self.selected_algorithm.hash(state);
+	}
 }
 
 impl Deref for Options {

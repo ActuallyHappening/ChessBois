@@ -218,13 +218,17 @@ fn cell_selected(
 		.options
 		.get_unavailable_points()
 		.contains(point);
+
 	if !is_disabled {
 		// sets colour to selected
 		let material = materials.get_mut(mat).unwrap();
 		material.base_color = CELL_SELECTED_COLOUR;
 
-		let mut options = options.into_inner();
-		options.current.selected_start = Some(*point);
+		if options.current.selected_start != Some(*point) {
+			let mut options = options.into_inner();
+			options.current.selected_start = Some(*point);
+			options.requires_updating();
+		}
 	}
 
 	Bubble::Burst
