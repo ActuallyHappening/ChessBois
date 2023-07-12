@@ -20,27 +20,28 @@ use std::f32::consts::TAU;
 
 use crate::*;
 
-mod state_manual;
-mod viz_colours;
-
-use cells::*;
-mod cells;
-mod compute;
+mod automatic;
+mod manual;
 
 mod cached_info;
-
-use visualization::*;
+mod cells;
+mod compute;
+mod coords;
+mod state_manual;
+mod ui;
 mod visualization;
+mod viz_colours;
 
+use self::automatic::AutomaticState;
 use self::cached_info::update_cache_from_computation;
 use self::compute::{begin_background_compute, handle_automatic_computation, ComputationResult};
+use self::manual::ManualState;
 use self::state_manual::{ManualFreedom, ManualNextCell};
 use self::viz_colours::VizColour;
-use ui::*;
-mod ui;
-
+use cells::*;
 use coords::*;
-mod coords;
+use ui::*;
+use visualization::*;
 
 pub struct BoardPlugin;
 impl Plugin for BoardPlugin {
@@ -49,57 +50,15 @@ impl Plugin for BoardPlugin {
 			.add_event::<NewOptions>()
 			.add_event::<ComputationResult>()
 			.add_startup_system(setup)
-			// normal state: Automatic
-			.add_systems(
-				(
-					handle_automatic_computation,
-					update_cache_from_computation,
-					handle_spawning_visualization,
-					handle_new_options,
-					right_sidebar_ui,
-				)
-					.in_set(OnUpdate(ProgramState::Automatic)),
-			)
-			// state changes
-			.add_systems(
-				(
-					state_manual::despawn_visualization,
-					state_manual::despawn_markers,
-					state_manual::add_empty_manual_moves,
-				)
-					.in_schedule(OnExit(ProgramState::Automatic)),
-			)
-			.add_systems(
-				(
-					state_manual::despawn_visualization,
-					state_manual::despawn_markers,
-					state_manual::add_empty_manual_moves,
-					state_manual::add_default_manual_viz_colour,
-				)
-					.in_schedule(OnEnter(ProgramState::Automatic)),
-			)
-			// manual state:
-			.add_event::<ManualNextCell>()
-			.init_resource::<ManualFreedom>()
-			.init_resource::<VizColour>()
-			.add_systems(
-				(
-					state_manual::handle_manual_visualization,
-					state_manual::handle_new_manual_selected,
-					viz_colours::colour_hotkeys,
-				)
-					.in_set(OnUpdate(ProgramState::Manual)),
-			)
-			// end manual state
 			.add_system(left_sidebar_ui)
+			.add_plugin(AutomaticState)
+			.add_plugin(ManualState)
 			.add_plugins(
 				DefaultPickingPlugins
 					.build()
 					.disable::<DefaultHighlightingPlugin>()
 					.disable::<DebugPickingPlugin>(),
 			);
-		// .add_system(handle_new_cell_selected_event)
-		// .add_system(handle_new_board_event)
 	}
 }
 

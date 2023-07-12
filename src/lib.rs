@@ -22,9 +22,10 @@ impl Plugin for ChessSolverPlugin {
 	fn build(&self, app: &mut App) {
 		app
 			.add_startup_system(setup)
-			.add_system(display_error)
 			.add_state::<ProgramState>()
-			.add_plugin(BoardPlugin);
+			.add_plugin(BoardPlugin)
+			.add_system(display_error)
+			;
 	}
 }
 
