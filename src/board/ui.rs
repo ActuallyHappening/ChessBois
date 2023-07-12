@@ -46,7 +46,7 @@ pub fn left_ui_auto(
 				const SIZE_CAP: f64 = 20.;
 				ui.add(egui::Slider::from_get_set((2.)..=SIZE_CAP, |val| {
 					if let Some(new_val) = val {
-						let new = options.options.clone().update_height(new_val as u16);
+						let new = options.options.clone().update_width(new_val as u16);
 						if new != options.options {
 							options.options = new;
 							options.selected_start = None;

@@ -64,7 +64,7 @@ impl Plugin for AutomaticState {
 
 /// Decides what happens when [NewOptions] event comes in
 fn handle_new_options(
-	options: ResMut<CurrentOptions>,
+	options: Res<CurrentOptions>,
 
 	cells: Query<Entity, (With<CellMarker>, With<ChessPoint>)>,
 	viz: Query<Entity, With<VisualizationComponent>>,
@@ -74,7 +74,7 @@ fn handle_new_options(
 	mut mma: ResSpawning,
 ) {
 	if options.is_changed() {
-		let options = &mut options.into_inner().current;
+		let options = &options.into_inner().current;
 
 		if options.requires_updating {
 			info!("Automatic updating ...")
@@ -98,7 +98,7 @@ fn handle_new_options(
 		);
 
 		// add new options as current
-		commands.insert_resource(CurrentOptions::from_options(Options {
+		commands.insert_resource(CurrentOptions::from(Options {
 			requires_updating: false,
 			..options.clone()
 		}));
@@ -155,6 +155,7 @@ fn handle_cell_clicked(mut event: EventReader<CellClicked>, options: ResMut<Curr
 		debug!("Cell clicked in auto mode, disabling: {:?}", point);
 
 		let options = options.into_inner();
-		options.current.options.rm(*point);
+		options.rm(*point);
+		options.requires_updating();
 	}
 }

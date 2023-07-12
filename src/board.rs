@@ -5,6 +5,7 @@ use crate::solver::{
 };
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
+use derive_more::From;
 use top_level_types::OptionsWrapper;
 
 mod automatic;
@@ -35,7 +36,7 @@ impl Plugin for BoardPlugin {
 }
 
 /// What [Options] are currently selected / rendered
-#[derive(Resource, Debug, Clone, Deref, DerefMut, PartialEq, Eq)]
+#[derive(Resource, Debug, Clone, Deref, DerefMut, PartialEq, Eq, From)]
 pub struct CurrentOptions {
 	pub current: Options,
 }

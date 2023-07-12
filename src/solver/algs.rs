@@ -131,10 +131,24 @@ impl Algorithm {
 #[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct Options {
 	pub options: BoardOptions,
+
 	pub selected_start: Option<ChessPoint>,
 	pub selected_algorithm: Algorithm,
 
 	pub requires_updating: bool,
+}
+
+impl Deref for Options {
+	type Target = BoardOptions;
+
+	fn deref(&self) -> &Self::Target {
+		&self.options
+	}
+}
+impl DerefMut for Options {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.options
+	}
 }
 
 impl Options {
