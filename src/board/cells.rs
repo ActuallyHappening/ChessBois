@@ -20,7 +20,13 @@ pub struct MarkerMarker;
 pub struct CellMarker;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, From, Into, Deref, DerefMut)]
-pub struct CellClicked(ChessPoint);
+pub struct CellClicked(pub ChessPoint);
+
+// pub fn refresh_cells_on_new_options(options: Res<CurrentOptions>) {
+// 	if options.is_changed() {
+// 		warn!("Refreshing all cells ...")
+// 	}
+// }
 
 pub fn spawn_cells(options: &Options, commands: &mut Commands, mma: &mut ResSpawning) {
 	let start = options.selected_start;
@@ -200,9 +206,8 @@ fn spawn_mark(
 fn cell_selected(
 	// The first parameter is always the `ListenedEvent`, passed in by the event listening system.
 	In(event): In<ListenedEvent<Over>>,
-	options: Res<CurrentOptions>,
+	options: ResMut<CurrentOptions>,
 	cells: Query<(&Handle<StandardMaterial>, &ChessPoint)>,
-	mut update_board: EventWriter<NewOptions>,
 
 	mut materials: ResMut<Assets<StandardMaterial>>,
 ) -> Bubble {
@@ -218,11 +223,8 @@ fn cell_selected(
 		let material = materials.get_mut(mat).unwrap();
 		material.base_color = CELL_SELECTED_COLOUR;
 
-		let mut options = options.clone().into_options();
-		options.selected_start = Some(*point);
-
-		// send event
-		update_board.send(NewOptions::from_options(options));
+		let mut options = options.into_inner();
+		options.current.selected_start = Some(*point);
 	}
 
 	Bubble::Burst
@@ -258,7 +260,7 @@ fn toggle_cell_availability(
 			send_event.send(CellClicked(*point));
 		}
 		Err(_) => {
-			let err_msg = format!("Cell clicked but no ChessPoint found");
+			let err_msg = "Cell clicked but no ChessPoint found".to_string();
 			commands.insert_resource(Error::new(err_msg));
 		}
 	}

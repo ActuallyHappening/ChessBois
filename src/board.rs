@@ -1,16 +1,4 @@
-//! Overall structure
-//! Whenever something that could change the visualization happens, send a [NewOptions] event.
-//! [NewOptions]:
-//! - Handled by [handle_new_options]
-//! - Begins new computation
-//!
-//! Each NewOptions guarantees that the visualization will be voided/de-spawned
-//!
-//! When computation is required, start with [begin_background_compute]
-//! - polls result with [get_computation]
-//! - system [handle_automatic_computation] sends [ComputationResult] event + adds as resource when computation is received
-
-use self::{automatic::AutomaticState, manual::ManualState, ui::UiPlugin};
+use self::{automatic::AutomaticState, cells::CellClicked, manual::ManualState, ui::UiPlugin};
 use crate::solver::{
 	algs::{Algorithm, Options},
 	BoardOptions,
@@ -40,23 +28,20 @@ impl Plugin for BoardPlugin {
 					.disable::<DefaultHighlightingPlugin>()
 					.disable::<DebugPickingPlugin>(),
 			)
+			// .add_system(refresh_cells_on_new_options)
+			.add_event::<CellClicked>()
 			.add_startup_system(setup);
 	}
 }
 
-/// What 'shape', dimensions and disabled cells there are
+/// What [Options] are currently selected / rendered
 #[derive(Resource, Debug, Clone)]
 pub struct CurrentOptions {
-	current: Options,
-}
-
-#[derive(Debug, Clone)]
-pub struct NewOptions {
-	new: Options,
+	pub current: Options,
 }
 
 /// Sets up default resources + sends initial [NewOptions] event
-fn setup(mut commands: Commands, mut update_board: EventWriter<NewOptions>) {
+fn setup(mut commands: Commands) {
 	// let mut board = BoardOptions::new(2, 3);
 	// board.rm((1, 2));
 	// board.rm((2, 2));
@@ -73,8 +58,6 @@ fn setup(mut commands: Commands, mut update_board: EventWriter<NewOptions>) {
 	let current_options = CurrentOptions::from_options(options.clone());
 
 	commands.insert_resource(current_options);
-
-	update_board.send(NewOptions::from_options(options));
 }
 
 mod top_level_types {
@@ -85,20 +68,6 @@ mod top_level_types {
 		fn as_options(&self) -> &Options;
 
 		fn from_options(options: Options) -> Self;
-	}
-
-	impl OptionsWrapper for NewOptions {
-		fn into_options(self) -> Options {
-			self.new
-		}
-
-		fn as_options(&self) -> &Options {
-			&self.new
-		}
-
-		fn from_options(options: Options) -> Self {
-			NewOptions { new: options }
-		}
 	}
 
 	impl OptionsWrapper for CurrentOptions {

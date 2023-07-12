@@ -17,7 +17,7 @@ impl Plugin for UiPlugin {
 		// app.add_systems((left_sidebar_ui, right_sidebar_ui).before(display_error));
 		app
 			.add_system(display_error.in_set(OnUpdate(ProgramState::Manual)))
-			.add_systems((left_ui_auto, right_ui_auto).in_set(OnUpdate(ProgramState::Automatic)));
+			.add_systems((left_ui_auto, right_ui_auto).in_set(OnUpdate(ProgramState::Automatic))).add_system(left_ui_manual.in_set(OnUpdate(ProgramState::Manual)));
 	}
 }
 
@@ -26,11 +26,9 @@ pub fn left_ui_auto(
 	mut cam: Query<&mut Transform, With<MainCamera>>,
 	mut next_state: ResMut<NextState<ProgramState>>,
 	options: ResMut<CurrentOptions>,
-	mut new_board_event: EventWriter<NewOptions>,
 ) {
 	egui::SidePanel::left("left_ui_auto").show(contexts.ctx_mut(), |ui| {
-		let options = options.clone().into_options();
-		let current_alg = &options.selected_algorithm;
+		let options = &mut options.into_inner().current;
 
 		ui.heading("Controls Panel");
 				if ui.button("Switch to manual mode").clicked() {
@@ -45,7 +43,6 @@ pub fn left_ui_auto(
 					if let Some(new_val) = val {
 						options.options = options.options.update_width(new_val as u16);
 						options.selected_start = None;
-						new_board_event.send(NewOptions::from_options(options));
 						new_val
 					} else {
 						options.options.width() as f64
@@ -56,7 +53,6 @@ pub fn left_ui_auto(
 					if let Some(new_val) = val {
 						options.options = options.options.update_height(new_val as u16);
 						options.selected_start = None;
-						new_board_event.send(NewOptions::from_options(options));
 						new_val
 					} else {
 						options.options.height() as f64
@@ -68,19 +64,16 @@ pub fn left_ui_auto(
 					for alg in Algorithm::iter() {
 						let str: &'static str = alg.into();
 						let mut text = RichText::new(str);
-						if &alg == current_alg {
+						if alg == options.selected_algorithm {
 							text = text.color(UI_ENABLED_COLOUR);
 						}
 						if ui.button(text).clicked() {
-							new_board_event.send(NewOptions::from_options(Options {
-								selected_algorithm: alg,
-								selected_start: None,
-								..options.clone()
-							}));
+							options.selected_algorithm = alg;
+							options.selected_start = None;
 						}
 					}
 				});
-				ui.label(current_alg.get_description());
+				ui.label(options.selected_algorithm.get_description());
 
 				ui.add(egui::Slider::from_get_set((10.)..=10_000_000., |val| {
 					if let Some(new_val) = val {
@@ -114,7 +107,7 @@ pub fn left_ui_manual(
 	mut commands: Commands,
 	mut contexts: EguiContexts,
 	current_level: ResMut<ManualFreedom>,
-	viz_colour: ResMut<viz_colours::VizColour>,
+	viz_colour: ResMut<VizColour>,
 	moves: ResMut<ManualMoves>,
 ) {
 	let current_level = current_level.into_inner();
