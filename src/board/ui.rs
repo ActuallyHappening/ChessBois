@@ -11,6 +11,13 @@ use bevy_egui::{
 };
 use strum::IntoEnumIterator;
 
+pub struct UiPlugin;
+impl Plugin for UiPlugin {
+	fn build(&self, app: &mut App) {
+			// app.add_systems((left_sidebar_ui, right_sidebar_ui).before(display_error));
+	}
+}
+
 #[allow(clippy::too_many_arguments)]
 pub fn left_sidebar_ui(
 	_commands: Commands,

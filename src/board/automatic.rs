@@ -4,13 +4,14 @@ pub struct AutomaticState;
 impl Plugin for AutomaticState {
 	fn build(&self, app: &mut App) {
 		app
+			.add_event::<NewOptions>()
+			.add_event::<ComputationResult>()
 			.add_systems(
 				(
 					handle_automatic_computation,
 					update_cache_from_computation,
 					handle_spawning_visualization,
 					handle_new_options,
-					right_sidebar_ui,
 				)
 					.in_set(OnUpdate(ProgramState::Automatic)),
 			)

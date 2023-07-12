@@ -24,7 +24,6 @@ impl Plugin for ChessSolverPlugin {
 			.add_startup_system(setup)
 			.add_state::<ProgramState>()
 			.add_plugin(BoardPlugin)
-			.add_system(display_error)
 			;
 	}
 }

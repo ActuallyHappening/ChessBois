@@ -47,10 +47,7 @@ pub struct BoardPlugin;
 impl Plugin for BoardPlugin {
 	fn build(&self, app: &mut App) {
 		app
-			.add_event::<NewOptions>()
-			.add_event::<ComputationResult>()
-			.add_startup_system(setup)
-			.add_system(left_sidebar_ui)
+			.add_plugin(UiPlugin)
 			.add_plugin(AutomaticState)
 			.add_plugin(ManualState)
 			.add_plugins(
@@ -58,7 +55,8 @@ impl Plugin for BoardPlugin {
 					.build()
 					.disable::<DefaultHighlightingPlugin>()
 					.disable::<DebugPickingPlugin>(),
-			);
+			)
+			.add_startup_system(setup);
 	}
 }
 
