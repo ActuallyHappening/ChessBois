@@ -26,7 +26,7 @@ pub fn display_error(
 	errors: Option<ResMut<Error>>,
 	mut commands: Commands,
 ) {
-	egui::TopBottomPanel::bottom("errors_panel").show(contexts.ctx_mut(), |ui| {
+	egui::Window::new("errors_panel").show(contexts.ctx_mut(), |ui| {
 		ui.heading("Errors panel");
 		if ui.button("Clear").clicked() {
 			commands.remove_resource::<Error>();
