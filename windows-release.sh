@@ -1,4 +1,4 @@
-set -e
+set -exuo pipefail
 
 TARGET_NAME=x86_64-pc-windows-gnu
 ENV_BINARY=bevy_solver
