@@ -169,9 +169,10 @@ pub fn left_ui_manual(
 	});
 
 	// copy + paste functionality
-	let mut state_str = current_moves.to_json();
-	if ui.text_edit_singleline(&mut state_str).changed() {
-		match ManualMoves::try_from(state_str) {
+	let state_str = current_moves.to_json();
+	let mut str = state_str.clone();
+	if ui.text_edit_singleline(&mut str).changed() {
+		match ManualMoves::try_from(str.clone()) {
 			Ok(moves) => {
 				*current_moves = moves;
 			}
@@ -182,6 +183,27 @@ pub fn left_ui_manual(
 				));
 			}
 		}
+	}
+	// copy to clipboard
+	if ui.button("Copy current state to clipboard").clicked() {
+		ui.output_mut(|o| o.copied_text = state_str);
+	}
+	// paste from clipboard
+	if ui.button("Paste from your current clipboard").clicked() {
+		let clip = crate::clipboard::get_from_clipboard();
+		// if let Some(clip) = clipboard {
+			match ManualMoves::try_from(clip) {
+				Ok(moves) => {
+					*current_moves = moves;
+				}
+				Err(e) => {
+					warn!("Could not parse clipboard JSON string: {}", e);
+					commands.insert_resource(Error::new(
+						"Could not parse your data".into(),
+					));
+				}
+			}
+		// }
 	}
 
 	// undo button
