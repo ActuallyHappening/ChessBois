@@ -52,7 +52,7 @@ pub fn left_ui_auto(
 							options.selected_start = None;
 							options.requires_updating();
 						}
-						
+
 						new_val
 					} else {
 						options.options.width() as f64
@@ -80,7 +80,7 @@ pub fn left_ui_auto(
 						if alg == options.selected_algorithm {
 							text = text.color(UI_ENABLED_COLOUR);
 						}
-						if ui.button(text).clicked() {
+						if ui.button(text).clicked() && options.selected_algorithm != alg {
 							info!("Changing algorithm from {:?} to {:?}", options.selected_algorithm, alg);
 							options.selected_algorithm = alg;
 							options.selected_start = None;
@@ -135,9 +135,9 @@ pub fn left_ui_manual(
 	}
 
 	ui.label("Manual mode allows you to plot that path that you want. It has varying levels of freedom, from completely free which allows you to jump from any available square to any other available square\
-				to only allowing you to move to squares that are one knight move away from the current square. If you want to disable/re-enable a square, switch back to automatic then back to manual.\
-				To reset your drawing, change modes then change back.
-				");
+		to only allowing you to move to squares that are one knight move away from the current square. If you want to disable/re-enable a square, switch back to automatic then back to manual.\
+		To reset your drawing, change modes then change back.
+	");
 
 	ui.label("Select a freedom level:");
 	ui.horizontal_wrapped(|ui| {
