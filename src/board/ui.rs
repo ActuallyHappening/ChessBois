@@ -1,10 +1,15 @@
 use super::{
+	automatic::ComputationResult,
 	manual::{ManualFreedom, ManualMoves},
 	viz_colours::VizColour,
-	*, automatic::ComputationResult,
+	*,
 };
 use crate::*;
-use crate::{errors::{Error, display_error}, solver::algs::Computation, ProgramState, MainCamera};
+use crate::{
+	errors::{display_error, Error},
+	solver::algs::Computation,
+	MainCamera, ProgramState,
+};
 use bevy_egui::{
 	egui::{Color32, RichText},
 	*,
@@ -17,7 +22,8 @@ impl Plugin for UiPlugin {
 		// app.add_systems((left_sidebar_ui, right_sidebar_ui).before(display_error));
 		app
 			.add_system(display_error.in_set(OnUpdate(ProgramState::Manual)))
-			.add_systems((left_ui_auto, right_ui_auto).in_set(OnUpdate(ProgramState::Automatic))).add_system(left_ui_manual.in_set(OnUpdate(ProgramState::Manual)));
+			.add_systems((left_ui_auto, right_ui_auto).in_set(OnUpdate(ProgramState::Automatic)))
+			.add_system(left_ui_manual.in_set(OnUpdate(ProgramState::Manual)));
 	}
 }
 
@@ -39,9 +45,8 @@ pub fn left_ui_auto(
 
 				const SIZE_CAP: f64 = 20.;
 				ui.add(egui::Slider::from_get_set((2.)..=SIZE_CAP, |val| {
-					let mut options = options.clone();
 					if let Some(new_val) = val {
-						options.options = options.options.update_width(new_val as u16);
+						options.options = options.options.clone().update_width(new_val as u16);
 						options.selected_start = None;
 						new_val
 					} else {
@@ -49,9 +54,8 @@ pub fn left_ui_auto(
 					}
 				}).text("Width"));
 				ui.add(egui::Slider::from_get_set((2.)..=SIZE_CAP, |val| {
-					let mut options = options.clone();
 					if let Some(new_val) = val {
-						options.options = options.options.update_height(new_val as u16);
+						options.options = options.options.clone().update_height(new_val as u16);
 						options.selected_start = None;
 						new_val
 					} else {

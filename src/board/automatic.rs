@@ -1,8 +1,19 @@
-use crate::{ProgramState, ChessPoint, solver::{pieces::StandardKnight, algs::Computation, CellOption}, GroundClicked};
+use crate::{
+	solver::{algs::Computation, pieces::StandardKnight, CellOption},
+	ChessPoint, GroundClicked, ProgramState,
+};
 
 use super::{
+	cells::{
+		despawn_cells, despawn_markers, spawn_cells, spawn_markers, sys_despawn_markers, CellClicked,
+		CellMarker, MarkerMarker,
+	},
 	manual::{add_default_manual_viz_colour, add_empty_manual_moves, ManualNextCell},
-	*, visualization::{sys_despawn_visualization, VisualizationComponent, despawn_visualization, spawn_visualization}, cells::{sys_despawn_markers, CellMarker, MarkerMarker, despawn_markers, spawn_markers, despawn_cells, spawn_cells, CellClicked}, viz_colours::VizColour,
+	visualization::{
+		despawn_visualization, spawn_visualization, sys_despawn_visualization, VisualizationComponent,
+	},
+	viz_colours::VizColour,
+	*,
 };
 use cached_info::*;
 use compute::*;
@@ -131,10 +142,7 @@ pub fn handle_spawning_visualization(
 	}
 }
 
-fn handle_plane_clicked(
-	mut click: EventReader<GroundClicked>,
-	options: ResMut<CurrentOptions>,
-) {
+fn handle_plane_clicked(mut click: EventReader<GroundClicked>, options: ResMut<CurrentOptions>) {
 	if click.iter().next().is_some() {
 		debug!("Plane clicked");
 
@@ -143,15 +151,11 @@ fn handle_plane_clicked(
 	}
 }
 
-fn handle_cell_clicked(
-	mut event: EventReader<CellClicked>,
-
-	options: ResMut<CurrentOptions>,
-) {
+fn handle_cell_clicked(mut event: EventReader<CellClicked>, options: ResMut<CurrentOptions>) {
 	if let Some(CellClicked(point)) = event.iter().next() {
 		debug!("Cell clicked in auto mode, disabling: {:?}", point);
 
 		let options = options.into_inner();
 		options.current.options.rm(*point);
-	}	
+	}
 }

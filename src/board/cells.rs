@@ -1,12 +1,12 @@
 use std::f32::consts::TAU;
 
-use super::*;
 use super::automatic::cached_info::CellMark;
-use crate::*;
-use crate::errors::Error;
-use crate::{CELL_DISABLED_COLOUR, ChessPoint};
-use derive_more::{From, Into};
+use super::*;
 use crate::board::automatic::cached_info;
+use crate::errors::Error;
+use crate::*;
+use crate::{ChessPoint, CELL_DISABLED_COLOUR};
+use derive_more::{From, Into};
 
 mod coords;
 pub use coords::{get_spacial_coord, get_spacial_coord_2d};

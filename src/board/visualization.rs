@@ -1,13 +1,14 @@
-use super::{*, viz_colours::VizColour, cells::get_spacial_coord_2d};
-use crate::{solver::{Move, Moves}, ChessPoint, VISUALIZATION_HEIGHT, VISUALIZATION_DIMENSIONS};
+use super::{cells::get_spacial_coord_2d, viz_colours::VizColour, *};
+use crate::{
+	solver::{Move, Moves},
+	ChessPoint, VISUALIZATION_DIMENSIONS, VISUALIZATION_HEIGHT,
+};
 
 #[derive(Component, Debug, Clone)]
 pub struct VisualizationComponent {
 	from: ChessPoint,
 	to: ChessPoint,
 }
-
-
 
 /// Actually spawn entities of new solution
 pub fn spawn_visualization(

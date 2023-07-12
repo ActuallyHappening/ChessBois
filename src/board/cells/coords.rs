@@ -1,6 +1,5 @@
 use super::*;
 
-
 /// Returns spacial coordinates of center of cell mesh
 fn get_spacial_coord_normalized(board: &BoardOptions, chess_position: ChessPoint) -> Vec2 {
 	let ChessPoint { row: y, column: x } = chess_position;

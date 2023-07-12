@@ -1,15 +1,15 @@
 use super::cells::MarkerMarker;
-use super::visualization::VisualizationComponent;
 use super::visualization::spawn_visualization;
+use super::visualization::VisualizationComponent;
 use super::viz_colours::VizColour;
 use super::*;
-use crate::ChessPoint;
-use crate::ProgramState;
 use crate::errors::Error;
-use crate::solver::Move;
-use crate::solver::Moves;
 use crate::solver::pieces::ChessPiece;
 use crate::solver::pieces::StandardKnight;
+use crate::solver::Move;
+use crate::solver::Moves;
+use crate::ChessPoint;
+use crate::ProgramState;
 use derive_more::From;
 use derive_more::Into;
 use serde::Deserialize;
@@ -162,9 +162,7 @@ pub fn handle_new_manual_selected(
 							from, *cell
 						);
 						warn!("{err_msg}");
-						commands.insert_resource(Error::new(
-							err_msg.clone(),
-						));
+						commands.insert_resource(Error::new(err_msg.clone()));
 					}
 				}
 				ManualFreedom::ValidOnly => {
@@ -180,9 +178,7 @@ pub fn handle_new_manual_selected(
 								from, *cell
 							);
 							warn!("{err_msg}");
-							commands.insert_resource(Error::new(
-								err_msg.clone(),
-							));
+							commands.insert_resource(Error::new(err_msg.clone()));
 						}
 					} else {
 						let err_msg = format!(
@@ -190,9 +186,7 @@ pub fn handle_new_manual_selected(
 							from, *cell
 						);
 						warn!("{err_msg}");
-						commands.insert_resource(Error::new(
-							err_msg.clone(),
-						));
+						commands.insert_resource(Error::new(err_msg.clone()));
 					}
 				}
 			}
