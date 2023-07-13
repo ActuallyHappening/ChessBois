@@ -25,7 +25,7 @@ pub fn spawn_visualization(
 ) {
 	for (i, Move { from, to }) in moves.iter().enumerate() {
 		let colour = (*viz_cols.get(i).expect("Colour to have index")).into();
-		spawn_path_line(from, to, &options, colour, i + 1, commands, mma)
+		spawn_path_line(from, to, &options, colour, i, commands, mma)
 	}
 }
 
@@ -58,6 +58,7 @@ fn spawn_path_line(
 	let start_pos = get_spacial_coord_2d(options, *from);
 	let end_pos = get_spacial_coord_2d(options, *to);
 	let start_vec = &Vec3::new(start_pos.x, VISUALIZATION_HEIGHT * 1.1, start_pos.y);
+	let end_vec = Vec3::new(end_pos.x, VISUALIZATION_HEIGHT * 1.1, end_pos.y);
 
 	let center = (start_pos + end_pos) / 2.; // ✅
 	let length = (start_pos - end_pos).length(); // ✅
@@ -119,7 +120,7 @@ fn spawn_path_line(
 
 	// text
 	let text = format!("{}", number);
-	let (mesh, offset) = get_text_mesh(text, CELL_SIZE / 4., Fonts::Light);
+	let (mesh, offset) = get_text_mesh(text, CELL_SIZE / 3., Fonts::Light);
 
 	commands
 		.spawn((
