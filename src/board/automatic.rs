@@ -1,6 +1,7 @@
 use crate::{
+	errors::Error,
 	solver::{algs::Computation, pieces::StandardKnight, CellOption},
-	ChessPoint, GroundClicked, ProgramState, errors::Error,
+	ChessPoint, GroundClicked, ProgramState,
 };
 
 use super::{
@@ -15,6 +16,7 @@ use super::{
 	viz_colours::VizColour,
 	*,
 };
+use bevy::transform::commands;
 use cached_info::*;
 use compute::*;
 
@@ -139,16 +141,27 @@ pub fn handle_spawning_visualization(
 	}
 }
 
-fn handle_plane_clicked(mut click: EventReader<GroundClicked>, options: ResMut<CurrentOptions>) {
+fn handle_plane_clicked(
+	mut click: EventReader<GroundClicked>,
+	options: ResMut<CurrentOptions>,
+	mut commands: Commands,
+	visualization: Query<Entity, With<VisualizationComponent>>,
+) {
 	if click.iter().next().is_some() {
 		debug!("Plane clicked");
 
 		let options = options.into_inner();
 		options.current.selected_start = None;
+
+		despawn_visualization(&mut commands, visualization)
 	}
 }
 
-fn handle_cell_clicked(mut event: EventReader<CellClicked>, options: ResMut<CurrentOptions>, mut commands: Commands) {
+fn handle_cell_clicked(
+	mut event: EventReader<CellClicked>,
+	options: ResMut<CurrentOptions>,
+	mut commands: Commands,
+) {
 	if let Some(CellClicked(point)) = event.iter().next() {
 		debug!("Cell clicked in auto mode, toggling: {:?}", point);
 
