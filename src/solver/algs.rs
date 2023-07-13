@@ -460,7 +460,7 @@ fn brute_recursive_tour_repeatless<P: ChessPiece + 'static>(
 	)
 	.map(|moves| {
 		let mut moves = moves.into_iter().rev().collect::<Vec<Move>>();
-		moves.push(Move::new(start, start));
+		// moves.push(Move::new(start, start));
 		moves.into()
 	})
 	.add_state_count(state_counter)

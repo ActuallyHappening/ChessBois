@@ -128,7 +128,7 @@ fn spawn_path_line(
 					.translate(offset)
 					.translate(Vec3::X * CELL_SIZE / 4. + Vec3::Y * 1.)
 					.with_rotation(Quat::from_rotation_x(-TAU / 4.)),
-				material: mat.add(Color::LIME_GREEN.into()),
+				material: mat.add(Color::RED.into()),
 				..default()
 			},
 			VisualizationComponent {
