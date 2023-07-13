@@ -157,6 +157,10 @@ impl Moves {
 	pub(crate) fn new(moves: Vec<Move>) -> Self {
 		Self { moves }
 	}
+
+	pub fn find_move_index(&self, m: &Move) -> Option<usize> {
+		self.moves.iter().position(|x| x == m)
+	}
 }
 
 impl IntoIterator for Moves {

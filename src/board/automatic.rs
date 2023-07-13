@@ -86,7 +86,7 @@ fn handle_new_options(
 
 		// cells
 		despawn_cells(&mut commands, cells);
-		spawn_cells(options, &mut commands, &mut mma);
+		spawn_cells(options, &mut commands, None, &mut mma);
 
 		// begin recomputing visualization
 		if options.selected_start.is_some() {

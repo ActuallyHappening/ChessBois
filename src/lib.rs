@@ -16,6 +16,8 @@ use board::BoardPlugin;
 pub use solver::ChessPoint;
 mod errors;
 mod clipboard;
+mod textmesh;
+mod utils;
 
 #[derive(Default)]
 pub struct ChessSolverPlugin;

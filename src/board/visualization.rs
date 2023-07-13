@@ -1,7 +1,7 @@
 use super::{cells::get_spacial_coord_2d, viz_colours::VizColour, *};
 use crate::{
 	solver::{Move, Moves},
-	ChessPoint, VISUALIZATION_DIMENSIONS, VISUALIZATION_HEIGHT,
+	ChessPoint, VISUALIZATION_DIMENSIONS, VISUALIZATION_HEIGHT, textmesh::{get_text_mesh, Fonts}, CELL_SIZE, utils::TransformExt,
 };
 
 #[derive(Component, Debug, Clone)]
@@ -20,7 +20,7 @@ pub fn spawn_visualization(
 ) {
 	for (i, Move { from, to }) in moves.iter().enumerate() {
 		let colour = (*viz_cols.get(i).expect("Colour to have index")).into();
-		spawn_path_line(from, to, &options, colour, commands, mma)
+		spawn_path_line(from, to, &options, colour, Some(69), commands, mma)
 	}
 }
 
@@ -45,9 +45,10 @@ fn spawn_path_line(
 	to: &ChessPoint,
 	options: &BoardOptions,
 	colour: Color,
+	number: Option<usize>,
 
 	commands: &mut Commands,
-	mma: &mut ResSpawning,
+	(meshs, mat, ass): &mut ResSpawning,
 ) {
 	let start_pos = get_spacial_coord_2d(options, *from);
 	let end_pos = get_spacial_coord_2d(options, *to);
@@ -59,13 +60,14 @@ fn spawn_path_line(
 	// assert_eq!(angle, TAU / 8., "Drawing from {from} [{from:?}] [{from_pos}] to {to} [{to:?}] [{to_pos}], Angle: {angle}, 𝚫y: {}, 𝚫x: {}", (to_pos.y - from_pos.y), (to_pos.x - from_pos.x));
 	// info!("Angle: {angle}, {}", angle.to_degrees());
 
-	let transform = Transform::from_translation(Vec3::new(center.x, VISUALIZATION_HEIGHT, center.y))
+	let center = &Vec3::new(center.x, VISUALIZATION_HEIGHT, center.y);
+	let transform = Transform::from_translation(*center)
 		.with_rotation(Quat::from_rotation_y(angle));
 
 	// info!("Transform: {:?}", transform);
 	// info!("Angle: {:?}, Length: {:?}", angle, length);
 
-	let mesh_thin_rectangle = mma.0.add(
+	let mesh_thin_rectangle = meshs.add(
 		shape::Box::new(
 			length,
 			VISUALIZATION_DIMENSIONS.x,
@@ -74,7 +76,7 @@ fn spawn_path_line(
 		.into(),
 	);
 
-	let material = mma.1.add(colour.into());
+	let material = mat.add(colour.into());
 	commands.spawn((
 		PbrBundle {
 			mesh: mesh_thin_rectangle,
@@ -90,13 +92,13 @@ fn spawn_path_line(
 
 	// small dot at start
 	let start_transform =
-		Transform::from_translation(Vec3::new(start_pos.x, VISUALIZATION_HEIGHT, start_pos.y))
+		Transform::from_translation(*center)
 			.with_rotation(Quat::from_rotation_y(angle));
 	commands
 		.spawn(PbrBundle {
 			transform: start_transform,
 			material,
-			mesh: mma.0.add(
+			mesh: meshs.add(
 				shape::Icosphere {
 					radius: VISUALIZATION_DIMENSIONS.length(),
 					subdivisions: 1,
@@ -110,4 +112,22 @@ fn spawn_path_line(
 			from: *from,
 			to: *to,
 		});
+
+	if let Some(number) = number {
+		let text = format!("{}", number);
+		let (mesh, offset) = get_text_mesh(text, CELL_SIZE / 2., Fonts::Light);
+
+		commands.spawn((
+			PbrBundle {
+				mesh: meshs.add(mesh),
+				transform: Transform::from_translation(*center).translate(offset).translate(Vec3::Y * 0.1),
+				material: mat.add(Color::LIME_GREEN.into()),
+				..default()
+			},
+			VisualizationComponent {
+				from: *from,
+				to: *to,
+			},
+		));
+	}
 }
