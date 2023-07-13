@@ -1,7 +1,11 @@
+use std::f32::consts::TAU;
+
 use super::{cells::get_spacial_coord_2d, viz_colours::VizColour, *};
 use crate::{
 	solver::{Move, Moves},
-	ChessPoint, VISUALIZATION_DIMENSIONS, VISUALIZATION_HEIGHT, textmesh::{get_text_mesh, Fonts}, CELL_SIZE, utils::TransformExt,
+	textmesh::{get_text_mesh, Fonts},
+	utils::{EntityCommandsExt, TransformExt},
+	ChessPoint, CELL_SIZE, VISUALIZATION_DIMENSIONS, VISUALIZATION_HEIGHT,
 };
 
 #[derive(Component, Debug, Clone)]
@@ -52,6 +56,7 @@ fn spawn_path_line(
 ) {
 	let start_pos = get_spacial_coord_2d(options, *from);
 	let end_pos = get_spacial_coord_2d(options, *to);
+	let start_vec = Vec3::new(start_pos.x, VISUALIZATION_HEIGHT * 1.1, start_pos.y);
 
 	let center = (start_pos + end_pos) / 2.; // ✅
 	let length = (start_pos - end_pos).length(); // ✅
@@ -61,8 +66,7 @@ fn spawn_path_line(
 	// info!("Angle: {angle}, {}", angle.to_degrees());
 
 	let center = &Vec3::new(center.x, VISUALIZATION_HEIGHT, center.y);
-	let transform = Transform::from_translation(*center)
-		.with_rotation(Quat::from_rotation_y(angle));
+	let transform = Transform::from_translation(*center).with_rotation(Quat::from_rotation_y(angle));
 
 	// info!("Transform: {:?}", transform);
 	// info!("Angle: {:?}, Length: {:?}", angle, length);
@@ -92,8 +96,7 @@ fn spawn_path_line(
 
 	// small dot at start
 	let start_transform =
-		Transform::from_translation(*center)
-			.with_rotation(Quat::from_rotation_y(angle));
+		Transform::from_translation(*center).with_rotation(Quat::from_rotation_y(angle));
 	commands
 		.spawn(PbrBundle {
 			transform: start_transform,
@@ -115,19 +118,24 @@ fn spawn_path_line(
 
 	if let Some(number) = number {
 		let text = format!("{}", number);
-		let (mesh, offset) = get_text_mesh(text, CELL_SIZE / 2., Fonts::Light);
+		let (mesh, offset) = get_text_mesh(text, CELL_SIZE / 4., Fonts::Light);
 
-		commands.spawn((
-			PbrBundle {
-				mesh: meshs.add(mesh),
-				transform: Transform::from_translation(*center).translate(offset).translate(Vec3::Y * 0.1),
-				material: mat.add(Color::LIME_GREEN.into()),
-				..default()
-			},
-			VisualizationComponent {
-				from: *from,
-				to: *to,
-			},
-		));
+		commands
+			.spawn((
+				PbrBundle {
+					mesh: meshs.add(mesh),
+					transform: Transform::from_translation(start_vec)
+						.translate(offset)
+						.translate(Vec3::X * CELL_SIZE / 3. - Vec3::Y * 0.5)
+						.with_rotation(Quat::from_rotation_x(-TAU / 4.)),
+					material: mat.add(Color::LIME_GREEN.into()),
+					..default()
+				},
+				VisualizationComponent {
+					from: *from,
+					to: *to,
+				},
+			))
+			.name(format!("Number for {}", *from));
 	}
 }

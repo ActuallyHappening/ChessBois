@@ -21,8 +21,8 @@ fn main() {
 		)
 		.add_plugin(ChessSolverPlugin);
 
-	// #[cfg(feature = "dev")]
-	// app.add_plugin(bevy_editor_pls::prelude::EditorPlugin::default());
+	#[cfg(feature = "dev")]
+	app.add_plugin(bevy_editor_pls::prelude::EditorPlugin::default());
 
 	app.run();
 }
