@@ -76,7 +76,7 @@ fn handle_new_options(
 	if options.is_changed() && options.requires_updating {
 		let options = &options.into_inner().current;
 
-		info!("Automatic updating ...");
+		trace!("Automatic updating ...");
 
 		despawn_visualization(&mut commands, viz);
 

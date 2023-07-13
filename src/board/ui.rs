@@ -227,7 +227,7 @@ pub fn right_ui_auto(
 	let options = &options.current;
 	let solution = computation.map(|comp| comp.into_comp());
 
-	egui::SidePanel::right("right_sidebar").show(contexts.ctx_mut(), |ui| {
+	egui::SidePanel::right("auto_right_sidebar").show(contexts.ctx_mut(), |ui| {
 		ui.heading("Results Panel");
 
 		if let Some(solution) = solution {
@@ -235,14 +235,17 @@ pub fn right_ui_auto(
 			match solution {
 				Computation::Successful {
 					explored_states: states,
-					..
+					solution: moves,
 				} => {
 					let mut msg = format!("Solution found in {} states considered", states);
 					if !alg.should_show_states() {
 						msg = "Solution found".to_string();
 					}
 					ui.label(RichText::new(msg).color(Color32::GREEN));
-					ui.label("Notes: if states =0 it is because the solution was cached");
+
+					// printing solution moves
+					let moves = format!("{}", moves);
+					ui.label(moves);
 				}
 				Computation::Failed {
 					total_states: states,

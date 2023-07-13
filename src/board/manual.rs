@@ -122,7 +122,7 @@ pub fn handle_new_manual_selected(
 	for CellClicked { 0: cell } in events.iter() {
 		if manual_moves.start.is_none() {
 			manual_moves.start = Some(*cell);
-			info!("Manually adding start cell: {:?}", manual_moves.start);
+			trace!("[Manual] New start cell: {:?}", manual_moves.start);
 		} else {
 			let from = if manual_moves.moves.last().is_none() {
 				manual_moves.start.unwrap()
