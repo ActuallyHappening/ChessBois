@@ -22,6 +22,9 @@ pub struct CellMarker;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, From, Into, Deref, DerefMut)]
 pub struct CellClicked(pub ChessPoint);
 
+pub use markers::*;
+mod markers;
+
 // pub fn refresh_cells_on_new_options(options: Res<CurrentOptions>) {
 // 	if options.is_changed() {
 // 		warn!("Refreshing all cells ...")
@@ -38,17 +41,7 @@ pub fn spawn_cells(options: &Options, commands: &mut Commands, mma: &mut ResSpaw
 	}
 }
 
-pub fn spawn_markers(options: &Options, commands: &mut Commands, mma: &mut ResSpawning) {
-	for point in options.options.get_all_points() {
-		spawn_mark(
-			point,
-			options,
-			cell_get_transform(point, &options.options),
-			commands,
-			mma,
-		);
-	}
-}
+
 
 pub fn despawn_cells(
 	commands: &mut Commands,
@@ -59,21 +52,7 @@ pub fn despawn_cells(
 	}
 }
 
-pub fn despawn_markers(
-	commands: &mut Commands,
-	markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
-) {
-	for mark in markers.iter() {
-		commands.entity(mark).despawn_recursive();
-	}
-}
 
-pub fn sys_despawn_markers(
-	mut commands: Commands,
-	markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
-) {
-	super::cells::despawn_markers(&mut commands, markers);
-}
 
 /// Takes as much information as it can get and returns the colour the cell should be.
 ///
