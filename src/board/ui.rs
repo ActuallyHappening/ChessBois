@@ -23,7 +23,7 @@ impl Plugin for UiPlugin {
 		app
 			.add_system(display_error.in_set(OnUpdate(ProgramState::Manual)))
 			.add_systems((left_ui_auto, right_ui_auto).in_set(OnUpdate(ProgramState::Automatic)))
-			.add_system(left_ui_manual.in_set(OnUpdate(ProgramState::Manual)));
+			.add_systems((left_ui_manual, right_ui_manual).in_set(OnUpdate(ProgramState::Manual)));
 	}
 }
 
@@ -275,5 +275,64 @@ pub fn right_ui_auto(
 			));
 		}
 	
+	});
+}
+
+pub fn right_ui_manual(
+	moves: Res<ManualMoves>,
+	options: Res<CurrentOptions>,
+
+	mut contexts: EguiContexts,
+) {
+	egui::SidePanel::right("manual_right_sidebar").show(contexts.ctx_mut(), |ui| {
+		ui.heading("Results Panel");
+
+		let required_points: Vec<_> = options.get_available_points();
+		let mut required_points: Vec<_> = required_points.iter().map(|m| (m, false)).collect();
+		for completed_point in moves.get_all_passed_through_points().iter() {
+			required_points.iter_mut().find(|(p, _)| p == &completed_point).map(|(_, b)| *b = true);
+		}
+
+		if required_points.iter().all(|(_, b)| *b) {
+			ui.colored_label(Color32::GREEN, "You have completed the board!");
+		} else {
+			ui.colored_label(Color32::YELLOW, "You have not completed the board yet");
+		}
+
+		// if let Some(solution) = solution {
+		// 	let alg: Algorithm = options.selected_algorithm;
+		// 	match solution {
+		// 		Computation::Successful {
+		// 			explored_states: states,
+		// 			solution: moves,
+		// 		} => {
+		// 			let mut msg = format!("Solution found in {} states considered", states);
+		// 			if !alg.should_show_states() {
+		// 				msg = "Solution found".to_string();
+		// 			}
+		// 			ui.label(RichText::new(msg).color(Color32::GREEN));
+
+		// 			// printing solution moves
+		// 			let moves = format!("{}", moves);
+		// 			ui.label(moves);
+		// 		}
+		// 		Computation::Failed {
+		// 			total_states: states,
+		// 		} => {
+		// 			let mut msg = format!("No solution found, with {} states considered", states);
+		// 			if !alg.should_show_states() {
+		// 				msg = "Solution found".to_string();
+		// 			}
+		// 			ui.label(RichText::new(msg).color(Color32::RED));
+		// 		}
+		// 		Computation::GivenUp { explored_states: states } => {
+		// 			let mut msg = format!("To avoid excessive computation finding a solution was given up, with {} states considered", states);
+		// 			if !alg.should_show_states() {
+		// 				msg = "Solution found".to_string();
+		// 			}
+		// 			ui.label(RichText::new(msg).color(Color32::RED));
+		// 		}
+		// 	}
+		// }
 	});
 }

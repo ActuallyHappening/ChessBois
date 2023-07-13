@@ -162,6 +162,14 @@ impl Moves {
 	pub fn find_move_index(&self, m: &Move) -> Option<usize> {
 		self.moves.iter().position(|x| x == m)
 	}
+
+	pub fn get_all_passed_through_points(&self) -> Vec<ChessPoint> {
+		let mut ret: Vec<_> = self.moves.iter().map(|m| m.from).collect();
+		if let Some(last) = self.moves.last() {
+			ret.push(last.to);
+		}
+		ret
+	}
 }
 
 impl IntoIterator for Moves {

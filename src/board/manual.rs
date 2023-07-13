@@ -65,6 +65,19 @@ impl ManualFreedom {
 	}
 }
 
+impl std::ops::Deref for ManualMoves {
+	type Target = Moves;
+	fn deref(&self) -> &Self::Target {
+		&self.moves
+	}
+}
+
+impl std::ops::DerefMut for ManualMoves {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.moves
+	}
+}
+
 impl ManualMoves {
 	pub fn to_json(&self) -> String {
 		// using serde_json
