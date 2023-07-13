@@ -5,8 +5,6 @@ use super::*;
 use crate::board::automatic::cached_info;
 use crate::errors::Error;
 use crate::*;
-use crate::solver::Moves;
-use crate::textmesh::{get_text_mesh, Fonts};
 use crate::{ChessPoint, CELL_DISABLED_COLOUR};
 use derive_more::{From, Into};
 
@@ -33,7 +31,7 @@ mod markers;
 // 	}
 // }
 
-pub fn spawn_cells(options: &Options, commands: &mut Commands, moves: Option<Moves>, mma: &mut ResSpawning) {
+pub fn spawn_cells(options: &Options, commands: &mut Commands, mma: &mut ResSpawning) {
 	let start = options.selected_start;
 	let options = options.options.clone();
 
@@ -88,7 +86,7 @@ fn spawn_cell(
 	let (meshes, materials, _) = mma;
 	let mesh = meshes.add(shape::Box::new(CELL_SIZE, CELL_SIZE, CELL_DEPTH).into());
 
-	let cell = commands.spawn((
+	commands.spawn((
 		PbrBundle {
 			mesh,
 			transform,

@@ -154,6 +154,7 @@ impl DerefMut for Moves {
 }
 
 impl Moves {
+	#[allow(dead_code)]
 	pub(crate) fn new(moves: Vec<Move>) -> Self {
 		Self { moves }
 	}
@@ -184,15 +185,6 @@ impl std::iter::FromIterator<Move> for Moves {
 pub enum CellOption {
 	Available,
 	Unavailable,
-}
-
-impl CellOption {
-	fn is_available(&self) -> bool {
-		match self {
-			CellOption::Available => true,
-			CellOption::Unavailable => false,
-		}
-	}
 }
 
 /// Necessary information to make custom board.

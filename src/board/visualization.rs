@@ -9,6 +9,7 @@ use crate::{
 };
 
 #[derive(Component, Debug, Clone)]
+#[allow(dead_code)]
 pub struct VisualizationComponent {
 	from: ChessPoint,
 	to: ChessPoint,

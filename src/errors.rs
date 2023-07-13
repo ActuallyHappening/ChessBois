@@ -15,10 +15,6 @@ impl Error {
 	}
 }
 
-pub fn sys_clear_error(mut commands: Commands, errors: ResMut<Error>) {
-	commands.remove_resource::<Error>();
-}
-
 pub fn display_error(
 	mut contexts: EguiContexts,
 	errors: Option<ResMut<Error>>,

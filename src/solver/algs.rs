@@ -128,8 +128,7 @@ impl Algorithm {
 }
 
 /// Represents information required to display cells + visual solutions
-#[derive(derivative::Derivative)]
-#[derive(Debug, Clone, Eq, PartialOrd, Ord)]
+#[derive(derivative::Derivative, Debug, Clone, Eq, PartialOrd, Ord)]
 #[derivative(PartialEq)]
 pub struct Options {
 	pub options: BoardOptions,
@@ -409,7 +408,7 @@ fn try_move_recursive(
 		);
 
 		match result {
-			PartialComputation::Failed => {/* Continue looping */}
+			PartialComputation::Failed => { /* Continue looping */ }
 			PartialComputation::Successful {
 				solution: mut working_moves,
 			} => {
@@ -458,11 +457,7 @@ fn brute_recursive_tour_repeatless<P: ChessPiece + 'static>(
 		start,
 		&mut state_counter,
 	)
-	.map(|moves| {
-		let mut moves = moves.into_iter().rev().collect::<Vec<Move>>();
-		// moves.push(Move::new(start, start));
-		moves.into()
-	})
+	.map(|moves| moves.into_iter().rev().collect::<Vec<Move>>().into())
 	.add_state_count(state_counter)
 }
 
