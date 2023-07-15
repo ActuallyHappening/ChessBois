@@ -1,5 +1,6 @@
 [serve]
 open = true
+port = 6969
 
 # You must manually specify this
 no-default-features = true
