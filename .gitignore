@@ -2,3 +2,4 @@ target
 dist
 
 releases/*
+!releases/.gitkeep
