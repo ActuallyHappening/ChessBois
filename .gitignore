@@ -3,4 +3,4 @@ dist
 
 releases/*
 !releases/.gitkeep
-!releases/*.dist
+# !releases/*.dist

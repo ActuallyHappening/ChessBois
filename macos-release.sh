@@ -1,4 +1,4 @@
-set -exuo pipefail
+set -exu
 
 # fail, please confirm cargo config
 

@@ -1,4 +1,4 @@
-set -exuo pipefail
+set -exu
 
 ./macos-release.sh &
 ./windows-release.sh &
