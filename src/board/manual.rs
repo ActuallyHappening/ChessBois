@@ -92,8 +92,10 @@ impl ManualMoves {
 	}
 
 	pub fn undo_move(&mut self) {
-		self.moves.pop();
 		self.colours.pop();
+		if self.moves.pop().is_none() {
+			self.start = None;
+		}
 	}
 }
 
