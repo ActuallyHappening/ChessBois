@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use bevy::{prelude::*, ecs::system::EntityCommands};
+use bevy::{ecs::system::EntityCommands, prelude::*};
 
 pub trait TransformExt {
 	fn translate(self, delta: Vec3) -> Self;

@@ -14,8 +14,8 @@ pub mod solver;
 
 use board::BoardPlugin;
 pub use solver::ChessPoint;
-mod errors;
 mod clipboard;
+mod errors;
 mod textmesh;
 mod utils;
 

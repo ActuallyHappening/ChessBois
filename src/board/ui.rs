@@ -244,8 +244,10 @@ pub fn right_ui_auto(
 					ui.label(RichText::new(msg).color(Color32::GREEN));
 
 					// printing solution moves
-					let moves = format!("{}", moves);
-					ui.label(moves);
+					egui::ScrollArea::vertical().show(ui, |ui| {
+						let moves = format!("Moves taken: \n{}", moves);
+						ui.label(moves);
+					});
 				}
 				Computation::Failed {
 					total_states: states,
@@ -290,7 +292,12 @@ pub fn right_ui_manual(
 		let required_points: Vec<_> = options.get_available_points();
 		let mut required_points: Vec<_> = required_points.iter().map(|m| (m, false)).collect();
 		for completed_point in moves.get_all_passed_through_points().iter() {
-			required_points.iter_mut().find(|(p, _)| p == &completed_point).map(|(_, b)| *b = true);
+			if let Some((_, b)) = required_points
+				.iter_mut()
+				.find(|(p, _)| p == &completed_point)
+			{
+				*b = true
+			}
 		}
 
 		if required_points.iter().all(|(_, b)| *b) {

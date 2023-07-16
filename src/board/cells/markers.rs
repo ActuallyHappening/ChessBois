@@ -1,4 +1,3 @@
-
 use super::*;
 
 pub fn spawn_markers(options: &Options, commands: &mut Commands, mma: &mut ResSpawning) {
@@ -28,7 +27,6 @@ pub fn sys_despawn_markers(
 ) {
 	super::cells::despawn_markers(&mut commands, markers);
 }
-
 
 fn spawn_mark(
 	at: ChessPoint,

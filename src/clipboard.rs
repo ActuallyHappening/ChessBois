@@ -1,7 +1,9 @@
 #[cfg(not(target_arch = "wasm32"))]
 pub fn get_from_clipboard() -> String {
 	let mut clipboard = arboard::Clipboard::new().expect("Couldn't create clipboard instance");
-	clipboard.get_text().expect("Couldn't get text from clipboard")
+	clipboard
+		.get_text()
+		.expect("Couldn't get text from clipboard")
 }
 
 // Can't await on JS Future :(

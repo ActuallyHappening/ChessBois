@@ -104,7 +104,6 @@ fn spawn_cell(
 	));
 }
 
-
 /// Changes selected cell
 fn cell_selected(
 	// The first parameter is always the `ListenedEvent`, passed in by the event listening system.
