@@ -11,12 +11,11 @@ use super::{
 	},
 	manual::{add_default_manual_viz_colour, add_empty_manual_moves},
 	visualization::{
-		despawn_visualization, spawn_visualization, sys_despawn_visualization, VisualizationComponent,
+		despawn_visualization, spawn_visualization, sys_despawn_visualization, VisualizationComponent, VizOptions,
 	},
 	viz_colours::VizColour,
 	*,
 };
-use bevy::transform::commands;
 use cached_info::*;
 use compute::*;
 
@@ -49,6 +48,7 @@ impl Plugin for AutomaticState {
 					sys_despawn_markers,
 					add_empty_manual_moves,
 					add_default_manual_viz_colour,
+					VizOptions::sys_with_numbers,
 				)
 					.in_schedule(OnEnter(ProgramState::Automatic)),
 			)
@@ -114,6 +114,7 @@ pub fn handle_spawning_visualization(
 
 	_viz: Query<Entity, With<VisualizationComponent>>,
 	viz_col: Res<VizColour>,
+	viz_options: Res<VizOptions>,
 
 	mut mma: ResSpawning,
 ) {
@@ -134,6 +135,7 @@ pub fn handle_spawning_visualization(
 				&mut commands,
 				&mut mma,
 				vec![*viz_col.into_inner(); moves.len()],
+				&viz_options,
 			);
 		}
 

@@ -1,5 +1,6 @@
 use super::visualization::spawn_visualization;
 use super::visualization::VisualizationComponent;
+use super::visualization::VizOptions;
 use super::viz_colours::VizColour;
 use super::*;
 use crate::errors::Error;
@@ -30,7 +31,8 @@ impl Plugin for ManualState {
 					viz_colours::colour_hotkeys,
 				)
 					.in_set(OnUpdate(ProgramState::Manual)),
-			);
+			)
+			.add_system(VizOptions::sys_without_numbers.in_schedule(OnEnter(ProgramState::Manual)));
 	}
 }
 
@@ -106,6 +108,7 @@ impl TryFrom<String> for ManualMoves {
 pub fn handle_manual_visualization(
 	mut commands: Commands,
 	options: Res<CurrentOptions>,
+	viz_options: Res<VizOptions>,
 
 	manual_moves: ResMut<ManualMoves>,
 
@@ -120,6 +123,7 @@ pub fn handle_manual_visualization(
 		&mut commands,
 		&mut mma,
 		manual_moves.colours.clone(),
+		&viz_options,
 	);
 }
 

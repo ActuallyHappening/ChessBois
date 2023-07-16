@@ -1,5 +1,7 @@
 use std::f32::consts::TAU;
 
+use strum::{EnumIs, EnumIter, Display};
+
 use super::{cells::get_spacial_coord_2d, viz_colours::VizColour, *};
 use crate::{
 	solver::{Move, Moves},
@@ -15,6 +17,21 @@ pub struct VisualizationComponent {
 	to: ChessPoint,
 }
 
+#[derive(Resource, EnumIs, EnumIter, Display, PartialEq, Clone, Copy)]
+pub enum VizOptions {
+	WithNumbers,
+	WithoutNumbers,
+}
+
+impl VizOptions {
+	pub fn sys_with_numbers(mut commands: Commands) {
+		commands.insert_resource(VizOptions::WithNumbers);
+	}
+	pub fn sys_without_numbers(mut commands: Commands) {
+		commands.insert_resource(VizOptions::WithoutNumbers);
+	}
+}
+
 /// Actually spawn entities of new solution
 pub fn spawn_visualization(
 	moves: Moves,
@@ -22,10 +39,11 @@ pub fn spawn_visualization(
 	commands: &mut Commands,
 	mma: &mut ResSpawning,
 	viz_cols: Vec<VizColour>,
+	viz_options: &VizOptions,
 ) {
 	for (i, Move { from, to }) in moves.iter().enumerate() {
 		let colour = (*viz_cols.get(i).expect("Colour to have index")).into();
-		spawn_path_line(from, to, &options, colour, i, commands, mma)
+		spawn_path_line(from, to, &options, viz_options, colour, i, commands, mma)
 	}
 }
 
@@ -49,6 +67,7 @@ fn spawn_path_line(
 	from: &ChessPoint,
 	to: &ChessPoint,
 	options: &BoardOptions,
+	viz_options: &VizOptions,
 	colour: Color,
 	number: usize,
 
@@ -119,24 +138,26 @@ fn spawn_path_line(
 		});
 
 	// text
-	let text = format!("{}", number);
-	let (mesh, offset) = get_text_mesh(text, CELL_SIZE / 3., Fonts::Light);
+	if viz_options.is_with_numbers() {
+		let text = format!("{}", number);
+		let (mesh, offset) = get_text_mesh(text, CELL_SIZE / 3., Fonts::Light);
 
-	commands
-		.spawn((
-			PbrBundle {
-				mesh: meshs.add(mesh),
-				transform: Transform::from_translation(*start_vec)
-					.translate(offset)
-					.translate(Vec3::X * CELL_SIZE / 4. + Vec3::Y * 1.)
-					.with_rotation(Quat::from_rotation_x(-TAU / 4.)),
-				material: mat.add(Color::RED.into()),
-				..default()
-			},
-			VisualizationComponent {
-				from: *from,
-				to: *to,
-			},
-		))
-		.name(format!("Number for {}", *from));
+		commands
+			.spawn((
+				PbrBundle {
+					mesh: meshs.add(mesh),
+					transform: Transform::from_translation(*start_vec)
+						.translate(offset)
+						.translate(Vec3::X * CELL_SIZE / 4. + Vec3::Y * 1.)
+						.with_rotation(Quat::from_rotation_x(-TAU / 4.)),
+					material: mat.add(Color::RED.into()),
+					..default()
+				},
+				VisualizationComponent {
+					from: *from,
+					to: *to,
+				},
+			))
+			.name(format!("Number for {}", *from));
+	}
 }

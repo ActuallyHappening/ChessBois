@@ -2,7 +2,7 @@ use super::{
 	automatic::ComputationResult,
 	manual::{ManualFreedom, ManualMoves},
 	viz_colours::VizColour,
-	*,
+	*, visualization::VizOptions,
 };
 use crate::*;
 use crate::{
@@ -11,7 +11,7 @@ use crate::{
 	MainCamera, ProgramState,
 };
 use bevy_egui::{
-	egui::{Color32, RichText},
+	egui::{Color32, RichText, Ui},
 	*,
 };
 use strum::IntoEnumIterator;
@@ -27,11 +27,31 @@ impl Plugin for UiPlugin {
 	}
 }
 
+impl VizOptions {
+	/// Renders array of buttons for changing if numbers should be shown or not
+	fn render(&self, ui: &mut Ui, viz_options: &mut VizOptions) {
+		ui.label("Show numbers?");
+		ui.horizontal_wrapped(|ui| {
+			for option in VizOptions::iter() {
+				let mut text = RichText::new(format!("{}", option));
+				if option == *self {
+					text = text.color(UI_ENABLED_COLOUR);
+				}
+				if ui.button(text).clicked() {
+					*viz_options = option;
+				}
+			}
+		});	
+	}
+}
+
 pub fn left_ui_auto(
 	mut contexts: EguiContexts,
 	mut cam: Query<&mut Transform, With<MainCamera>>,
 	mut next_state: ResMut<NextState<ProgramState>>,
 	mut options: ResMut<CurrentOptions>,
+
+	viz_options: ResMut<VizOptions>,
 ) {
 	egui::SidePanel::left("left_ui_auto").show(contexts.ctx_mut(), |ui| {
 		let options = &mut options.current;
@@ -72,6 +92,7 @@ pub fn left_ui_auto(
 					}
 				}).text("Height"));
 
+				// algorithms
 				ui.label("Select algorithm:");
 				ui.horizontal_wrapped(|ui| {
 					for alg in Algorithm::iter() {
@@ -90,6 +111,7 @@ pub fn left_ui_auto(
 				});
 				ui.label(options.selected_algorithm.get_description());
 
+				// saftey states cap
 				ui.add(egui::Slider::from_get_set((10.)..=10_000_000., |val| {
 					if let Some(new_val) = val {
 						*ALG_STATES_CAP.lock().unwrap() = new_val as u128;
@@ -109,6 +131,10 @@ pub fn left_ui_auto(
 					}
 				}).text("Camera zoom"));
 				ui.label("You can change the camera zoom to see larger boards");
+
+				// viz options
+				let selected_option = *viz_options;
+				selected_option.render(ui, viz_options.into_inner());
 
 				// if ui.button("Hide visual icons").clicked() {
 				// 	despawn_markers(&mut commands, markers);
