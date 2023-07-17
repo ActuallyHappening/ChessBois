@@ -246,6 +246,8 @@ use std::collections::BTreeMap;
 enum CellState {
 	NeverOccupied,
 	PreviouslyOccupied,
+
+	TargetEnding,
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
@@ -366,11 +368,19 @@ fn try_move_recursive(
 
 	if num_moves_required == 0 {
 		// base case
-		// println!("Found solution!");
-		// return Some(Vec::new().into());
-		return PartialComputation::Successful {
-			solution: vec![].into(),
-		};
+		if let Some(state) =  attempting_board.get(&current_pos) {
+			match state {
+				CellState::TargetEnding => {
+					return PartialComputation::Successful {
+						solution: vec![].into(),
+					};
+				}
+				CellState::NeverOccupied  => {
+					return PartialComputation::Failed;
+				}
+				CellState::PreviouslyOccupied => panic!("What, trying to end on point already moved to?")
+			}
+		}
 	}
 
 	let mut available_moves = attempting_board.get_available_moves_from(&current_pos, piece);

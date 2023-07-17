@@ -191,6 +191,7 @@ impl std::iter::FromIterator<Move> for Moves {
 
 #[derive(Debug, Copy, Hash, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum CellOption {
+	Target,
 	Available,
 	Unavailable,
 }
@@ -357,6 +358,7 @@ impl Display for BoardOptions {
 				match cell {
 					CellOption::Available => write!(f, " ✅ ")?,
 					CellOption::Unavailable => write!(f, " ❌ ")?,
+					CellOption::Target => write!(f, " 🎯 ")?,
 				}
 			}
 			writeln!(f)?;
