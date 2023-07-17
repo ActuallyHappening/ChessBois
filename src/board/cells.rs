@@ -6,10 +6,13 @@ use crate::board::automatic::cached_info;
 use crate::errors::Error;
 use crate::*;
 use crate::{ChessPoint, CELL_DISABLED_COLOUR};
+pub use coords::{get_spacial_coord, get_spacial_coord_2d};
 use derive_more::{From, Into};
+pub use markers::*;
 
 mod coords;
-pub use coords::{get_spacial_coord, get_spacial_coord_2d};
+mod markers;
+mod targets;
 
 /// Marker for Markers lol
 #[derive(Component)]
@@ -21,9 +24,6 @@ pub struct CellMarker;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, From, Into, Deref, DerefMut)]
 pub struct CellClicked(pub ChessPoint);
-
-pub use markers::*;
-mod markers;
 
 // pub fn refresh_cells_on_new_options(options: Res<CurrentOptions>) {
 // 	if options.is_changed() {
