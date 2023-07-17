@@ -1,4 +1,5 @@
 use std::f32::consts::TAU;
+use bevy::prelude::*;
 
 use super::automatic::cached_info::CellMark;
 use super::*;
@@ -83,10 +84,10 @@ fn spawn_cell(
 	mma: &mut ResSpawning,
 ) {
 	let transform = cell_get_transform(at, options);
-	let (meshes, materials, _) = mma;
-	let mesh = meshes.add(shape::Box::new(CELL_SIZE, CELL_SIZE, CELL_DEPTH).into());
+	let (meshs, materials, _) = mma;
+	let mesh = meshs.add(shape::Box::new(CELL_SIZE, CELL_SIZE, CELL_DEPTH).into());
 
-	commands.spawn((
+	let mut cell = commands.spawn((
 		PbrBundle {
 			mesh,
 			transform,
@@ -102,9 +103,22 @@ fn spawn_cell(
 		OnPointer::<Out>::run_callback(cell_deselected),
 		OnPointer::<Click>::run_callback(toggle_cell_availability),
 	));
+
+	cell.with_children(|parent| {
+		let quad = shape::Quad::new(Vec2::new(CELL_SIZE, CELL_SIZE) * 0.7);
+		parent.spawn(PbrBundle {
+			mesh: meshs.add(quad.into()),
+			material: materials.add(StandardMaterial {
+				base_color_texture: Some(mma.2.load("images/TargetSymbol.png")),
+				alpha_mode: AlphaMode::Blend,
+				..default()
+			}),
+			..default()
+		});
+	});
 }
 
-/// Changes selected cell
+/// Changes selected cell on hover
 fn cell_selected(
 	// The first parameter is always the `ListenedEvent`, passed in by the event listening system.
 	In(event): In<ListenedEvent<Over>>,

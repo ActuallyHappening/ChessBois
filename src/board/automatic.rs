@@ -11,7 +11,8 @@ use super::{
 	},
 	manual::{add_default_manual_viz_colour, add_empty_manual_moves},
 	visualization::{
-		despawn_visualization, spawn_visualization, sys_despawn_visualization, VisualizationComponent, VizOptions,
+		despawn_visualization, spawn_visualization, sys_despawn_visualization, VisualizationComponent,
+		VizOptions,
 	},
 	viz_colours::VizColour,
 	*,
@@ -49,6 +50,7 @@ impl Plugin for AutomaticState {
 					add_empty_manual_moves,
 					add_default_manual_viz_colour,
 					VizOptions::sys_with_numbers,
+					ToggleAction::sys_toggle_enabled,
 				)
 					.in_schedule(OnEnter(ProgramState::Automatic)),
 			)
@@ -58,9 +60,26 @@ impl Plugin for AutomaticState {
 					sys_despawn_visualization,
 					sys_despawn_markers,
 					add_empty_manual_moves,
+					ToggleAction::sys_toggle_enabled,
 				)
 					.in_schedule(OnExit(ProgramState::Automatic)),
 			);
+	}
+}
+
+/// WHat happens when you click on a cell
+#[derive(Resource, Clone, Copy, PartialEq, Eq)]
+enum ToggleAction {
+	ToggleCellEnabled,
+	TargetCell,
+}
+
+impl ToggleAction {
+	pub fn sys_toggle_enabled(mut commands: Commands) {
+		commands.insert_resource(ToggleAction::ToggleCellEnabled);
+	}
+	pub fn sys_toggle_targets(mut commands: Commands) {
+		commands.insert_resource(ToggleAction::TargetCell);
 	}
 }
 
@@ -159,9 +178,12 @@ fn handle_plane_clicked(
 	}
 }
 
+/// When cell clicked
 fn handle_cell_clicked(
 	mut event: EventReader<CellClicked>,
 	options: ResMut<CurrentOptions>,
+	selected_action: Res<ToggleAction>,
+
 	mut commands: Commands,
 ) {
 	if let Some(CellClicked(point)) = event.iter().next() {
@@ -169,21 +191,39 @@ fn handle_cell_clicked(
 
 		let options = options.into_inner();
 		match options.get(point) {
-			Some(CellOption::Available) => {
-				options.rm(*point);
-				if options.current.selected_start == Some(*point) {
-					options.current.selected_start = None;
+			Some(current_point) => match selected_action.into_inner() {
+				ToggleAction::ToggleCellEnabled => match current_point {
+					CellOption::Available => {
+						options.rm(*point);
+						options.current.selected_start = None;
+					}
+					CellOption::Unavailable => {
+						options.add(*point);
+					}
+					CellOption::Target => {
+						//
+					}
+				},
+				ToggleAction::TargetCell => match current_point {
+					CellOption::Available => {
+						options.target(*point);
+						options.current.selected_start = None;
+					}
+					CellOption::Unavailable => {
+						//
+					}
+					CellOption::Target => {
+						options.untarget(*point);
+					}
 				}
-			}
-			Some(CellOption::Unavailable) => {
-				options.add(*point);
-			}
+			},
 			None => {
 				let err_msg = format!("Cell {:?} is out of bounds", point);
 				warn!("{}", err_msg);
 				commands.insert_resource(Error::new(err_msg));
 			}
 		}
+
 		options.requires_updating();
 	}
 }

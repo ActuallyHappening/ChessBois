@@ -191,6 +191,7 @@ impl std::iter::FromIterator<Move> for Moves {
 
 #[derive(Debug, Copy, Hash, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum CellOption {
+	/// Only allows solutions ending on target
 	Target,
 	Available,
 	Unavailable,
@@ -234,6 +235,8 @@ impl BoardOptions {
 	// pub fn add(&mut self, p: (u16, u16)) {
 	// 	self.options[p.0 as usize - 1][p.1 as usize - 1] = CellOption::Available;
 	// }
+
+	/// Sets point to [CellOption::Unavailable]
 	pub fn rm(&mut self, p: impl Into<ChessPoint>) {
 		let p = p.into();
 		trace!(
@@ -244,9 +247,20 @@ impl BoardOptions {
 		);
 		self.options[p.row as usize - 1][p.column as usize - 1] = CellOption::Unavailable;
 	}
+	/// Sets point to [CellOption::Available]
 	pub fn add(&mut self, p: impl Into<ChessPoint>) {
 		let p = p.into();
 		self.options[p.row as usize - 1][p.column as usize - 1] = CellOption::Available;
+	}
+
+	/// Sets point to [CellOption::Target]
+	pub fn target(&mut self, p: impl Into<ChessPoint>) {
+		let p = p.into();
+		self.options[p.row as usize - 1][p.column as usize - 1] = CellOption::Target;
+	}
+	/// Sets point to [CellOption::Available]
+	pub fn untarget(&mut self, p: impl Into<ChessPoint>) {
+		self.add(p);
 	}
 
 	/// 1 indexed

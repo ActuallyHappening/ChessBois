@@ -43,61 +43,28 @@ fn spawn_mark(
 		let mut transform = cell_transform;
 		transform.translation += Vec3::Y * CELL_DEPTH / 2.;
 
-		match mark {
-			CellMark::Failed => {
-				let material_handle = materials.add(StandardMaterial {
-					base_color_texture: Some(ass.load("images/XMark.png")),
-					alpha_mode: AlphaMode::Blend,
-					..default()
-				});
-
-				commands.spawn((
-					PbrBundle {
-						mesh,
-						material: material_handle,
-						transform,
-						..default()
-					},
-					at,
-					MarkerMarker {},
-				));
+		let asset_path = format!(
+			"images/{}.png",
+			match mark {
+				CellMark::Succeeded => "TickMark",
+				CellMark::Failed => "XMark",
+				CellMark::GivenUp => "WarningMark",
 			}
-			CellMark::Succeeded => {
-				let material_handle = materials.add(StandardMaterial {
-					base_color_texture: Some(ass.load("images/TickMark.png")),
-					alpha_mode: AlphaMode::Blend,
-					..default()
-				});
-
-				commands.spawn((
-					PbrBundle {
-						mesh,
-						material: material_handle,
-						transform,
-						..default()
-					},
-					at,
-					MarkerMarker {},
-				));
-			}
-			CellMark::GivenUp => {
-				let material_handle = materials.add(StandardMaterial {
-					base_color_texture: Some(ass.load("images/WarningMark.png")),
-					alpha_mode: AlphaMode::Blend,
-					..default()
-				});
-
-				commands.spawn((
-					PbrBundle {
-						mesh,
-						material: material_handle,
-						transform,
-						..default()
-					},
-					at,
-					MarkerMarker {},
-				));
-			}
-		}
+		);
+		let material_handle = materials.add(StandardMaterial {
+			base_color_texture: Some(ass.load(asset_path)),
+			alpha_mode: AlphaMode::Blend,
+			..default()
+		});
+		commands.spawn((
+			PbrBundle {
+				mesh,
+				material: material_handle,
+				transform,
+				..default()
+			},
+			at,
+			MarkerMarker {},
+		));
 	}
 }
