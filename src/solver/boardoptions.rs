@@ -72,7 +72,7 @@ impl BoardOptions {
 
 	pub fn has_target_restriction(&self) -> TargetRestriction {
 		let available_points = self.get_available_points();
-		let _total_num = available_points.len();
+		let total_num = available_points.len();
 		let mut points_endable = 0;
 		for p in self.get_available_points() {
 			if let CellOption::Available { can_finish_on } = self.get(&p).unwrap() {
@@ -84,7 +84,7 @@ impl BoardOptions {
 
 		match points_endable {
 			0 => TargetRestriction::NoneFinishable,
-			_total_num => TargetRestriction::AllFinishable,
+			_x if _x == total_num => TargetRestriction::AllFinishable,
 			_ => TargetRestriction::CertainFinishable,
 		}
 	}
