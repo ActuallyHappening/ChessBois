@@ -50,7 +50,7 @@ impl Plugin for AutomaticState {
 					add_empty_manual_moves,
 					add_default_manual_viz_colour,
 					VizOptions::sys_with_numbers,
-					ToggleAction::sys_toggle_enabled,
+					// ToggleAction::sys_toggle_enabled,
 				)
 					.in_schedule(OnEnter(ProgramState::Automatic)),
 			)
@@ -60,16 +60,18 @@ impl Plugin for AutomaticState {
 					sys_despawn_visualization,
 					sys_despawn_markers,
 					add_empty_manual_moves,
-					ToggleAction::sys_toggle_enabled,
 				)
 					.in_schedule(OnExit(ProgramState::Automatic)),
-			);
+			)
+			// startup
+			.add_startup_system(ToggleAction::sys_toggle_enabled);
 	}
 }
 
-/// WHat happens when you click on a cell
+/// WHat happens when you click on a cell.
+/// Specific to **automatic** mode.
 #[derive(Resource, Clone, Copy, PartialEq, Eq)]
-enum ToggleAction {
+pub enum ToggleAction {
 	ToggleCellEnabled,
 	TargetCell,
 }
@@ -215,7 +217,7 @@ fn handle_cell_clicked(
 					CellOption::Target => {
 						options.untarget(*point);
 					}
-				}
+				},
 			},
 			None => {
 				let err_msg = format!("Cell {:?} is out of bounds", point);
