@@ -1,5 +1,5 @@
 use super::{
-	automatic::ComputationResult,
+	automatic::{ComputationResult, ToggleAction},
 	manual::{ManualFreedom, ManualMoves},
 	viz_colours::VizColour,
 	*, visualization::VizOptions,
@@ -52,6 +52,7 @@ pub fn left_ui_auto(
 	mut options: ResMut<CurrentOptions>,
 
 	viz_options: ResMut<VizOptions>,
+	toggle_action: ResMut<ToggleAction>,
 ) {
 	egui::SidePanel::left("left_ui_auto").show(contexts.ctx_mut(), |ui| {
 		let options = &mut options.current;
@@ -135,6 +136,9 @@ pub fn left_ui_auto(
 				// viz options
 				let selected_option = *viz_options;
 				selected_option.render(ui, viz_options.into_inner());
+
+				let toggle_action = toggle_action.into_inner();
+				toggle_action.render(ui);
 
 				// if ui.button("Hide visual icons").clicked() {
 				// 	despawn_markers(&mut commands, markers);

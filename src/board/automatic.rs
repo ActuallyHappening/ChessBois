@@ -17,10 +17,13 @@ use super::{
 	viz_colours::VizColour,
 	*,
 };
+use bevy_egui::egui::Ui;
 use cached_info::*;
 use compute::*;
 
 pub use compute::ComputationResult;
+use derive_more::Display;
+use strum::{EnumIter, EnumIs, IntoEnumIterator};
 
 pub mod cached_info;
 mod compute;
@@ -70,9 +73,11 @@ impl Plugin for AutomaticState {
 
 /// WHat happens when you click on a cell.
 /// Specific to **automatic** mode.
-#[derive(Resource, Clone, Copy, PartialEq, Eq)]
+#[derive(Resource, Clone, Copy, PartialEq, Eq, EnumIs, strum::Display, EnumIter)]
 pub enum ToggleAction {
+	#[strum(serialize = "Enable / Disable")]
 	ToggleCellEnabled,
+	#[strum(serialize = "Target / Untarget")]
 	TargetCell,
 }
 
@@ -82,6 +87,21 @@ impl ToggleAction {
 	}
 	pub fn sys_toggle_targets(mut commands: Commands) {
 		commands.insert_resource(ToggleAction::TargetCell);
+	}
+
+	pub fn render(&mut self, ui: &mut Ui) {
+		use bevy_egui::egui::*;
+		ui.horizontal_wrapped(|ui| {
+			for action in ToggleAction::iter() {
+				let mut text = RichText::new(action.to_string());
+				if action == *self {
+					text = text.color(Color32::GREEN);
+				}
+				if ui.button(text).clicked() {
+					*self = action;
+				}
+			}
+		});
 	}
 }
 
