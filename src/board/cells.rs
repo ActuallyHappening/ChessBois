@@ -1,10 +1,11 @@
-use std::f32::consts::TAU;
 use bevy::prelude::*;
+use std::f32::consts::TAU;
 
 use super::automatic::cached_info::CellMark;
 use super::*;
 use crate::board::automatic::cached_info;
-use crate::errors::Error;
+use crate::errors::{Error, LogLevel};
+use crate::solver::CellOption;
 use crate::*;
 use crate::{ChessPoint, CELL_DISABLED_COLOUR};
 pub use coords::{get_spacial_coord, get_spacial_coord_2d};
@@ -99,7 +100,7 @@ fn spawn_cell(
 		CellMarker {},
 		PickableBundle::default(),    // Makes the entity pickable
 		RaycastPickTarget::default(), // Marker for the `bevy_picking_raycast` backend
-		OnPointer::<Over>::run_callback(cell_selected),
+		OnPointer::<Over>::run_callback(cell_hovered),
 		OnPointer::<Out>::run_callback(cell_deselected),
 		OnPointer::<Click>::run_callback(toggle_cell_availability),
 	));
@@ -119,32 +120,37 @@ fn spawn_cell(
 }
 
 /// Changes selected cell on hover
-fn cell_selected(
+fn cell_hovered(
 	// The first parameter is always the `ListenedEvent`, passed in by the event listening system.
 	In(event): In<ListenedEvent<Over>>,
 	options: ResMut<CurrentOptions>,
 	cells: Query<(&Handle<StandardMaterial>, &ChessPoint)>,
 
 	mut materials: ResMut<Assets<StandardMaterial>>,
+	mut commands: Commands,
 ) -> Bubble {
 	let (mat, point) = cells.get(event.target).unwrap();
 
-	let is_disabled = options
-		.as_options()
-		.options
-		.get_unavailable_points()
-		.contains(point);
+	match options.get(point) {
+		Some(CellOption::Available { .. }) => {
+			// sets colour to selected
+			let material = materials.get_mut(mat).unwrap();
+			material.base_color = CELL_SELECTED_COLOUR;
 
-	if !is_disabled {
-		// sets colour to selected
-		let material = materials.get_mut(mat).unwrap();
-		material.base_color = CELL_SELECTED_COLOUR;
-
-		if options.current.selected_start != Some(*point) {
-			let mut options = options.into_inner();
-			options.current.selected_start = Some(*point);
-			options.requires_updating();
+			if options.current.selected_start != Some(*point) {
+				let options = options.into_inner();
+				options.current.selected_start = Some(*point);
+				options.requires_updating();
+			}
 		}
+		Some(CellOption::Unavailable) => {
+			// unavailable
+		}
+		None => Error::handle_error(
+			LogLevel::Error,
+			"Cell selected but no ChessPoint found",
+			&mut commands,
+		),
 	}
 
 	Bubble::Burst

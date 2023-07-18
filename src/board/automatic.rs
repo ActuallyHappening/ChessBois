@@ -23,7 +23,7 @@ use compute::*;
 
 pub use compute::ComputationResult;
 use derive_more::Display;
-use strum::{EnumIter, EnumIs, IntoEnumIterator};
+use strum::{EnumIs, EnumIter, IntoEnumIterator};
 
 pub mod cached_info;
 mod compute;
@@ -105,7 +105,8 @@ impl ToggleAction {
 	}
 }
 
-/// Decides what happens when [NewOptions] event comes in
+/// Decides what happens when [NewOptions] event comes in.
+/// Triggers computation
 fn handle_new_options(
 	options: Res<CurrentOptions>,
 
@@ -162,7 +163,7 @@ pub fn handle_spawning_visualization(
 	if let Some(solution) = solutions.iter().next() {
 		let (solution, options) = solution.clone().get();
 		if &options != current_options.as_options() {
-			// warn!("Not rendering visualization for computation of non-valid state");
+			trace!("Not rendering visualization for computation of non-valid state");
 			return;
 		}
 
@@ -215,7 +216,7 @@ fn handle_cell_clicked(
 		match options.get(point) {
 			Some(current_point) => match selected_action.into_inner() {
 				ToggleAction::ToggleCellEnabled => match current_point {
-					CellOption::Available {..} => {
+					CellOption::Available { .. } => {
 						options.rm(*point);
 						options.current.selected_start = None;
 					}
@@ -223,18 +224,17 @@ fn handle_cell_clicked(
 						options.add(*point);
 					}
 				},
-				ToggleAction::TargetCell => match current_point {
-					CellOption::Available {can_finish_on: false} => {
-						options.target(*point);
-						options.current.selected_start = None;
+				ToggleAction::TargetCell => {
+					match current_point {
+						CellOption::Available { .. } => {
+							info!("Targetting point {}", *point);
+							options.toggle_target(*point);
+						}
+						CellOption::Unavailable => {
+							//
+						}
 					}
-					CellOption::Available { can_finish_on: true } => {
-						options.untarget(*point);
-					}
-					CellOption::Unavailable => {
-						//
-					}
-				},
+				}
 			},
 			None => {
 				let err_msg = format!("Cell {:?} is out of bounds", point);

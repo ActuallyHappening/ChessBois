@@ -112,7 +112,7 @@ pub fn handle_automatic_computation(
 			// only set as current if state is valid
 			commands.insert_resource(comp.clone());
 		} else {
-			warn!("Computation with invalid / changed state ignored")
+			trace!("Computation with invalid / changed state ignored")
 		}
 
 		// let message get out to everybody, even if state is invalid

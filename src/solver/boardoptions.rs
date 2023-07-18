@@ -107,12 +107,13 @@ impl BoardOptions {
 		self.options[p.row as usize - 1][p.column as usize - 1] = self.has_target_restriction().into_available_cell_option();
 	}
 
-	/// Targets a specific point.
+	/// Target/Untargets a specific point.
 	/// If this is the first target, sets can_finish to false for all other cells
-	pub fn target(&mut self, p: impl Into<ChessPoint>) {
+	pub fn toggle_target(&mut self, p: impl Into<ChessPoint>) {
 		let p = p.into();
+		info!("Targeting/Untargetting cell {}", p);
 		match self.has_target_restriction() {
-			// requires reset
+			// requires reset, only this cell should be endable
 			TargetRestriction::AllFinishable => {
 				info!("Setting all other cells to can_finish false");
 				for p in self.get_available_points() {
@@ -127,13 +128,6 @@ impl BoardOptions {
 			}
 		}
 	}
-	/// Untargets a specific point.
-	/// If this is the last target, sets can_finish to true for all other cells
-	pub fn untarget(&mut self, p: impl Into<ChessPoint>) {
-		let p = p.into();
-
-	}
-
 	/// 1 indexed
 	pub fn width(&self) -> u16 {
 		self.options[0].len() as u16

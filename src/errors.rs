@@ -1,3 +1,4 @@
+pub use bevy::ecs::schedule::LogLevel;
 use bevy_egui::{egui::Ui, *};
 use derive_more::Constructor;
 
@@ -9,9 +10,24 @@ pub struct Error {
 }
 
 impl Error {
-	fn render_to_ui(&self, ui: &mut Ui) {
+	pub fn render_to_ui(&self, ui: &mut Ui) {
 		// red title
 		ui.colored_label(egui::Color32::RED, self.title.clone());
+	}
+
+	pub fn handle_error(intensity: LogLevel, err: &str, commands: &mut Commands) {
+		commands.insert_resource(Error::new(err.to_string()));
+		match intensity {
+			LogLevel::Error => {
+				error!("{}", err);
+			}
+			LogLevel::Warn => {
+				warn!("{}", err);
+			}
+			LogLevel::Ignore => {
+				trace!("(Error) {}", err);
+			}
+		}
 	}
 }
 

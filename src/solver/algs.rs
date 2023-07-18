@@ -137,6 +137,7 @@ pub struct Options {
 	pub selected_algorithm: Algorithm,
 
 	#[derivative(PartialEq = "ignore")]
+	// must be ignored by Hash
 	pub requires_updating: bool,
 }
 
