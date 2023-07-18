@@ -6,6 +6,7 @@ use super::*;
 use crate::board::automatic::cached_info;
 use crate::errors::{Error, LogLevel};
 use crate::solver::CellOption;
+use crate::utils::EntityCommandsExt;
 use crate::*;
 use crate::{ChessPoint, CELL_DISABLED_COLOUR};
 pub use coords::{get_spacial_coord, get_spacial_coord_2d};
@@ -105,18 +106,27 @@ fn spawn_cell(
 		OnPointer::<Click>::run_callback(toggle_cell_availability),
 	));
 
-	cell.with_children(|parent| {
-		let quad = shape::Quad::new(Vec2::new(CELL_SIZE, CELL_SIZE) * 0.7);
-		parent.spawn(PbrBundle {
-			mesh: meshs.add(quad.into()),
-			material: materials.add(StandardMaterial {
-				base_color_texture: Some(mma.2.load("images/TargetSymbol.png")),
-				alpha_mode: AlphaMode::Blend,
-				..default()
-			}),
-			..default()
+	// add target symbol
+	if options.get(&at) == Some(CellOption::Available {
+		can_finish_on: true,
+	}) {
+		cell.with_children(|parent| {
+			let quad = shape::Quad::new(Vec2::new(CELL_SIZE, CELL_SIZE) * 0.7);
+			parent
+				.spawn(PbrBundle {
+					mesh: meshs.add(quad.into()),
+					transform: Transform::from_translation(Vec3::Z * 2.),
+					material: materials.add(StandardMaterial {
+						base_color_texture: Some(mma.2.load("images/TargetSymbol.png")),
+						alpha_mode: AlphaMode::Blend,
+						..default()
+					}),
+					..default()
+				})
+				.insert(CellMarker)
+				.name("Target symbol");
 		});
-	});
+	}
 }
 
 /// Changes selected cell on hover

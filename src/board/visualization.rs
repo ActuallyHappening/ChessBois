@@ -77,7 +77,7 @@ fn spawn_path_line(
 	let start_pos = get_spacial_coord_2d(options, *from);
 	let end_pos = get_spacial_coord_2d(options, *to);
 	let start_vec = &Vec3::new(start_pos.x, VISUALIZATION_HEIGHT * 1.1, start_pos.y);
-	let end_vec = Vec3::new(end_pos.x, VISUALIZATION_HEIGHT * 1.1, end_pos.y);
+	let _end_vec = Vec3::new(end_pos.x, VISUALIZATION_HEIGHT * 1.1, end_pos.y);
 
 	let center = (start_pos + end_pos) / 2.; // ✅
 	let length = (start_pos - end_pos).length(); // ✅
