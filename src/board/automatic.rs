@@ -195,27 +195,24 @@ fn handle_cell_clicked(
 		match options.get(point) {
 			Some(current_point) => match selected_action.into_inner() {
 				ToggleAction::ToggleCellEnabled => match current_point {
-					CellOption::Available => {
+					CellOption::Available {..} => {
 						options.rm(*point);
 						options.current.selected_start = None;
 					}
 					CellOption::Unavailable => {
 						options.add(*point);
 					}
-					CellOption::Target => {
-						//
-					}
 				},
 				ToggleAction::TargetCell => match current_point {
-					CellOption::Available => {
+					CellOption::Available {can_finish_on: false} => {
 						options.target(*point);
 						options.current.selected_start = None;
 					}
+					CellOption::Available { can_finish_on: true } => {
+						options.untarget(*point);
+					}
 					CellOption::Unavailable => {
 						//
-					}
-					CellOption::Target => {
-						options.untarget(*point);
 					}
 				},
 			},
