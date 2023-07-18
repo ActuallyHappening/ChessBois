@@ -211,14 +211,21 @@ pub fn left_ui_manual(
 		}
 	}
 	// copy to clipboard
+	// non wasm
 	#[cfg(not(target_arch = "wasm32"))]
 	if ui.button("Copy current state to clipboard").clicked() {
-		#[cfg(not(target_arch = "wasm32"))]
 		ui.output_mut(|o| o.copied_text = state_str);
 
 		// #[cfg(target_arch = "wasm32")]
 		// crate::clipboard::set_to_clipboard(&state_str);
 	}
+
+	// copy to clipboard web
+	#[cfg(target_arch = "wasm32")]
+	if ui.button("Copy current state to clipboard").clicked() {
+		crate::clipboard::set_to_clipboard(&state_str);
+	}
+
 	// paste from clipboard
 	#[cfg(not(target_arch = "wasm32"))]
 	if ui.button("Paste from your current clipboard").clicked() {
