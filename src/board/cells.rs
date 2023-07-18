@@ -107,7 +107,7 @@ fn spawn_cell(
 	));
 
 	// add target symbol
-	if options.get(&at) == Some(CellOption::Available {
+	if options.targets_state().should_show_targets_visual() && options.get(&at) == Some(CellOption::Available {
 		can_finish_on: true,
 	}) {
 		cell.with_children(|parent| {

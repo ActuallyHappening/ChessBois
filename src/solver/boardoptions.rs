@@ -32,6 +32,10 @@ impl TargetRestriction {
 			},
 		}
 	}
+
+	pub fn should_show_targets_visual(self) -> bool {
+		!matches!(self, TargetRestriction::AllFinishable)
+	}
 }
 
 impl BoardOptions {
@@ -70,7 +74,7 @@ impl BoardOptions {
 		self.options[point.row as usize - 1][point.column as usize - 1] = state;
 	}
 
-	pub fn has_target_restriction(&self) -> TargetRestriction {
+	pub fn targets_state(&self) -> TargetRestriction {
 		let available_points = self.get_available_points();
 		let total_num = available_points.len();
 		let mut points_endable = 0;
@@ -104,7 +108,7 @@ impl BoardOptions {
 	/// Sets can finish to true if no cells are can_finish = false
 	pub fn add(&mut self, p: impl Into<ChessPoint>) {
 		let p = p.into();
-		self.options[p.row as usize - 1][p.column as usize - 1] = self.has_target_restriction().into_available_cell_option();
+		self.options[p.row as usize - 1][p.column as usize - 1] = self.targets_state().into_available_cell_option();
 	}
 
 	/// Target/Untargets a specific point.
@@ -112,7 +116,7 @@ impl BoardOptions {
 	pub fn toggle_target(&mut self, p: impl Into<ChessPoint>) {
 		let p = p.into();
 		info!("Targeting/Untargetting cell {}", p);
-		match self.has_target_restriction() {
+		match self.targets_state() {
 			// requires reset, only this cell should be endable
 			TargetRestriction::AllFinishable => {
 				info!("Setting all other cells to can_finish false");
@@ -159,7 +163,7 @@ impl BoardOptions {
 	}
 
 	pub fn update_width(mut self, new_width: u16) -> Self {
-		let new_cell = self.has_target_restriction().into_available_cell_option();
+		let new_cell = self.targets_state().into_available_cell_option();
 		for row in self.options.iter_mut() {
 			if row.len() < new_width as usize {
 				row.resize(new_width as usize, new_cell);
@@ -174,7 +178,7 @@ impl BoardOptions {
 	/// defaulting to Available for new cells
 	pub fn update_height(mut self, new_height: u16) -> Self {
 		let width = self.width() as usize;
-		let new_cell = self.has_target_restriction().into_available_cell_option();
+		let new_cell = self.targets_state().into_available_cell_option();
 		if self.options.len() < new_height as usize {
 			self.options.resize_with(new_height as usize, || vec![new_cell; width]);
 		} else {
