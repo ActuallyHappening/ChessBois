@@ -211,7 +211,7 @@ impl Algorithm {
 				if let Computation::GivenUp { explored_states } = comp {
 					if explored_states != *ALG_STATES_CAP.lock().unwrap() {
 						// must recompute
-						info!(
+						trace!(
 							"Cache hit and recomputing because {} != {}",
 							explored_states,
 							*ALG_STATES_CAP.lock().unwrap()
@@ -220,7 +220,7 @@ impl Algorithm {
 						add_solution_to_cache::<P>(options, comp.clone());
 						return Some(comp);
 					} else {
-						info!(
+						trace!(
 							"Cache hit on GivenUp and same states limit ({})",
 							explored_states
 						);

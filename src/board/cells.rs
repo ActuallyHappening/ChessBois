@@ -111,7 +111,7 @@ fn spawn_cell(
 		can_finish_on: true,
 	}) {
 		cell.with_children(|parent| {
-			let quad = shape::Quad::new(Vec2::new(CELL_SIZE, CELL_SIZE) * 0.7);
+			let quad = shape::Quad::new(Vec2::new(CELL_SIZE, CELL_SIZE) * 0.5);
 			parent
 				.spawn(PbrBundle {
 					mesh: meshs.add(quad.into()),
