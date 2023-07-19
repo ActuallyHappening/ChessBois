@@ -100,6 +100,12 @@ impl ManualMoves {
 		}
 	}
 
+	pub fn reset(&mut self) {
+		self.start = None;
+		self.moves.clear();
+		self.colours.clear();
+	}
+
 	fn from_automatic_state(moves: Moves, start: ChessPoint) -> Self {
 		ManualMoves {
 			start: Some(start),

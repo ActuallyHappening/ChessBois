@@ -251,8 +251,12 @@ pub fn left_ui_manual(
 	}
 
 	// undo button
-	if ui.button("Undo").clicked() {
+	ui.label("Control actions:");
+	if ui.button("Undo moves").clicked() {
 		current_moves.undo_move();
+	}
+	if ui.button(RichText::new("Reset").color(Color32::RED)).clicked() {
+		current_moves.reset();
 	}
 });
 }
