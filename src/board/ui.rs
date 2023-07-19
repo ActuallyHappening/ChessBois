@@ -2,9 +2,9 @@ use super::{
 	automatic::{ComputationResult, ToggleAction},
 	manual::{ManualFreedom, ManualMoves},
 	viz_colours::VizColour,
-	*, visualization::VizOptions,
+	*, visualization::VizOptions, cells::MarkerMarker,
 };
-use crate::*;
+use crate::{*, board::cells::despawn_markers};
 use crate::{
 	errors::{display_error, Error},
 	solver::algs::Computation,
@@ -53,6 +53,9 @@ pub fn left_ui_auto(
 
 	viz_options: ResMut<VizOptions>,
 	toggle_action: ResMut<ToggleAction>,
+
+	mut commands: Commands,
+	markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
 ) {
 	egui::SidePanel::left("left_ui_auto").show(contexts.ctx_mut(), |ui| {
 		let options = &mut options.current;
@@ -141,9 +144,9 @@ pub fn left_ui_auto(
 				let toggle_action = toggle_action.into_inner();
 				toggle_action.render(ui);
 
-				// if ui.button("Hide visual icons").clicked() {
-				// 	despawn_markers(&mut commands, markers);
-				// }
+				if ui.button("Hide (temporarily) helper markers").clicked() {
+					despawn_markers(&mut commands, markers);
+				}
 			},
 	);
 }
