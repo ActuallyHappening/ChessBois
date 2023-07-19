@@ -199,6 +199,15 @@ pub enum CellOption {
 	Unavailable,
 }
 
+impl CellOption {
+	fn unwrap_available(self) -> bool {
+		match self {
+			CellOption::Available { can_finish_on } => can_finish_on,
+			CellOption::Unavailable => panic!("Tried to unwrap unavailable cell option"),
+		}
+	}
+}
+
 mod boardoptions;
 pub use boardoptions::*;
 

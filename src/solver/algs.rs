@@ -243,12 +243,11 @@ impl Algorithm {
 
 use std::collections::BTreeMap;
 
-#[derive(Debug, Clone, PartialEq, Hash, Eq)]
+/// Actual state of cell
+#[derive(Debug, Clone, PartialEq, Hash, Eq, EnumIs)]
 enum CellState {
-	NeverOccupied,
+	NeverOccupied { can_finish_on: bool },
 	PreviouslyOccupied,
-
-	TargetEnding,
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
@@ -269,7 +268,14 @@ impl Board {
 			cell_states: options
 				.get_available_points()
 				.into_iter()
-				.map(|p| (p, CellState::NeverOccupied))
+				.map(|p| {
+					(
+						p,
+						CellState::NeverOccupied {
+							can_finish_on: options.get(&p).unwrap().unwrap_available(),
+						},
+					)
+				})
 				.collect(),
 		}
 	}
@@ -278,7 +284,7 @@ impl Board {
 		let mut moves = Vec::new();
 		for &(dx, dy) in piece.relative_moves() {
 			if let Some(p) = p.displace(&(dx, dy)) {
-				if self.get(&p) == Some(CellState::NeverOccupied) {
+				if self.get(&p).map(|s| s.is_never_occupied()) == Some(true) {
 					moves.push(p);
 				}
 			}
@@ -289,7 +295,7 @@ impl Board {
 		let mut degree = 0;
 		for &(dx, dy) in piece.relative_moves() {
 			if let Some(p) = p.displace(&(dx, dy)) {
-				if self.get(&p) == Some(CellState::NeverOccupied) {
+				if self.get(&p).map(|s| s.is_never_occupied()) == Some(true) {
 					degree += 1;
 				}
 			}
@@ -369,17 +375,21 @@ fn try_move_recursive(
 
 	if num_moves_required == 0 {
 		// base case
-		if let Some(state) =  attempting_board.get(&current_pos) {
+		if let Some(state) = attempting_board.get(&current_pos) {
 			match state {
-				CellState::TargetEnding => {
+				CellState::NeverOccupied {
+					can_finish_on: true,
+				} => {
 					return PartialComputation::Successful {
 						solution: vec![].into(),
 					};
 				}
-				CellState::NeverOccupied  => {
+				CellState::NeverOccupied {
+					can_finish_on: false,
+				} => {
 					return PartialComputation::Failed;
 				}
-				CellState::PreviouslyOccupied => panic!("What, trying to end on point already moved to?")
+				CellState::PreviouslyOccupied => panic!("What, trying to end on point already moved to?"),
 			}
 		}
 	}
