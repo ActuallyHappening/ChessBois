@@ -4,4 +4,4 @@ set -exu
 ./windows-release.sh &
 ./web-release &
 
-# scp -r "ah@ahubuntu:/home/ah/ChessBois/releases/*" .
+# scp -r "ah@ahubuntu:/home/ah/ChessBois/releases/*" releases/
