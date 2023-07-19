@@ -1,6 +1,6 @@
 [package]
 name = "bevy_solver"
-version = "0.1.10"
+version = "0.1.11"
 edition = "2021"
 
 # [lib]
@@ -25,18 +25,13 @@ opt-level = 3
 # codegen-units = 1
 # lto = true
 
+# TODO: use size optimization for web release builds
+# [profile.release-web]
+# inherits = "release"
+# opt-level = "s"
+
 [dependencies.bevy]
 version = "0.10.1"
-
-# branch = "release-0.10.1"
-# git = "https://github.com/bevyengine/bevy"
-
-# version = "0.11.0-dev"
-# git = "https://github.com/bevyengine/bevy"
-# branch = "latest"
-
-# version = "0.11.0-dev"
-# path = "./bevy"
 
 [dependencies]
 bevy_editor_pls = { version = "0.4.0", optional = true }

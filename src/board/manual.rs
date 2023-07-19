@@ -198,8 +198,7 @@ pub fn handle_new_manual_selected(
 	}
 }
 
-/// overwrites / resets manual moves
-pub fn add_empty_manual_moves(mut commands: Commands) {
+pub fn get_manual_moves_from_automatic_state(mut commands: Commands, auto_state: Res<CurrentOptions>) {
 	commands.insert_resource(ManualMoves::default());
 }
 

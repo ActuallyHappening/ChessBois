@@ -9,7 +9,7 @@ use super::{
 		despawn_cells, despawn_markers, spawn_cells, spawn_markers, sys_despawn_markers, CellClicked,
 		CellMarker, MarkerMarker,
 	},
-	manual::{add_default_manual_viz_colour, add_empty_manual_moves},
+	manual::{add_default_manual_viz_colour, get_manual_moves_from_automatic_state},
 	visualization::{
 		despawn_visualization, spawn_visualization, sys_despawn_visualization, VisualizationComponent,
 		VizOptions,
@@ -50,7 +50,7 @@ impl Plugin for AutomaticState {
 				(
 					sys_despawn_visualization,
 					sys_despawn_markers,
-					add_empty_manual_moves,
+					get_manual_moves_from_automatic_state,
 					add_default_manual_viz_colour,
 					VizOptions::sys_with_numbers,
 					// ToggleAction::sys_toggle_enabled,
@@ -62,7 +62,7 @@ impl Plugin for AutomaticState {
 				(
 					sys_despawn_visualization,
 					sys_despawn_markers,
-					add_empty_manual_moves,
+					get_manual_moves_from_automatic_state,
 				)
 					.in_schedule(OnExit(ProgramState::Automatic)),
 			)
