@@ -94,6 +94,13 @@ impl BoardOptions {
 		}
 	}
 
+	/// If no squares are endable, resets board to all endable
+	pub fn check_for_targets_reset(&mut self) {
+		if self.targets_state().is_none_finishable() {
+			self.reset_targets();
+		}
+	}
+
 	/// Sets point to [CellOption::Unavailable]
 	pub fn rm(&mut self, p: impl Into<ChessPoint>) {
 		let p = p.into();
@@ -134,12 +141,7 @@ impl BoardOptions {
 					CellOption::Available { can_finish_on } => {
 						self.set_p(&p, CellOption::Available { can_finish_on: !can_finish_on });
 
-						if self.targets_state().is_none_finishable() {
-							// if no cells are endable, set all cells to endable
-							for p in self.get_available_points() {
-								self.set_p(&p, CellOption::Available { can_finish_on: true });
-							}
-						}
+						self.check_for_targets_reset();
 					}
 					CellOption::Unavailable => {
 						debug!("Cannot target a cell that is disabled");
@@ -148,6 +150,14 @@ impl BoardOptions {
 			}
 		}
 	}
+
+	/// Resets all targets to can_finish = true
+	pub fn reset_targets(&mut self) {
+		for p in self.get_available_points() {
+			self.set_p(&p, CellOption::Available { can_finish_on: true });
+		}
+	}
+
 	/// 1 indexed
 	pub fn width(&self) -> u16 {
 		self.options[0].len() as u16
@@ -187,6 +197,7 @@ impl BoardOptions {
 				row.truncate(new_width as usize);
 			}
 		}
+		self.check_for_targets_reset();
 		Self { options: self.options }
 	}
 
@@ -200,6 +211,7 @@ impl BoardOptions {
 		} else {
 			self.options.truncate(new_height as usize);
 		}
+		self.check_for_targets_reset();
 		Self { options: self.options }
 	}
 

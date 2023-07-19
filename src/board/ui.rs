@@ -64,6 +64,7 @@ pub fn left_ui_auto(
 
 				ui.label("Instructions: Hover over cell to begin knight there. Click cell to toggle availability (red = unavailable). You can alter the dimensions of the board (below) and the algorithm used.");
 
+				// board size
 				const SIZE_CAP: f64 = 20.;
 				ui.add(egui::Slider::from_get_set((2.)..=SIZE_CAP, |val| {
 					if let Some(new_val) = val {

@@ -170,6 +170,7 @@ impl Options {
 		}
 	}
 
+	/// Requires a re-render
 	pub fn requires_updating(&mut self) -> &mut Self {
 		self.requires_updating = true;
 		self
