@@ -144,6 +144,7 @@ pub fn left_ui_auto(
 				let toggle_action = toggle_action.into_inner();
 				toggle_action.render(ui);
 
+				ui.label("Helper actions:");
 				if ui.button("Hide (temporarily) helper markers").clicked() {
 					despawn_markers(&mut commands, markers);
 				}

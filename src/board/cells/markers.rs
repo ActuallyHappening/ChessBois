@@ -1,5 +1,15 @@
 use super::*;
 
+pub fn hide_markers_hotkey(
+	keys: Res<Input<KeyCode>>,
+	markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
+	mut commands: Commands,
+) {
+	if keys.just_pressed(KeyCode::H) {
+		despawn_markers(&mut commands, markers)
+	}
+}
+
 pub fn spawn_markers(options: &Options, commands: &mut Commands, mma: &mut ResSpawning) {
 	for point in options.options.get_all_points() {
 		spawn_mark(
