@@ -122,7 +122,10 @@ impl Algorithm {
 	}
 }
 
-/// Represents information required to display cells + visual solutions
+/// Represents information required to display cells + visual solutions.
+/// [Options.options]
+/// [Options.selected_start]
+/// [Options.selected_algorithm]
 #[derive(derivative::Derivative, Debug, Clone, Eq, PartialOrd, Ord)]
 #[derivative(PartialEq)]
 pub struct Options {

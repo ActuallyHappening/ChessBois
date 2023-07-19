@@ -27,6 +27,10 @@ impl ComputationResult {
 	pub fn into_comp(&self) -> Computation {
 		self.0.clone()
 	}
+
+	pub fn get_comp(&self) -> &Computation {
+		&self.0
+	}
 }
 
 pub fn begin_background_compute<P: ChessPiece + Copy + Send + Sync + 'static>(

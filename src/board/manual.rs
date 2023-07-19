@@ -1,9 +1,11 @@
+use super::automatic::ComputationResult;
 use super::visualization::spawn_visualization;
 use super::visualization::VisualizationComponent;
 use super::visualization::VizOptions;
 use super::viz_colours::VizColour;
 use super::*;
 use crate::errors::Error;
+use crate::solver::algs::Computation;
 use crate::solver::pieces::ChessPiece;
 use crate::solver::pieces::StandardKnight;
 use crate::solver::Move;
@@ -95,6 +97,14 @@ impl ManualMoves {
 		self.colours.pop();
 		if self.moves.pop().is_none() {
 			self.start = None;
+		}
+	}
+
+	fn from_automatic_state(moves: Moves, start: ChessPoint) -> Self {
+		ManualMoves {
+			start: Some(start),
+			colours: vec![VizColour::default(); moves.len()],
+			moves,
 		}
 	}
 }
@@ -198,8 +208,20 @@ pub fn handle_new_manual_selected(
 	}
 }
 
-pub fn get_manual_moves_from_automatic_state(mut commands: Commands, auto_state: Res<CurrentOptions>) {
-	commands.insert_resource(ManualMoves::default());
+pub fn get_manual_moves_from_automatic_state(
+	mut commands: Commands,
+	auto_solution: Option<Res<ComputationResult>>,
+) {
+	if let Some(comp) = auto_solution {
+		if let Computation::Successful {
+			solution: moves, ..
+		} = comp.into_inner().get_comp()
+		{
+			let start = moves.first().unwrap().from;
+			let manual_moves = ManualMoves::from_automatic_state(moves.clone(), start);
+			commands.insert_resource(manual_moves);
+		}
+	}
 }
 
 pub fn add_default_manual_viz_colour(mut commands: Commands) {
