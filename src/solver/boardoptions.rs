@@ -8,6 +8,7 @@ pub struct BoardOptions {
 	options: Vec<Vec<CellOption>>,
 }
 
+#[derive(EnumIs)]
 pub enum TargetRestriction {
 	/// All cells are endable.
 	/// New cells should be endable
@@ -128,7 +129,22 @@ impl BoardOptions {
 			}
 			// no reset required
 			TargetRestriction::CertainFinishable | TargetRestriction::NoneFinishable => {
-				self.set_p(&p, CellOption::Available { can_finish_on: true });
+				let state = self.get(&p).unwrap();
+				match state {
+					CellOption::Available { can_finish_on } => {
+						self.set_p(&p, CellOption::Available { can_finish_on: !can_finish_on });
+
+						if self.targets_state().is_none_finishable() {
+							// if no cells are endable, set all cells to endable
+							for p in self.get_available_points() {
+								self.set_p(&p, CellOption::Available { can_finish_on: true });
+							}
+						}
+					}
+					CellOption::Unavailable => {
+						debug!("Cannot target a cell that is disabled");
+					}
+				}
 			}
 		}
 	}
