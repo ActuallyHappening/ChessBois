@@ -1,5 +1,6 @@
 ## v0.1.11:
 - Copies state over from auto to manual
+- manual state: reset button
 
 ## v0.1.10:
 - Targets
