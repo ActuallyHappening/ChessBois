@@ -229,6 +229,7 @@ fn handle_cell_clicked(
 						CellOption::Available { .. } => {
 							info!("Targetting point {}", *point);
 							options.toggle_target(*point);
+							options.requires_updating();
 						}
 						CellOption::Unavailable => {
 							//
