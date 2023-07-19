@@ -1,3 +1,5 @@
+use std::num::NonZeroUsize;
+
 use super::*;
 
 
@@ -13,9 +15,11 @@ pub enum TargetRestriction {
 	/// All cells are endable.
 	/// New cells should be endable
 	AllFinishable,
-	/// Only some cells are endable, i.e. there exists at leas one cell that is not endable.
+	/// Only some cells are endable, i.e. there exists at least one cell that is not endable.
 	/// New cells should not be enable
-	CertainFinishable,
+	CertainFinishable {
+		num_endable: NonZeroUsize,
+	},
 	/// No cells are endable.
 	/// New cells should not be endable, and really the entire board should be re-enabled
 	NoneFinishable,
@@ -28,7 +32,7 @@ impl TargetRestriction {
 			TargetRestriction::AllFinishable => CellOption::Available {
 				can_finish_on: true,
 			},
-			TargetRestriction::CertainFinishable | TargetRestriction::NoneFinishable => CellOption::Available {
+			TargetRestriction::CertainFinishable { .. } | TargetRestriction::NoneFinishable => CellOption::Available {
 				can_finish_on: false,
 			},
 		}
@@ -36,6 +40,16 @@ impl TargetRestriction {
 
 	pub fn should_show_targets_visual(self) -> bool {
 		!matches!(self, TargetRestriction::AllFinishable)
+	}
+
+	pub fn get_description(&self) -> String {
+		match self {
+			TargetRestriction::AllFinishable => "No specific cells are targetted.".to_string(),
+			TargetRestriction::CertainFinishable { num_endable } => {
+				format!("Only {} cells are targetted", num_endable)
+			}
+			TargetRestriction::NoneFinishable => "No cells are targetted, which is impossible?".to_string(),
+		}
 	}
 }
 
@@ -90,7 +104,7 @@ impl BoardOptions {
 		match points_endable {
 			0 => TargetRestriction::NoneFinishable,
 			_x if _x == total_num => TargetRestriction::AllFinishable,
-			_ => TargetRestriction::CertainFinishable,
+			x => TargetRestriction::CertainFinishable { num_endable: x.try_into().unwrap() },
 		}
 	}
 
@@ -135,7 +149,7 @@ impl BoardOptions {
 				self.set_p(&p, CellOption::Available { can_finish_on: true });
 			}
 			// no reset required
-			TargetRestriction::CertainFinishable | TargetRestriction::NoneFinishable => {
+			TargetRestriction::CertainFinishable { .. } | TargetRestriction::NoneFinishable => {
 				let state = self.get(&p).unwrap();
 				match state {
 					CellOption::Available { can_finish_on } => {
@@ -255,11 +269,12 @@ impl BoardOptions {
 
 	pub fn get_description(&self) -> String {
 		format!(
-			"{}x{} board with {} cells available (and {} cells disabled)",
+			"Current options: {}x{} board with {} cells available (and {} cells disabled). {}",
 			self.height(),
 			self.width(),
 			self.get_available_points().len(),
-			self.get_unavailable_points().len()
+			self.get_unavailable_points().len(),
+			self.targets_state().get_description(),
 		)
 	}
 }

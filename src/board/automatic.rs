@@ -102,7 +102,7 @@ fn handle_new_options(
 		if options.selected_start.is_some() {
 			begin_background_compute(options.selected_algorithm, &StandardKnight, options.clone());
 		} else {
-			warn!("Not beginning background compute")
+			debug!("Not beginning background compute")
 		}
 
 		// add new options as current

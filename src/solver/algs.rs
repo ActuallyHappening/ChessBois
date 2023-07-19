@@ -120,11 +120,6 @@ impl Algorithm {
 			",
 		}
 	}
-
-	pub fn should_show_states(&self) -> bool {
-		// matches!(self, Algorithm::WarnsdorfUnreliable | Algorithm::WarnsdorfBacktrack | Algorithm::HamiltonianCycle)
-		true
-	}
 }
 
 /// Represents information required to display cells + visual solutions

@@ -268,39 +268,24 @@ pub fn right_ui_auto(
 	egui::SidePanel::right("auto_right_sidebar").show(contexts.ctx_mut(), |ui| {
 		ui.heading("Results Panel");
 
-		if let Some(solution) = solution {
-			let alg: Algorithm = options.selected_algorithm;
+		// quick status
+		if let Some(solution) = &solution {
 			match solution {
 				Computation::Successful {
 					explored_states: states,
-					solution: moves,
+					..
 				} => {
-					let mut msg = format!("Solution found in {} states considered", states);
-					if !alg.should_show_states() {
-						msg = "Solution found".to_string();
-					}
+					let msg = format!("Solution found in {} states considered", states);
 					ui.label(RichText::new(msg).color(Color32::GREEN));
-
-					// printing solution moves
-					egui::ScrollArea::vertical().show(ui, |ui| {
-						let moves = format!("Moves taken: \n{}", moves);
-						ui.label(moves);
-					});
 				}
 				Computation::Failed {
 					total_states: states,
 				} => {
-					let mut msg = format!("No solution found, with {} states considered", states);
-					if !alg.should_show_states() {
-						msg = "Solution found".to_string();
-					}
+					let msg = format!("No solution found, with {} states considered", states);
 					ui.label(RichText::new(msg).color(Color32::RED));
 				}
 				Computation::GivenUp { explored_states: states } => {
-					let mut msg = format!("To avoid excessive computation finding a solution was given up, with {} states considered", states);
-					if !alg.should_show_states() {
-						msg = "Solution found".to_string();
-					}
+					let msg = format!("To avoid excessive computation finding a solution was given up, with {} states considered", states);
 					ui.label(RichText::new(msg).color(Color32::RED));
 				}
 			}
@@ -309,10 +294,18 @@ pub fn right_ui_auto(
 		if let Some(start) = &options.selected_start {
 			let alg_selected: &str = options.selected_algorithm.into();
 			ui.label(format!(
-				"Current info: Starting at {start} with {} algorithm {}",
+				"Current info: Starting at {start} with {} algorithm. {}",
 				alg_selected,
 				options.options.get_description()
 			));
+		}
+
+		if let Some(Computation::Successful { solution: moves, .. }) = &solution {
+			// printing solution moves
+			egui::ScrollArea::vertical().show(ui, |ui| {
+				let moves = format!("Moves taken: \n{}", moves);
+				ui.label(moves);
+			});
 		}
 	
 	});
