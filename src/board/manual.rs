@@ -220,8 +220,12 @@ pub fn get_manual_moves_from_automatic_state(
 			let start = moves.first().unwrap().from;
 			let manual_moves = ManualMoves::from_automatic_state(moves.clone(), start);
 			commands.insert_resource(manual_moves);
+			return;
 		}
 	}
+
+	debug!("Cannot automatically convert state from auto -> manual");
+	commands.insert_resource(ManualMoves::default());
 }
 
 pub fn add_default_manual_viz_colour(mut commands: Commands) {

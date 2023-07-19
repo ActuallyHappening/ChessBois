@@ -133,6 +133,7 @@ impl ToggleAction {
 
 	pub fn render(&mut self, ui: &mut Ui) {
 		use bevy_egui::egui::*;
+		ui.label("What happens when you click a cell?");
 		ui.horizontal_wrapped(|ui| {
 			for action in ToggleAction::iter() {
 				let mut text = RichText::new(action.to_string());
