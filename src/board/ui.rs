@@ -236,10 +236,10 @@ pub fn left_ui_manual(
 	}
 
 	// copy to clipboard web
-	#[cfg(target_arch = "wasm32")]
-	if ui.button("Copy current state to clipboard").clicked() {
-		crate::clipboard::set_to_clipboard(&state_str);
-	}
+	// #[cfg(target_arch = "wasm32")]
+	// if ui.button("Copy current state to clipboard").clicked() {
+	// 	crate::clipboard::set_to_clipboard(&state_str);
+	// }
 
 	// paste from clipboard
 	#[cfg(not(target_arch = "wasm32"))]
@@ -265,7 +265,7 @@ pub fn left_ui_manual(
 	if ui.button("Undo moves [u]").clicked() {
 		current_moves.undo_move();
 	}
-	if ui.button(RichText::new("Reset [r]").color(Color32::RED)).clicked() {
+	if ui.button(RichText::new("Reset").color(Color32::RED)).clicked() {
 		current_moves.reset();
 	}
 });
