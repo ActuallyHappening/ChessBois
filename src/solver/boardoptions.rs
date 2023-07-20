@@ -4,7 +4,7 @@ use super::*;
 
 /// Necessary information to make custom board.
 /// Does NOT hold actual state, to solve use [Board]
-#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct BoardOptions {
 	options: Vec<Vec<CellOption>>,
 }

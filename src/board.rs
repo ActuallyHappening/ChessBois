@@ -61,7 +61,11 @@ fn setup(mut commands: Commands) {
 		selected_algorithm: Algorithm::default(),
 		requires_updating: true,
 	};
-	let current_options = CurrentOptions::from_options(options);
+	let mut current_options = CurrentOptions::from_options(options);
+	if let Some(state) = crate::weburl::try_load_state_from_url() {
+		info!("Loaded state from URL!");
+		current_options.current.options = state.options;
+	}
 
 	commands.insert_resource(current_options);
 }

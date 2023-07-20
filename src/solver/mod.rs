@@ -190,7 +190,7 @@ impl std::iter::FromIterator<Move> for Moves {
 	}
 }
 
-#[derive(Debug, Copy, Hash, Clone, PartialEq, Eq, PartialOrd, Ord, EnumIs)]
+#[derive(Debug, Copy, Hash, Clone, PartialEq, Eq, PartialOrd, Ord, EnumIs, Serialize, Deserialize)]
 pub enum CellOption {
 	/// Only allows solutions ending on target
 	Available {

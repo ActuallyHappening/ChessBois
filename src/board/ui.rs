@@ -116,6 +116,7 @@ impl ManualMoves {
 	pub fn save_state_ui(
 		mut contexts: EguiContexts,
 		state: ResMut<ManualMoves>,
+		options: Res<CurrentOptions>,
 		mut commands: Commands,
 	) {
 		let current_moves = state.into_inner();
@@ -187,7 +188,10 @@ impl ManualMoves {
 				This link will contain all the information needed to recreate your board.");
 
 				egui::ScrollArea::vertical().max_height(50.).show(ui, |ui| {
-					ui.hyperlink(crate::weburl::export_state_to_url(current_moves.clone()));
+					ui.hyperlink(crate::weburl::export_state_to_url(crate::weburl::State {
+						options: options.current.options.clone(),
+						manual_moves: current_moves.clone(),
+					}));
 				});
 			});
 		});
