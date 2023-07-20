@@ -84,10 +84,6 @@ impl ManualMoves {
 		serde_json::to_string(self).expect("To be able to convert moves to JSON")
 	}
 
-	pub fn to_url_string(&self) -> String {
-		serde_url_params::to_string(self).expect("To be able to convert moves to URL string")
-	}
-
 	pub fn add_move(&mut self, from: ChessPoint, to: ChessPoint, colour: VizColour) {
 		self.moves.push(Move::new(from, to));
 		self.colours.push(colour);

@@ -28,7 +28,10 @@ impl Plugin for UiPlugin {
 				(left_ui_auto, right_ui_auto, VizOptions::sys_viz_options_ui)
 					.in_set(OnUpdate(ProgramState::Automatic)),
 			)
-			.add_systems((left_ui_manual, right_ui_manual).in_set(OnUpdate(ProgramState::Manual)));
+			.add_systems(
+				(left_ui_manual, right_ui_manual, ManualMoves::save_state_ui)
+					.in_set(OnUpdate(ProgramState::Manual)),
+			);
 	}
 }
 
@@ -97,6 +100,8 @@ impl VizOptions {
 		egui::Window::new("viz_options_ui")
 			.default_pos(Pos2::new(4200., 4200.))
 			.show(contexts.ctx_mut(), |ui| {
+				ui.heading("Visualization options:");
+
 				let copy = *viz_options;
 				(*viz_options).render(ui);
 				if *viz_options != copy {
@@ -104,6 +109,88 @@ impl VizOptions {
 					trace!("Updating because of viz_options ui change detected")
 				}
 			});
+	}
+}
+
+impl ManualMoves {
+	pub fn save_state_ui(
+		mut contexts: EguiContexts,
+		state: ResMut<ManualMoves>,
+		mut commands: Commands,
+	) {
+		let current_moves = state.into_inner();
+
+		egui::Window::new("Save / Loading")
+			.default_pos(Pos2::new(4200., 4200.))
+			.show(contexts.ctx_mut(), |ui| {
+				egui::ScrollArea::vertical().show(ui, |ui| {
+				ui.heading("Manually saving:");
+				ui.label("You can save your created chess creation into some JSON, and load it in at any time. \
+				This works only on desktop versions, web is not supported. I can add this, but it will take more effort");
+
+				// copy + paste functionality
+
+				// viewer
+				let state_str = current_moves.to_json();
+				let mut str = state_str.clone();
+				ui.collapsing("The actual data", |ui| {
+					if ui.code_editor(&mut str).changed() {
+						match ManualMoves::try_from(str.clone()) {
+							Ok(moves) => {
+								*current_moves = moves;
+							}
+							Err(e) => {
+								warn!("Could not parse state JSON string: {}", e);
+								commands.insert_resource(Error::new("Could not parse your data".into()));
+							}
+						}
+					}
+				});
+				
+
+				// copy to clipboard
+				// non wasm
+				#[cfg(not(target_arch = "wasm32"))]
+				if ui.button("Copy current state to clipboard").clicked() {
+					ui.output_mut(|o| o.copied_text = state_str);
+
+					// #[cfg(target_arch = "wasm32")]
+					// crate::clipboard::set_to_clipboard(&state_str);
+				}
+
+				// copy to clipboard web
+				// #[cfg(target_arch = "wasm32")]
+				// if ui.button("Copy current state to clipboard").clicked() {
+				// 	crate::clipboard::set_to_clipboard(&state_str);
+				// }
+
+				// paste from clipboard
+				#[cfg(not(target_arch = "wasm32"))]
+				if ui.button("Paste from your current clipboard").clicked() {
+					let clip = crate::clipboard::get_from_clipboard();
+					// if let Some(clip) = clipboard {
+					match ManualMoves::try_from(clip) {
+						Ok(moves) => {
+							*current_moves = moves;
+						}
+						Err(e) => {
+							warn!("Could not parse clipboard JSON string: {}", e);
+							commands.insert_resource(Error::new("Could not parse your data".into()));
+						}
+					}
+					// }
+				}
+
+				// URL saving
+				ui.heading("URL saving:");
+				ui.label("An alternative to saving your state as a dump of JSON is to generate an open link. \
+				This link will contain all the information needed to recreate your board.");
+
+				egui::ScrollArea::vertical().max_height(50.).show(ui, |ui| {
+					ui.hyperlink(crate::weburl::export_state_to_url(current_moves.clone()));
+				});
+			});
+		});
 	}
 }
 
@@ -273,57 +360,6 @@ pub fn left_ui_manual(
 			}
 		}
 	});
-
-	// copy + paste functionality
-	let state_str = current_moves.to_json();
-	let mut str = state_str.clone();
-	if ui.text_edit_singleline(&mut str).changed() {
-		match ManualMoves::try_from(str.clone()) {
-			Ok(moves) => {
-				*current_moves = moves;
-			}
-			Err(e) => {
-				warn!("Could not parse state JSON string: {}", e);
-				commands.insert_resource(Error::new(
-					"Could not parse your data".into(),
-				));
-			}
-		}
-	}
-	// copy to clipboard
-	// non wasm
-	#[cfg(not(target_arch = "wasm32"))]
-	if ui.button("Copy current state to clipboard").clicked() {
-		ui.output_mut(|o| o.copied_text = state_str);
-
-		// #[cfg(target_arch = "wasm32")]
-		// crate::clipboard::set_to_clipboard(&state_str);
-	}
-
-	// copy to clipboard web
-	// #[cfg(target_arch = "wasm32")]
-	// if ui.button("Copy current state to clipboard").clicked() {
-	// 	crate::clipboard::set_to_clipboard(&state_str);
-	// }
-
-	// paste from clipboard
-	#[cfg(not(target_arch = "wasm32"))]
-	if ui.button("Paste from your current clipboard").clicked() {
-		let clip = crate::clipboard::get_from_clipboard();
-		// if let Some(clip) = clipboard {
-			match ManualMoves::try_from(clip) {
-				Ok(moves) => {
-					*current_moves = moves;
-				}
-				Err(e) => {
-					warn!("Could not parse clipboard JSON string: {}", e);
-					commands.insert_resource(Error::new(
-						"Could not parse your data".into(),
-					));
-				}
-			}
-		// }
-	}
 
 	// undo button
 	ui.label("Control actions:");

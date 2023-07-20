@@ -26,12 +26,18 @@ pub fn get_url_params() -> Option<String> {
 	location.search().ok()
 }
 
-use bevy::prelude::*;
-
 use crate::board::ManualMoves;
+use bevy::prelude::*;
 
 pub fn try_load_state_from_url() -> Option<ManualMoves> {
 	let url_params = get_url_params()?;
 	let moves = serde_qs::from_str(&url_params).ok()?;
 	Some(moves)
+}
+
+const URL: &str = "https://caleb-msrc-q11.netlify.app/";
+pub fn export_state_to_url(state: ManualMoves) -> String {
+	let url_params = serde_qs::to_string(&state).expect("To be able to convert to url params");
+	let full_url = format!("{}?{}", URL, url_params);
+	full_url
 }
