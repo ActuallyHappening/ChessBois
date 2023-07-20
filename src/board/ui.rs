@@ -183,16 +183,19 @@ impl ManualMoves {
 				}
 
 				// URL saving
-				ui.heading("URL saving:");
-				ui.label("An alternative to saving your state as a dump of JSON is to generate an open link. \
-				This link will contain all the information needed to recreate your board.");
+				#[cfg(feature = "weburl")]
+				{
+					ui.heading("URL saving:");
+					ui.label("An alternative to saving your state as a dump of JSON is to generate an open link. \
+					This link will contain all the information needed to recreate your board.");
 
-				egui::ScrollArea::vertical().max_height(50.).show(ui, |ui| {
-					ui.hyperlink(crate::weburl::export_state_to_url(crate::weburl::State {
-						options: options.current.options.clone(),
-						manual_moves: current_moves.clone(),
-					}));
-				});
+					egui::ScrollArea::vertical().max_height(50.).show(ui, |ui| {
+						ui.hyperlink(crate::weburl::export_state_to_url(crate::weburl::State {
+							options: options.current.options.clone(),
+							manual_moves: current_moves.clone(),
+						}));
+					});
+				}
 			});
 		});
 	}

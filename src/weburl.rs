@@ -1,5 +1,5 @@
-use serde::{Serialize, Deserialize};
 use crate::{board::ManualMoves, solver::BoardOptions};
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct State {
@@ -36,7 +36,6 @@ pub fn get_url_params() -> Option<String> {
 	let location = window.location();
 	location.search().ok()
 }
-
 
 #[cfg(target_arch = "wasm32")]
 pub fn try_load_state_from_url() -> Option<State> {
