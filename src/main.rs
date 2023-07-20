@@ -1,6 +1,5 @@
 use bevy::prelude::*;
-use bevy_solver::ChessPoint;
-use bevy_solver::*;
+use cap_solver::*;
 
 fn main() {
 	let mut app = App::new();
