@@ -7,7 +7,7 @@ use crate::{
 use super::{
 	cells::{
 		despawn_cells, despawn_markers, spawn_cells, spawn_markers, sys_despawn_markers, CellClicked,
-		CellMarker, MarkerMarker, hide_markers_hotkey,
+		CellMarker, MarkerMarker, 
 	},
 	manual::{add_default_manual_viz_colour, get_manual_moves_from_automatic_state},
 	visualization::{
@@ -15,7 +15,7 @@ use super::{
 		VizOptions,
 	},
 	viz_colours::VizColour,
-	*, ui::control_ui_hotkeys_automatic,
+	*,
 };
 use bevy_egui::egui::Ui;
 use cached_info::*;
