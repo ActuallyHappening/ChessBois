@@ -29,6 +29,7 @@ opt-level = 3
 # [profile.release-web]
 # inherits = "release"
 # opt-level = "s"
+# env variable: CARGO_PROFILE_RELEASE_OPT_LEVEL="s"
 
 [dependencies.bevy]
 version = "0.10.1"
