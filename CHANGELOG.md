@@ -1,5 +1,5 @@
 
-## v0.1.13:
+## v0.2.0:
 - Display window
 - Various UI improvements, saving is now seperate window
 
