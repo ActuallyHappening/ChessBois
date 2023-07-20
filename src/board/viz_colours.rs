@@ -8,12 +8,17 @@ use super::*;
 )]
 pub enum VizColour {
 	#[default]
+	#[strum(serialize = "Green [g]")]
 	Green,
 
+	#[strum(serialize = "Red [r]")]
 	Red,
+	#[strum(serialize = "Blue [b]")]
 	Blue,
+	#[strum(serialize = "Orange [o]")]
 	Orange,
 
+	#[strum(serialize = "Invisible [i]")]
 	Invisible,
 }
 

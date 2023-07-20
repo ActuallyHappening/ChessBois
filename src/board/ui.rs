@@ -45,8 +45,6 @@ impl VizOptions {
 	}
 }
 
-
-
 pub fn control_ui_hotkeys_automatic(keys: Res<Input<KeyCode>>, mut commands: Commands, markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>) {
 	if keys.just_pressed(KeyCode::H) {
 		despawn_markers(&mut commands, markers)

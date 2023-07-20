@@ -1,6 +1,7 @@
 use super::{
 	automatic::ToggleAction, ui::control_ui_hotkeys_automatic, viz_colours::colour_hotkeys,
 };
+use crate::board::manual::control_ui_hotkeys_manual;
 use crate::ProgramState;
 use bevy::prelude::*;
 
@@ -17,7 +18,9 @@ impl Plugin for HotkeysPlugin {
 					.in_set(OnUpdate(ProgramState::Automatic)),
 			)
 			// manual
-			.add_systems((colour_hotkeys,).in_set(OnUpdate(ProgramState::Manual)))
+			.add_systems(
+				(colour_hotkeys, control_ui_hotkeys_manual).in_set(OnUpdate(ProgramState::Manual)),
+			)
 			// both
 			.add_systems(());
 	}
