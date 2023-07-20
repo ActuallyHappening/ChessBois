@@ -134,6 +134,8 @@ pub struct Options {
 	pub selected_start: Option<ChessPoint>,
 	pub selected_algorithm: Algorithm,
 
+	// ignored by hash
+	pub show_markers: bool,
 	#[derivative(PartialEq = "ignore")]
 	// must be ignored by Hash
 	pub requires_updating: bool,
@@ -144,6 +146,18 @@ impl std::hash::Hash for Options {
 		self.options.hash(state);
 		self.selected_start.hash(state);
 		self.selected_algorithm.hash(state);
+	}
+}
+
+impl Default for Options {
+	fn default() -> Self {
+		Options {
+			options: BoardOptions::default(),
+			selected_start: None,
+			selected_algorithm: Algorithm::default(),
+			requires_updating: true,
+			show_markers: true,
+		}
 	}
 }
 

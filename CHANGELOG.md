@@ -1,6 +1,8 @@
 
 ## v0.1.13:
 - Display window
+- Various UI improvements, saving is now seperate window
+
 
 ## v0.1.12:
 - Hotkeys for targets/disable

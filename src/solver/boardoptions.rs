@@ -9,6 +9,12 @@ pub struct BoardOptions {
 	options: Vec<Vec<CellOption>>,
 }
 
+impl Default for BoardOptions {
+	fn default() -> Self {
+		Self::new(8, 8)
+	}
+}
+
 #[derive(EnumIs)]
 pub enum TargetRestriction {
 	/// All cells are endable.

@@ -48,26 +48,14 @@ pub struct CurrentOptions {
 
 /// Sets up default resources + sends initial [NewOptions] event
 fn setup(mut commands: Commands) {
-	// let mut board = BoardOptions::new(2, 3);
-	// board.rm((1, 2));
-	// board.rm((2, 2));
-	// board.rm((2, 1));
-	// board.rm((3, 1));
-	let board = BoardOptions::new(8, 8);
+	let mut default_options = CurrentOptions::from_options(Options::default());
 
-	let options = Options {
-		options: board,
-		selected_start: None,
-		selected_algorithm: Algorithm::default(),
-		requires_updating: true,
-	};
-	let mut current_options = CurrentOptions::from_options(options);
 	if let Some(state) = crate::weburl::try_load_state_from_url() {
 		info!("Loaded state from URL!");
-		current_options.current.options = state.options;
+		default_options.current.options = state.options;
 	}
 
-	commands.insert_resource(current_options);
+	commands.insert_resource(default_options);
 }
 
 mod top_level_types {

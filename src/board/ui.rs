@@ -12,6 +12,7 @@ use crate::{
 	solver::algs::Computation,
 	MainCamera, ProgramState,
 };
+use bevy::transform::commands;
 use bevy_egui::{
 	egui::{Color32, Pos2, RichText, Ui},
 	*,
@@ -96,13 +97,18 @@ impl VizOptions {
 		mut viz_options: ResMut<VizOptions>,
 		mut contexts: EguiContexts,
 		mut to_reload: ResMut<CurrentOptions>,
+
+		markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
+		mut commands: Commands,
 	) {
-		egui::Window::new("viz_options_ui")
+		egui::Window::new("Visualization options")
 			.default_pos(Pos2::new(4200., 4200.))
 			.show(contexts.ctx_mut(), |ui| {
 				ui.heading("Visualization options:");
 
 				let copy = *viz_options;
+				
+
 				(*viz_options).render(ui);
 				if *viz_options != copy {
 					(*to_reload).requires_updating();
