@@ -42,8 +42,7 @@ impl Plugin for AutomaticState {
 					handle_new_options,
 					handle_plane_clicked,
 					handle_cell_clicked,
-					ToggleAction::sys_action_hotkeys,
-					control_ui_hotkeys_automatic
+					
 				)
 					.in_set(OnUpdate(ProgramState::Automatic)),
 			)
@@ -149,7 +148,7 @@ impl ToggleAction {
 		});
 	}
 
-	pub fn sys_action_hotkeys(keys: Res<Input<KeyCode>>, mut selected_action: ResMut<Self>) {
+	pub fn change_toggle_action_hotkeys(keys: Res<Input<KeyCode>>, mut selected_action: ResMut<Self>) {
 		for key in ToggleAction::iter() {
 			if keys.just_pressed(KeyCode::from(key)) {
 				*selected_action = key;

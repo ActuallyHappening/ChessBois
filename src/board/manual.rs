@@ -30,7 +30,6 @@ impl Plugin for ManualState {
 				(
 					handle_manual_visualization,
 					handle_new_manual_selected,
-					viz_colours::colour_hotkeys,
 				)
 					.in_set(OnUpdate(ProgramState::Manual)),
 			)

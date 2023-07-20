@@ -42,6 +42,10 @@ pub enum ProgramState {
 	Manual,
 }
 
+pub struct AutomaticState;
+pub struct ManualState;
+pub struct BothStates;
+
 const CAMERA_HEIGHT: f32 = 75.;
 const LIGHT_HEIGHT: f32 = CAMERA_HEIGHT;
 

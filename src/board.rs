@@ -1,4 +1,7 @@
-use self::{automatic::AutomaticState, cells::CellClicked, manual::ManualState, ui::UiPlugin};
+use self::{
+	automatic::AutomaticState, cells::CellClicked, hotkeys::HotkeysPlugin, manual::ManualState,
+	ui::UiPlugin,
+};
 use crate::solver::{
 	algs::{Algorithm, Options},
 	BoardOptions,
@@ -12,6 +15,7 @@ mod automatic;
 mod manual;
 
 mod cells;
+mod hotkeys;
 mod ui;
 mod visualization;
 mod viz_colours;
@@ -29,7 +33,7 @@ impl Plugin for BoardPlugin {
 					.disable::<DefaultHighlightingPlugin>()
 					.disable::<DebugPickingPlugin>(),
 			)
-			// .add_system(refresh_cells_on_new_options)
+			.add_plugin(HotkeysPlugin)
 			.add_event::<CellClicked>()
 			.add_startup_system(setup);
 	}
