@@ -1,14 +1,11 @@
-use std::f32::consts::TAU;
-
-use strum::{EnumIs, EnumIter, Display};
-
 use super::{cells::get_spacial_coord_2d, viz_colours::VizColour, *};
 use crate::{
 	solver::{Move, Moves},
 	textmesh::{get_text_mesh, Fonts},
 	utils::{EntityCommandsExt, TransformExt},
-	ChessPoint, CELL_SIZE, VISUALIZATION_DIMENSIONS, VISUALIZATION_HEIGHT,
+	ChessPoint, CELL_SIZE, VISUALIZATION_HEIGHT,
 };
+use std::f32::consts::TAU;
 
 #[derive(Component, Debug, Clone)]
 #[allow(dead_code)]
@@ -17,18 +14,40 @@ pub struct VisualizationComponent {
 	to: ChessPoint,
 }
 
-#[derive(Resource, EnumIs, EnumIter, Display, PartialEq, Clone, Copy)]
-pub enum VizOptions {
-	WithNumbers,
-	WithoutNumbers,
+#[derive(Resource, PartialEq, Clone, Copy)]
+pub struct VizOptions {
+	pub show_numbers: bool,
+	pub show_dots: bool,
+	pub(super) viz_width: f32,
+}
+
+impl Default for VizOptions {
+	fn default() -> Self {
+		Self {
+			show_numbers: true,
+			show_dots: true,
+			viz_width: 0.2,
+		}
+	}
 }
 
 impl VizOptions {
-	pub fn sys_with_numbers(mut commands: Commands) {
-		commands.insert_resource(VizOptions::WithNumbers);
+	pub fn with_numbers(mut self, show_numbers: bool) -> Self {
+		self.show_numbers = show_numbers;
+		self
 	}
-	pub fn sys_without_numbers(mut commands: Commands) {
-		commands.insert_resource(VizOptions::WithoutNumbers);
+
+	pub fn dimentions(&self) -> Vec2 {
+		Vec2::new(self.viz_width, self.viz_width)
+	}
+}
+
+impl VizOptions {
+	pub fn sys_with_numbers(mut commands: Commands, old: Option<Res<VizOptions>>) {
+		commands.insert_resource(old.map(|o| *o).unwrap_or(VizOptions::default()).with_numbers(true));
+	}
+	pub fn sys_without_numbers(mut commands: Commands, old: Option<Res<VizOptions>>) {
+		commands.insert_resource(old.map(|o| *o).unwrap_or(VizOptions::default()).with_numbers(false));
 	}
 }
 
@@ -95,8 +114,8 @@ fn spawn_path_line(
 	let mesh_thin_rectangle = meshs.add(
 		shape::Box::new(
 			length,
-			VISUALIZATION_DIMENSIONS.x,
-			VISUALIZATION_DIMENSIONS.y,
+			viz_options.dimentions().x,
+			viz_options.dimentions().y
 		)
 		.into(),
 	);
@@ -116,29 +135,31 @@ fn spawn_path_line(
 	));
 
 	// small dot at start
-	let start_transform =
-		Transform::from_translation(*start_vec).with_rotation(Quat::from_rotation_y(angle));
-	commands
-		.spawn(PbrBundle {
-			transform: start_transform,
-			material,
-			mesh: meshs.add(
-				shape::Icosphere {
-					radius: VISUALIZATION_DIMENSIONS.length(),
-					subdivisions: 1,
-				}
-				.try_into()
-				.unwrap(),
-			),
-			..default()
-		})
-		.insert(VisualizationComponent {
-			from: *from,
-			to: *to,
-		});
+	if viz_options.show_dots {
+		let start_transform =
+			Transform::from_translation(*start_vec).with_rotation(Quat::from_rotation_y(angle));
+		commands
+			.spawn(PbrBundle {
+				transform: start_transform,
+				material,
+				mesh: meshs.add(
+					shape::Icosphere {
+						radius: viz_options.dimentions().length(),
+						subdivisions: 1,
+					}
+					.try_into()
+					.unwrap(),
+				),
+				..default()
+			})
+			.insert(VisualizationComponent {
+				from: *from,
+				to: *to,
+			});
+	}
 
 	// text
-	if viz_options.is_with_numbers() {
+	if viz_options.show_numbers {
 		let text = format!("{}", number);
 		let (mesh, offset) = get_text_mesh(text, CELL_SIZE / 3., Fonts::Light);
 

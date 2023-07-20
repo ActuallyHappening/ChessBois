@@ -22,26 +22,74 @@ impl Plugin for UiPlugin {
 		// app.add_systems((left_sidebar_ui, right_sidebar_ui).before(display_error));
 		app
 			// .add_system(display_error.in_set(OnUpdate(ProgramState::Manual)))
-			.add_systems((left_ui_auto, right_ui_auto).in_set(OnUpdate(ProgramState::Automatic)))
+			.add_systems((left_ui_auto, right_ui_auto, VizOptions::sys_viz_options_ui).in_set(OnUpdate(ProgramState::Automatic)))
 			.add_systems((left_ui_manual, right_ui_manual).in_set(OnUpdate(ProgramState::Manual)));
 	}
 }
 
 impl VizOptions {
 	/// Renders array of buttons for changing if numbers should be shown or not
-	fn render(&self, ui: &mut Ui, viz_options: &mut VizOptions) {
-		ui.label("Show numbers?");
+	fn render(&mut self, ui: &mut Ui) {
+		// show numbers
+		ui.label("Show numbers:");
 		ui.horizontal_wrapped(|ui| {
-			for option in VizOptions::iter() {
-				let mut text = RichText::new(format!("{}", option));
-				if option == *self {
-					text = text.color(UI_ENABLED_COLOUR);
-				}
-				if ui.button(text).clicked() {
-					*viz_options = option;
-				}
+			let mut yes_text = RichText::new("Yes");
+			if self.show_numbers {
+				yes_text = yes_text.color(UI_ENABLED_COLOUR);
 			}
-		});	
+			if ui.button(yes_text).clicked() {
+				self.show_numbers = true;
+			}
+
+			let mut no_text = RichText::new("No");
+			if !self.show_numbers {
+				no_text = no_text.color(UI_ENABLED_COLOUR);
+			}
+			if ui.button(no_text).clicked() {
+				self.show_numbers = false;
+			}
+		});
+
+		// show dots
+		ui.label("Show dots:");
+		ui.horizontal_wrapped(|ui| {
+			let mut yes_text = RichText::new("Yes");
+			if self.show_dots {
+				yes_text = yes_text.color(UI_ENABLED_COLOUR);
+			}
+			if ui.button(yes_text).clicked() {
+				self.show_dots = true;
+			}
+
+			let mut no_text = RichText::new("No");
+			if !self.show_dots {
+				no_text = no_text.color(UI_ENABLED_COLOUR);
+			}
+			if ui.button(no_text).clicked() {
+				self.show_dots = false;
+			}
+		});
+
+		// viz width
+		ui.add(egui::Slider::from_get_set((0.01)..=0.5, |val| {
+			if let Some(new_val) = val {
+				self.viz_width = new_val as f32;
+				new_val
+			} else {
+				self.viz_width as f64
+			}
+		}).text("Visualization width"));
+	}
+
+	pub fn sys_viz_options_ui(mut viz_options: ResMut<VizOptions>, mut contexts: EguiContexts, mut to_reload: ResMut<CurrentOptions>) {
+		egui::Window::new("viz_options_ui").show(contexts.ctx_mut(), |ui| {
+			let copy = *viz_options;
+			(*viz_options).render(ui);
+			if *viz_options != copy {
+				(*to_reload).requires_updating();
+				trace!("Updating because of viz_options ui change detected")
+			}
+		});
 	}
 }
 
@@ -144,8 +192,7 @@ pub fn left_ui_auto(
 				ui.label("You can change the camera zoom to see larger boards");
 
 				// viz options
-				let selected_option = *viz_options;
-				selected_option.render(ui, viz_options.into_inner());
+				// viz_options.into_inner().render(ui);
 
 				let toggle_action = toggle_action.into_inner();
 				toggle_action.render(ui);
