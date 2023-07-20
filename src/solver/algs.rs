@@ -73,7 +73,6 @@ impl From<Option<Moves>> for PartialComputation {
 	Copy, Debug, Clone, Default, PartialEq, Eq, EnumIter, IntoStaticStr, Hash, PartialOrd, Ord,
 )]
 pub enum Algorithm {
-	#[default]
 	#[strum(serialize = "Warnsdorf")]
 	WarnsdorfBacktrack,
 
@@ -83,6 +82,7 @@ pub enum Algorithm {
 	// #[strum(serialize = "Brute Force (SLOW)")]
 	// HamiltonianPath,
 	#[strum(serialize = "Brute Force (slow)")]
+	#[default]
 	BruteForceWarnsford,
 
 	#[strum(serialize = "Hamiltonian Cycle")]

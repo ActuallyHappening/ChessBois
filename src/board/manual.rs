@@ -123,6 +123,15 @@ impl TryFrom<String> for ManualMoves {
 	}
 }
 
+pub fn control_ui_hotkeys_manual(keys: Res<Input<KeyCode>>, mut moves: ResMut<ManualMoves>, ) {
+	if keys.just_pressed(KeyCode::U) {
+		moves.undo_move();
+	}
+	if keys.just_pressed(KeyCode::R) {
+		moves.reset();
+	}
+}
+
 pub fn handle_manual_visualization(
 	mut commands: Commands,
 	options: Res<CurrentOptions>,

@@ -15,7 +15,7 @@ use super::{
 		VizOptions,
 	},
 	viz_colours::VizColour,
-	*,
+	*, ui::control_ui_hotkeys_automatic,
 };
 use bevy_egui::egui::Ui;
 use cached_info::*;
@@ -43,6 +43,7 @@ impl Plugin for AutomaticState {
 					handle_plane_clicked,
 					handle_cell_clicked,
 					ToggleAction::sys_action_hotkeys,
+					control_ui_hotkeys_automatic
 				)
 					.in_set(OnUpdate(ProgramState::Automatic)),
 			)
@@ -118,9 +119,9 @@ fn handle_new_options(
 /// Specific to **automatic** mode.
 #[derive(Resource, Clone, Copy, PartialEq, Eq, EnumIs, strum::Display, EnumIter)]
 pub enum ToggleAction {
-	#[strum(serialize = "Enable / Disable")]
+	#[strum(serialize = "Enable / Disable [d]")]
 	ToggleCellEnabled,
-	#[strum(serialize = "Target / Untarget")]
+	#[strum(serialize = "Target / Untarget [t]")]
 	TargetCell,
 }
 
@@ -161,7 +162,7 @@ impl From<ToggleAction> for KeyCode {
 	fn from(value: ToggleAction) -> Self {
 			match value {
 				ToggleAction::TargetCell => KeyCode::T,
-				ToggleAction::ToggleCellEnabled => KeyCode::E,
+				ToggleAction::ToggleCellEnabled => KeyCode::D,
 			}
 	}
 }

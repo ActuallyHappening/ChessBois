@@ -21,7 +21,7 @@ impl Plugin for UiPlugin {
 	fn build(&self, app: &mut App) {
 		// app.add_systems((left_sidebar_ui, right_sidebar_ui).before(display_error));
 		app
-			.add_system(display_error.in_set(OnUpdate(ProgramState::Manual)))
+			// .add_system(display_error.in_set(OnUpdate(ProgramState::Manual)))
 			.add_systems((left_ui_auto, right_ui_auto).in_set(OnUpdate(ProgramState::Automatic)))
 			.add_systems((left_ui_manual, right_ui_manual).in_set(OnUpdate(ProgramState::Manual)));
 	}
@@ -42,6 +42,14 @@ impl VizOptions {
 				}
 			}
 		});	
+	}
+}
+
+
+
+pub fn control_ui_hotkeys_automatic(keys: Res<Input<KeyCode>>, mut commands: Commands, markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>) {
+	if keys.just_pressed(KeyCode::H) {
+		despawn_markers(&mut commands, markers)
 	}
 }
 
@@ -144,7 +152,7 @@ pub fn left_ui_auto(
 				let toggle_action = toggle_action.into_inner();
 				toggle_action.render(ui);
 
-				if ui.button("Hide (temporarily) helper markers").clicked() {
+				if ui.button("Hide (temporarily) helper markers [h]").clicked() {
 					despawn_markers(&mut commands, markers);
 				}
 			},
@@ -255,10 +263,10 @@ pub fn left_ui_manual(
 
 	// undo button
 	ui.label("Control actions:");
-	if ui.button("Undo moves").clicked() {
+	if ui.button("Undo moves [u]").clicked() {
 		current_moves.undo_move();
 	}
-	if ui.button(RichText::new("Reset").color(Color32::RED)).clicked() {
+	if ui.button(RichText::new("Reset [r]").color(Color32::RED)).clicked() {
 		current_moves.reset();
 	}
 });

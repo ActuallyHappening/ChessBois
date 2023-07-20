@@ -31,6 +31,7 @@ impl Error {
 	}
 }
 
+#[allow(dead_code)]
 pub fn display_error(
 	mut contexts: EguiContexts,
 	errors: Option<ResMut<Error>>,
