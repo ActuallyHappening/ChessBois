@@ -6,6 +6,7 @@
 ## v0.1.12:
 - Hotkeys for targets/disable
 - Button to temporarily hide helper markers
+- Hotkey for temporarily hiding markers
 
 ## v0.1.11:
 - Copies state over from auto to manual

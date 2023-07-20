@@ -7,7 +7,7 @@ use crate::{
 use super::{
 	cells::{
 		despawn_cells, despawn_markers, spawn_cells, spawn_markers, sys_despawn_markers, CellClicked,
-		CellMarker, MarkerMarker,
+		CellMarker, MarkerMarker, hide_markers_hotkey,
 	},
 	manual::{add_default_manual_viz_colour, get_manual_moves_from_automatic_state},
 	visualization::{
