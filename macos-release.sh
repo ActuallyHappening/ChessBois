@@ -5,7 +5,7 @@ set -exu
 cargo build --release --target x86_64-apple-darwin
 
 # Set ENV_BINARY to bevy_solver
-ENV_BINARY=bevy_solver
+ENV_BINARY=$(cargo get --name)
 
 mkdir -p $ENV_BINARY.app/Contents/MacOS
 cp target/x86_64-apple-darwin/release/$ENV_BINARY $ENV_BINARY.app/Contents/MacOS/

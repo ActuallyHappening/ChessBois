@@ -1,3 +1,7 @@
+
+## v0.1.13:
+- Display window
+
 ## v0.1.12:
 - Hotkeys for targets/disable
 - Button to temporarily hide helper markers

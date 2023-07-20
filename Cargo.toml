@@ -1,6 +1,6 @@
 [package]
-name = "bevy_solver"
-version = "0.1.12"
+name = "cap_solver"
+version = "0.1.13"
 edition = "2021"
 
 # [lib]

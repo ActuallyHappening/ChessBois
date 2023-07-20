@@ -1,7 +1,7 @@
 set -exu
 
 TARGET_NAME=x86_64-pc-windows-gnu
-ENV_BINARY=bevy_solver
+ENV_BINARY=$(cargo get --name)
 
 cargo bwindows --release
 
