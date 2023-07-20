@@ -1,3 +1,5 @@
+use std::ops::DerefMut;
+
 use super::{
 	automatic::{ComputationResult, ToggleAction},
 	cells::MarkerMarker,
@@ -38,7 +40,7 @@ impl Plugin for UiPlugin {
 
 impl VizOptions {
 	/// Renders array of buttons for changing if numbers should be shown or not
-	fn render(&mut self, ui: &mut Ui) {
+	fn render(&mut self, ui: &mut Ui, should_show_markers: &mut bool) {
 		// show numbers
 		ui.label("Show numbers:");
 		ui.horizontal_wrapped(|ui| {
@@ -91,6 +93,26 @@ impl VizOptions {
 			})
 			.text("Visualization width"),
 		);
+
+		// show/hide markers
+		ui.label("Should show markers? ([h] to hide temporarily, this hides permanently)");
+		ui.horizontal_wrapped(|ui| {
+			let mut yes_text = RichText::new("Yes");
+			if *should_show_markers {
+				yes_text = yes_text.color(UI_ENABLED_COLOUR);
+			}
+			if ui.button(yes_text).clicked() {
+				*should_show_markers = true;
+			}
+
+			let mut no_text = RichText::new("No");
+			if !*should_show_markers {
+				no_text = no_text.color(UI_ENABLED_COLOUR);
+			}
+			if ui.button(no_text).clicked() {
+				*should_show_markers = false;
+			}
+		});	
 	}
 
 	pub fn sys_viz_options_ui(
@@ -107,12 +129,12 @@ impl VizOptions {
 				ui.heading("Visualization options:");
 
 				let copy = *viz_options;
-				
+				let prev_show_markers = to_reload.current.show_markers;
 
-				(*viz_options).render(ui);
-				if *viz_options != copy {
+				(*viz_options).render(ui, &mut to_reload.deref_mut().current.show_markers);
+				if *viz_options != copy || prev_show_markers != to_reload.current.show_markers {
 					(*to_reload).requires_updating();
-					trace!("Updating because of viz_options ui change detected")
+					trace!("Updating because of viz_options ui change detected or show_markers was mutated")
 				}
 			});
 	}
