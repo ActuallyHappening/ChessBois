@@ -112,7 +112,7 @@ impl VizOptions {
 			if ui.button(no_text).clicked() {
 				*should_show_markers = false;
 			}
-		});	
+		});
 	}
 
 	pub fn sys_viz_options_ui(
@@ -125,6 +125,7 @@ impl VizOptions {
 	) {
 		egui::Window::new("Visualization options")
 			.default_pos(Pos2::new(4200., 4200.))
+			.default_open(false)
 			.show(contexts.ctx_mut(), |ui| {
 				ui.heading("Visualization options:");
 
@@ -151,6 +152,7 @@ impl ManualMoves {
 
 		egui::Window::new("Save / Loading")
 			.default_pos(Pos2::new(4200., 4200.))
+			.default_open(false)
 			.show(contexts.ctx_mut(), |ui| {
 				egui::ScrollArea::vertical().show(ui, |ui| {
 				ui.heading("Manually saving:");

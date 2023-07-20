@@ -36,8 +36,9 @@ fn spawn_mark(
 	commands: &mut Commands,
 	(meshes, materials, ass): &mut ResSpawning,
 ) {
-
-	if !options.show_markers { return; }
+	if !options.show_markers {
+		return;
+	}
 
 	if let Some(mark) = cached_info::get(&options.with_start(at)) {
 		let quad = shape::Quad::new(Vec2::new(CELL_SIZE, CELL_SIZE) * 0.7);
