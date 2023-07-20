@@ -11,7 +11,7 @@ use crate::{
 	MainCamera, ProgramState,
 };
 use bevy_egui::{
-	egui::{Color32, RichText, Ui},
+	egui::{Color32, RichText, Ui, Pos2},
 	*,
 };
 use strum::IntoEnumIterator;
@@ -82,7 +82,7 @@ impl VizOptions {
 	}
 
 	pub fn sys_viz_options_ui(mut viz_options: ResMut<VizOptions>, mut contexts: EguiContexts, mut to_reload: ResMut<CurrentOptions>) {
-		egui::Window::new("viz_options_ui").show(contexts.ctx_mut(), |ui| {
+		egui::Window::new("viz_options_ui").default_pos(Pos2::new(4200., 4200.)).show(contexts.ctx_mut(), |ui| {
 			let copy = *viz_options;
 			(*viz_options).render(ui);
 			if *viz_options != copy {
@@ -115,7 +115,7 @@ pub fn left_ui_auto(
 		let options = &mut options.current;
 
 		ui.heading("Controls Panel");
-				if ui.button("Switch to manual mode").clicked() {
+				if ui.button("Switch to manual mode >").clicked() {
 					next_state.set(ProgramState::Manual);
 				}
 
@@ -218,7 +218,7 @@ pub fn left_ui_manual(
 	let current_moves = moves.into_inner();
 
 	egui::SidePanel::left("left_ui_manual").show(contexts.ctx_mut(), |ui| {
-	if ui.button("Switch back to automatic mode").clicked() {
+	if ui.button("< Switch back to automatic mode").clicked() {
 		next_state.set(ProgramState::Automatic);
 	}
 
