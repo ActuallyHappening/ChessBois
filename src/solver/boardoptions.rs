@@ -2,7 +2,6 @@ use std::num::NonZeroUsize;
 
 use super::*;
 
-
 /// Necessary information to make custom board.
 /// Does NOT hold actual state, to solve use [Board]
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -17,9 +16,7 @@ pub enum TargetRestriction {
 	AllFinishable,
 	/// Only some cells are endable, i.e. there exists at least one cell that is not endable.
 	/// New cells should not be enable
-	CertainFinishable {
-		num_endable: NonZeroUsize,
-	},
+	CertainFinishable { num_endable: NonZeroUsize },
 	/// No cells are endable.
 	/// New cells should not be endable, and really the entire board should be re-enabled
 	NoneFinishable,
@@ -32,9 +29,11 @@ impl TargetRestriction {
 			TargetRestriction::AllFinishable => CellOption::Available {
 				can_finish_on: true,
 			},
-			TargetRestriction::CertainFinishable { .. } | TargetRestriction::NoneFinishable => CellOption::Available {
-				can_finish_on: false,
-			},
+			TargetRestriction::CertainFinishable { .. } | TargetRestriction::NoneFinishable => {
+				CellOption::Available {
+					can_finish_on: false,
+				}
+			}
 		}
 	}
 
@@ -48,7 +47,9 @@ impl TargetRestriction {
 			TargetRestriction::CertainFinishable { num_endable } => {
 				format!("Only {} cells are targetted", num_endable)
 			}
-			TargetRestriction::NoneFinishable => "No cells are targetted, which is impossible?".to_string(),
+			TargetRestriction::NoneFinishable => {
+				"No cells are targetted, which is impossible?".to_string()
+			}
 		}
 	}
 }
@@ -104,7 +105,9 @@ impl BoardOptions {
 		match points_endable {
 			0 => TargetRestriction::NoneFinishable,
 			_x if _x == total_num => TargetRestriction::AllFinishable,
-			x => TargetRestriction::CertainFinishable { num_endable: x.try_into().unwrap() },
+			x => TargetRestriction::CertainFinishable {
+				num_endable: x.try_into().unwrap(),
+			},
 		}
 	}
 
@@ -130,7 +133,8 @@ impl BoardOptions {
 	/// Sets can finish to true if no cells are can_finish = false
 	pub fn add(&mut self, p: impl Into<ChessPoint>) {
 		let p = p.into();
-		self.options[p.row as usize - 1][p.column as usize - 1] = self.targets_state().into_available_cell_option();
+		self.options[p.row as usize - 1][p.column as usize - 1] =
+			self.targets_state().into_available_cell_option();
 	}
 
 	/// Target/Untargets a specific point.
@@ -144,16 +148,31 @@ impl BoardOptions {
 				info!("Setting all other cells to can_finish false");
 				for p in self.get_available_points() {
 					// sets all other points to can_finish = false
-					self.set_p(&p, CellOption::Available { can_finish_on: false });
+					self.set_p(
+						&p,
+						CellOption::Available {
+							can_finish_on: false,
+						},
+					);
 				}
-				self.set_p(&p, CellOption::Available { can_finish_on: true });
+				self.set_p(
+					&p,
+					CellOption::Available {
+						can_finish_on: true,
+					},
+				);
 			}
 			// no reset required
 			TargetRestriction::CertainFinishable { .. } | TargetRestriction::NoneFinishable => {
 				let state = self.get(&p).unwrap();
 				match state {
 					CellOption::Available { can_finish_on } => {
-						self.set_p(&p, CellOption::Available { can_finish_on: !can_finish_on });
+						self.set_p(
+							&p,
+							CellOption::Available {
+								can_finish_on: !can_finish_on,
+							},
+						);
 
 						self.check_for_targets_reset();
 					}
@@ -168,7 +187,12 @@ impl BoardOptions {
 	/// Resets all targets to can_finish = true
 	pub fn reset_targets(&mut self) {
 		for p in self.get_available_points() {
-			self.set_p(&p, CellOption::Available { can_finish_on: true });
+			self.set_p(
+				&p,
+				CellOption::Available {
+					can_finish_on: true,
+				},
+			);
 		}
 	}
 
@@ -212,7 +236,9 @@ impl BoardOptions {
 			}
 		}
 		self.check_for_targets_reset();
-		Self { options: self.options }
+		Self {
+			options: self.options,
+		}
 	}
 
 	/// Increases/decreases the height of the options,
@@ -221,12 +247,16 @@ impl BoardOptions {
 		let width = self.width() as usize;
 		let new_cell = self.targets_state().into_available_cell_option();
 		if self.options.len() < new_height as usize {
-			self.options.resize_with(new_height as usize, || vec![new_cell; width]);
+			self
+				.options
+				.resize_with(new_height as usize, || vec![new_cell; width]);
 		} else {
 			self.options.truncate(new_height as usize);
 		}
 		self.check_for_targets_reset();
-		Self { options: self.options }
+		Self {
+			options: self.options,
+		}
 	}
 
 	pub fn get_unavailable_points(&self) -> Vec<ChessPoint> {
@@ -284,9 +314,13 @@ impl Display for BoardOptions {
 		for row in self.options.iter().rev() {
 			for cell in row.iter() {
 				match cell {
-					CellOption::Available { can_finish_on: false } => write!(f, " ✅ ")?,
+					CellOption::Available {
+						can_finish_on: false,
+					} => write!(f, " ✅ ")?,
 					CellOption::Unavailable => write!(f, " ❌ ")?,
-					CellOption::Available { can_finish_on: true } => write!(f, " 🎯 ")?,
+					CellOption::Available {
+						can_finish_on: true,
+					} => write!(f, " 🎯 ")?,
 				}
 			}
 			writeln!(f)?;

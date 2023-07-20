@@ -27,10 +27,7 @@ impl Plugin for ManualState {
 			.init_resource::<ManualFreedom>()
 			.init_resource::<VizColour>()
 			.add_systems(
-				(
-					handle_manual_visualization,
-					handle_new_manual_selected,
-				)
+				(handle_manual_visualization, handle_new_manual_selected)
 					.in_set(OnUpdate(ProgramState::Manual)),
 			)
 			.add_system(VizOptions::sys_without_numbers.in_schedule(OnEnter(ProgramState::Manual)));
@@ -87,6 +84,10 @@ impl ManualMoves {
 		serde_json::to_string(self).expect("To be able to convert moves to JSON")
 	}
 
+	pub fn to_url_string(&self) -> String {
+		serde_url_params::to_string(self).expect("To be able to convert moves to URL string")
+	}
+
 	pub fn add_move(&mut self, from: ChessPoint, to: ChessPoint, colour: VizColour) {
 		self.moves.push(Move::new(from, to));
 		self.colours.push(colour);
@@ -122,7 +123,7 @@ impl TryFrom<String> for ManualMoves {
 	}
 }
 
-pub fn control_ui_hotkeys_manual(keys: Res<Input<KeyCode>>, mut moves: ResMut<ManualMoves>, ) {
+pub fn control_ui_hotkeys_manual(keys: Res<Input<KeyCode>>, mut moves: ResMut<ManualMoves>) {
 	if keys.just_pressed(KeyCode::U) {
 		moves.undo_move();
 	}
@@ -242,6 +243,7 @@ pub fn get_manual_moves_from_automatic_state(
 	commands.insert_resource(ManualMoves::default());
 }
 
+/// Resets the visualisation colour to default (green)
 pub fn add_default_manual_viz_colour(mut commands: Commands) {
 	commands.insert_resource(VizColour::default());
 }

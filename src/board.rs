@@ -13,6 +13,7 @@ use top_level_types::OptionsWrapper;
 
 mod automatic;
 mod manual;
+pub(crate) use manual::ManualMoves;
 
 mod cells;
 mod hotkeys;

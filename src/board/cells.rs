@@ -107,9 +107,12 @@ fn spawn_cell(
 	));
 
 	// add target symbol
-	if options.targets_state().should_show_targets_visual() && options.get(&at) == Some(CellOption::Available {
-		can_finish_on: true,
-	}) {
+	if options.targets_state().should_show_targets_visual()
+		&& options.get(&at)
+			== Some(CellOption::Available {
+				can_finish_on: true,
+			})
+	{
 		cell.with_children(|parent| {
 			let quad = shape::Quad::new(Vec2::new(CELL_SIZE, CELL_SIZE) * 0.5);
 			parent

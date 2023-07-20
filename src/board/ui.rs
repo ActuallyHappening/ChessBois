@@ -1,17 +1,19 @@
 use super::{
 	automatic::{ComputationResult, ToggleAction},
+	cells::MarkerMarker,
 	manual::{ManualFreedom, ManualMoves},
+	visualization::VizOptions,
 	viz_colours::VizColour,
-	*, visualization::VizOptions, cells::MarkerMarker,
+	*,
 };
-use crate::{*, board::cells::despawn_markers};
+use crate::{board::cells::despawn_markers, *};
 use crate::{
 	errors::{display_error, Error},
 	solver::algs::Computation,
 	MainCamera, ProgramState,
 };
 use bevy_egui::{
-	egui::{Color32, RichText, Ui, Pos2},
+	egui::{Color32, Pos2, RichText, Ui},
 	*,
 };
 use strum::IntoEnumIterator;
@@ -22,7 +24,10 @@ impl Plugin for UiPlugin {
 		// app.add_systems((left_sidebar_ui, right_sidebar_ui).before(display_error));
 		app
 			// .add_system(display_error.in_set(OnUpdate(ProgramState::Manual)))
-			.add_systems((left_ui_auto, right_ui_auto, VizOptions::sys_viz_options_ui).in_set(OnUpdate(ProgramState::Automatic)))
+			.add_systems(
+				(left_ui_auto, right_ui_auto, VizOptions::sys_viz_options_ui)
+					.in_set(OnUpdate(ProgramState::Automatic)),
+			)
 			.add_systems((left_ui_manual, right_ui_manual).in_set(OnUpdate(ProgramState::Manual)));
 	}
 }
@@ -71,29 +76,42 @@ impl VizOptions {
 		});
 
 		// viz width
-		ui.add(egui::Slider::from_get_set((0.01)..=0.5, |val| {
-			if let Some(new_val) = val {
-				self.viz_width = new_val as f32;
-				new_val
-			} else {
-				self.viz_width as f64
-			}
-		}).text("Visualization width"));
+		ui.add(
+			egui::Slider::from_get_set((0.01)..=0.5, |val| {
+				if let Some(new_val) = val {
+					self.viz_width = new_val as f32;
+					new_val
+				} else {
+					self.viz_width as f64
+				}
+			})
+			.text("Visualization width"),
+		);
 	}
 
-	pub fn sys_viz_options_ui(mut viz_options: ResMut<VizOptions>, mut contexts: EguiContexts, mut to_reload: ResMut<CurrentOptions>) {
-		egui::Window::new("viz_options_ui").default_pos(Pos2::new(4200., 4200.)).show(contexts.ctx_mut(), |ui| {
-			let copy = *viz_options;
-			(*viz_options).render(ui);
-			if *viz_options != copy {
-				(*to_reload).requires_updating();
-				trace!("Updating because of viz_options ui change detected")
-			}
-		});
+	pub fn sys_viz_options_ui(
+		mut viz_options: ResMut<VizOptions>,
+		mut contexts: EguiContexts,
+		mut to_reload: ResMut<CurrentOptions>,
+	) {
+		egui::Window::new("viz_options_ui")
+			.default_pos(Pos2::new(4200., 4200.))
+			.show(contexts.ctx_mut(), |ui| {
+				let copy = *viz_options;
+				(*viz_options).render(ui);
+				if *viz_options != copy {
+					(*to_reload).requires_updating();
+					trace!("Updating because of viz_options ui change detected")
+				}
+			});
 	}
 }
 
-pub fn control_ui_hotkeys_automatic(keys: Res<Input<KeyCode>>, mut commands: Commands, markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>) {
+pub fn control_ui_hotkeys_automatic(
+	keys: Res<Input<KeyCode>>,
+	mut commands: Commands,
+	markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
+) {
 	if keys.just_pressed(KeyCode::H) {
 		despawn_markers(&mut commands, markers)
 	}

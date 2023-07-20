@@ -24,6 +24,10 @@ pub fn get_from_clipboard() -> String {
 
 #[cfg(target_arch = "wasm32")]
 pub async fn set_to_clipboard(str: &str) {
-	let clipboard = web_sys::window().expect("No window?").navigator().clipboard().expect("No clipboard?");
+	let clipboard = web_sys::window()
+		.expect("No window?")
+		.navigator()
+		.clipboard()
+		.expect("No clipboard?");
 	let res = clipboard.write_text(str);
 }

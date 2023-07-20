@@ -1,10 +1,10 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
-use strum::EnumIs;
 use std::{
 	fmt::{self, Display},
 	ops::{Deref, DerefMut},
 };
+use strum::EnumIs;
 
 pub mod algs;
 pub mod pieces;
@@ -210,5 +210,3 @@ impl CellOption {
 
 mod boardoptions;
 pub use boardoptions::*;
-
-

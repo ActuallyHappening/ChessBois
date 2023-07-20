@@ -44,10 +44,20 @@ impl VizOptions {
 
 impl VizOptions {
 	pub fn sys_with_numbers(mut commands: Commands, old: Option<Res<VizOptions>>) {
-		commands.insert_resource(old.map(|o| *o).unwrap_or(VizOptions::default()).with_numbers(true));
+		commands.insert_resource(
+			old
+				.map(|o| *o)
+				.unwrap_or(VizOptions::default())
+				.with_numbers(true),
+		);
 	}
 	pub fn sys_without_numbers(mut commands: Commands, old: Option<Res<VizOptions>>) {
-		commands.insert_resource(old.map(|o| *o).unwrap_or(VizOptions::default()).with_numbers(false));
+		commands.insert_resource(
+			old
+				.map(|o| *o)
+				.unwrap_or(VizOptions::default())
+				.with_numbers(false),
+		);
 	}
 }
 
@@ -115,7 +125,7 @@ fn spawn_path_line(
 		shape::Box::new(
 			length,
 			viz_options.dimentions().x,
-			viz_options.dimentions().y
+			viz_options.dimentions().y,
 		)
 		.into(),
 	);

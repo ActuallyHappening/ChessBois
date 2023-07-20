@@ -7,7 +7,7 @@ use crate::{
 use super::{
 	cells::{
 		despawn_cells, despawn_markers, spawn_cells, spawn_markers, sys_despawn_markers, CellClicked,
-		CellMarker, MarkerMarker, 
+		CellMarker, MarkerMarker,
 	},
 	manual::{add_default_manual_viz_colour, get_manual_moves_from_automatic_state},
 	visualization::{
@@ -42,7 +42,6 @@ impl Plugin for AutomaticState {
 					handle_new_options,
 					handle_plane_clicked,
 					handle_cell_clicked,
-					
 				)
 					.in_set(OnUpdate(ProgramState::Automatic)),
 			)
@@ -54,7 +53,6 @@ impl Plugin for AutomaticState {
 					get_manual_moves_from_automatic_state,
 					add_default_manual_viz_colour,
 					VizOptions::sys_with_numbers,
-					// ToggleAction::sys_toggle_enabled,
 				)
 					.in_schedule(OnEnter(ProgramState::Automatic)),
 			)
@@ -125,6 +123,7 @@ pub enum ToggleAction {
 }
 
 impl ToggleAction {
+	/// Inserts [ToggleAction] resource to toggle cell enabled
 	pub fn sys_toggle_enabled(mut commands: Commands) {
 		commands.insert_resource(ToggleAction::ToggleCellEnabled);
 	}
@@ -148,7 +147,10 @@ impl ToggleAction {
 		});
 	}
 
-	pub fn change_toggle_action_hotkeys(keys: Res<Input<KeyCode>>, mut selected_action: ResMut<Self>) {
+	pub fn change_toggle_action_hotkeys(
+		keys: Res<Input<KeyCode>>,
+		mut selected_action: ResMut<Self>,
+	) {
 		for key in ToggleAction::iter() {
 			if keys.just_pressed(KeyCode::from(key)) {
 				*selected_action = key;
@@ -159,10 +161,10 @@ impl ToggleAction {
 
 impl From<ToggleAction> for KeyCode {
 	fn from(value: ToggleAction) -> Self {
-			match value {
-				ToggleAction::TargetCell => KeyCode::T,
-				ToggleAction::ToggleCellEnabled => KeyCode::D,
-			}
+		match value {
+			ToggleAction::TargetCell => KeyCode::T,
+			ToggleAction::ToggleCellEnabled => KeyCode::D,
+		}
 	}
 }
 
