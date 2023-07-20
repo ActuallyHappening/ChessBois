@@ -1,3 +1,8 @@
+# TODO:
+- Make brute force the default algorithm
+- Add helper letters to each action
+
+
 ## v0.1.12:
 - Hotkeys for targets/disable
 - Button to temporarily hide helper markers
