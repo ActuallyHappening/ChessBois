@@ -2,6 +2,10 @@
 ## v0.2.0:
 - Display window
 - Various UI improvements, saving is now seperate window
+- Can control whether to show the helper markers (tick, cross and warning)
+- Can control whether to show visualization dots
+- Can control visualization widths
+- Windows start closed and out of the way by default!
 
 
 ## v0.1.12:
