@@ -1,4 +1,7 @@
 
+## v0.2.1:
+- Shows viz options in manual mode as well
+
 ## v0.2.0:
 - Display window
 - Various UI improvements, saving is now seperate window
