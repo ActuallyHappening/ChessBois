@@ -32,7 +32,7 @@ impl Plugin for UiPlugin {
 					.in_set(OnUpdate(ProgramState::Automatic)),
 			)
 			.add_systems(
-				(left_ui_manual, right_ui_manual, ManualMoves::save_state_ui)
+				(left_ui_manual, right_ui_manual, ManualMoves::save_state_ui, VizOptions::sys_viz_options_ui)
 					.in_set(OnUpdate(ProgramState::Manual)),
 			);
 	}
@@ -95,7 +95,8 @@ impl VizOptions {
 		);
 
 		// show/hide markers
-		ui.label("Should show markers? ([h] to hide temporarily, this hides permanently)");
+		ui.label("Should show markers? \
+		([h] to hide temporarily, this hides permanently). Also note this only applies in Automatic mode");
 		ui.horizontal_wrapped(|ui| {
 			let mut yes_text = RichText::new("Yes");
 			if *should_show_markers {
