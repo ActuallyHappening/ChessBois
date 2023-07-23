@@ -1,4 +1,8 @@
 
+## v0.2.2:
+- Allows tighter camera zooms
+- Fixes Z-fighting for dots
+
 ## v0.2.1:
 - Shows viz options in manual mode as well
 
