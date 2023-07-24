@@ -1,6 +1,5 @@
 use super::automatic::ComputationResult;
 use super::visualization::VizColour;
-use super::visualization::spawn_visualization;
 use super::visualization::VisualizationComponent;
 use super::visualization::VizOptions;
 use super::*;
@@ -140,7 +139,7 @@ pub fn handle_manual_visualization(
 ) {
 	let moves = manual_moves.moves.clone();
 	super::visualization::despawn_visualization(&mut commands, visualization);
-	spawn_visualization(
+	super::visualization::spawn_visualization(
 		moves,
 		options.into_inner().current.options.clone(),
 		&mut commands,
@@ -148,6 +147,8 @@ pub fn handle_manual_visualization(
 		manual_moves.colours.clone(),
 		&viz_options,
 	);
+
+	warn!("re-spawning manual viz")
 }
 
 pub fn handle_new_manual_selected(

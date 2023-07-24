@@ -6,7 +6,7 @@ use crate::solver::{algs::Computation, pieces::ChessPiece};
 /// When sent as an event, indicates that this computation has just finished NOT that it is current!
 /// Check current Options against state to see if it is current.
 ///
-/// When as a resource, indicates that is is current computation
+/// When as a resource, indicates that it is the currently rendered computation
 #[derive(Resource, Debug, Clone, PartialEq, Eq)]
 pub struct ComputationResult(Computation, Options);
 
@@ -15,12 +15,6 @@ impl ComputationResult {
 		(self.0, self.1)
 	}
 }
-
-// impl From<ComputationResult> for Computation {
-// 	fn from(result: ComputationResult) -> Self {
-// 		result.0
-// 	}
-// }
 
 impl ComputationResult {
 	#[allow(clippy::wrong_self_convention)]

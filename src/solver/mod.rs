@@ -140,6 +140,12 @@ impl From<Vec<Move>> for Moves {
 	}
 }
 
+impl From<Moves> for Vec<Move> {
+	fn from(value: Moves) -> Self {
+		value.moves
+	}
+}
+
 impl Deref for Moves {
 	type Target = Vec<Move>;
 

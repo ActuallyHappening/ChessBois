@@ -11,8 +11,8 @@ use super::{
 	},
 	manual::{add_default_manual_viz_colour, get_manual_moves_from_automatic_state},
 	visualization::{
-		despawn_visualization, spawn_visualization, sys_despawn_visualization, VisualizationComponent,
-		VizOptions, VizColour,
+		despawn_visualization, sys_despawn_visualization, SpawnVisualizationEvent,
+		VisualizationComponent, VizColour, VizOptions,
 	},
 	*,
 };
@@ -170,17 +170,15 @@ impl From<ToggleAction> for KeyCode {
 /// Consumes [EventReader<ComputationResult>] and actually spawns concrete visualization if state is correct.
 /// ONLY in AUTOMATIC state!
 pub fn handle_spawning_visualization(
-	mut commands: Commands,
 	mut solutions: EventReader<ComputationResult>,
+	mut viz: EventWriter<SpawnVisualizationEvent>,
+
 	current_options: Res<CurrentOptions>,
-
-	_viz: Query<Entity, With<VisualizationComponent>>,
 	viz_col: Res<VizColour>,
-	viz_options: Res<VizOptions>,
-
-	mut mma: ResSpawning,
 ) {
-	if let Some(solution) = solutions.iter().next() {
+	let mut next_viz = None;
+
+	for solution in solutions.iter() {
 		let (solution, options) = solution.clone().get();
 		if &options != current_options.as_options() {
 			trace!("Not rendering visualization for computation of non-valid state");
@@ -191,17 +189,19 @@ pub fn handle_spawning_visualization(
 			solution: moves, ..
 		} = solution
 		{
-			spawn_visualization(
-				moves.clone(),
-				options.options,
-				&mut commands,
-				&mut mma,
-				vec![*viz_col.into_inner(); moves.len()],
-				&viz_options,
-			);
+			if next_viz.is_none() {
+				next_viz = Some(moves);
+			} else {
+				warn!("Multiple visualizations in one frame, only rendering the first one")
+			}
 		}
+	}
 
-		solutions.clear()
+	if let Some(moves) = next_viz {
+		viz.send(SpawnVisualizationEvent::new_constant_colour(
+			moves.into(),
+			*viz_col,
+		));
 	}
 }
 

@@ -1,6 +1,6 @@
 use self::{
 	automatic::AutomaticState, cells::CellClicked, hotkeys::HotkeysPlugin, manual::ManualState,
-	ui::UiPlugin,
+	ui::UiPlugin, visualization::VisualizationPlugin,
 };
 use crate::solver::{
 	algs::{Algorithm, Options},
@@ -20,11 +20,11 @@ mod hotkeys;
 mod ui;
 mod visualization;
 
-
 pub struct BoardPlugin;
 impl Plugin for BoardPlugin {
 	fn build(&self, app: &mut App) {
 		app
+			.add_plugin(VisualizationPlugin)
 			.add_plugin(UiPlugin)
 			.add_plugin(AutomaticState)
 			.add_plugin(ManualState)

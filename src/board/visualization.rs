@@ -10,6 +10,13 @@ use std::f32::consts::TAU;
 mod colours;
 pub use colours::*;
 
+pub struct VisualizationPlugin;
+impl Plugin for VisualizationPlugin {
+	fn build(&self, app: &mut App) {
+			app.add_event::<SpawnVisualizationEvent>().add_system(handle_spawning_visualization);
+	}
+}
+
 #[derive(Component, Debug, Clone)]
 pub struct VisualizationComponent {
 	#[allow(dead_code)]
@@ -71,6 +78,22 @@ impl VizOptions {
 	}
 }
 
+impl SpawnVisualizationEvent {
+	pub fn new(moves: Vec<(Move, VizColour)>) -> Self {
+		Self { moves }
+	}
+
+	pub fn new_constant_colour(moves: Vec<Move>, col: impl Into<VizColour>) -> Self {
+		let col = col.into();
+		Self {
+			moves: moves
+				.into_iter()
+				.map(|m| (m, col))
+				.collect(),
+		}
+	}
+}
+
 /// Actually spawn entities of new solution
 pub fn spawn_visualization(
 	moves: Moves,
@@ -84,6 +107,12 @@ pub fn spawn_visualization(
 		let colour = (*viz_cols.get(i).expect("Colour to have index")).into();
 		spawn_path_line(from, to, &options, viz_options, colour, i, commands, mma)
 	}
+}
+
+/// Infuses [EventReader<SpawnVisualizationEvent>]s with current frame's state to spawn
+/// concrete visualisation.
+pub fn handle_spawning_visualization(viz: EventReader<SpawnVisualizationEvent>) {
+
 }
 
 pub fn despawn_visualization(
