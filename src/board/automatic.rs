@@ -12,9 +12,8 @@ use super::{
 	manual::{add_default_manual_viz_colour, get_manual_moves_from_automatic_state},
 	visualization::{
 		despawn_visualization, spawn_visualization, sys_despawn_visualization, VisualizationComponent,
-		VizOptions,
+		VizOptions, VizColour,
 	},
-	viz_colours::VizColour,
 	*,
 };
 use bevy_egui::egui::Ui;

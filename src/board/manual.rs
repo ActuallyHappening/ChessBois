@@ -1,8 +1,8 @@
 use super::automatic::ComputationResult;
+use super::visualization::VizColour;
 use super::visualization::spawn_visualization;
 use super::visualization::VisualizationComponent;
 use super::visualization::VizOptions;
-use super::viz_colours::VizColour;
 use super::*;
 use crate::errors::Error;
 use crate::solver::algs::Computation;

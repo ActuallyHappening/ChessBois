@@ -1,4 +1,4 @@
-use super::{cells::get_spacial_coord_2d, viz_colours::VizColour, *};
+use super::{cells::get_spacial_coord_2d, *};
 use crate::{
 	solver::{Move, Moves},
 	textmesh::{get_text_mesh, Fonts},
@@ -7,18 +7,28 @@ use crate::{
 };
 use std::f32::consts::TAU;
 
+mod colours;
+pub use colours::*;
+
 #[derive(Component, Debug, Clone)]
-#[allow(dead_code)]
 pub struct VisualizationComponent {
+	#[allow(dead_code)]
 	from: ChessPoint,
+	#[allow(dead_code)]
 	to: ChessPoint,
 }
 
+/// Options for converting visualization into concrete entities
 #[derive(Resource, PartialEq, Clone, Copy)]
 pub struct VizOptions {
 	pub show_numbers: bool,
 	pub show_dots: bool,
+	/// Width of lines
 	pub(super) viz_width: f32,
+}
+
+pub struct SpawnVisualizationEvent {
+	moves: Vec<(Move, VizColour)>,
 }
 
 impl Default for VizOptions {
@@ -37,7 +47,7 @@ impl VizOptions {
 		self
 	}
 
-	pub fn dimentions(&self) -> Vec2 {
+	pub fn dimensions(&self) -> Vec2 {
 		Vec2::new(self.viz_width, self.viz_width)
 	}
 }
@@ -124,8 +134,8 @@ fn spawn_path_line(
 	let mesh_thin_rectangle = meshs.add(
 		shape::Box::new(
 			length,
-			viz_options.dimentions().x,
-			viz_options.dimentions().y,
+			viz_options.dimensions().x,
+			viz_options.dimensions().y,
 		)
 		.into(),
 	);
@@ -154,7 +164,7 @@ fn spawn_path_line(
 				material,
 				mesh: meshs.add(
 					shape::Icosphere {
-						radius: viz_options.dimentions().length(),
+						radius: viz_options.dimensions().length(),
 						subdivisions: 1,
 					}
 					.try_into()

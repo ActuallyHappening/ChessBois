@@ -19,7 +19,7 @@ mod cells;
 mod hotkeys;
 mod ui;
 mod visualization;
-mod viz_colours;
+
 
 pub struct BoardPlugin;
 impl Plugin for BoardPlugin {

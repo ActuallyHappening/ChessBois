@@ -4,8 +4,7 @@ use super::{
 	automatic::{ComputationResult, ToggleAction},
 	cells::MarkerMarker,
 	manual::{ManualFreedom, ManualMoves},
-	visualization::VizOptions,
-	viz_colours::VizColour,
+	visualization::{VizOptions, VizColour},
 	*,
 };
 use crate::{board::cells::despawn_markers, *};
@@ -14,7 +13,6 @@ use crate::{
 	solver::algs::Computation,
 	MainCamera, ProgramState,
 };
-use bevy::transform::commands;
 use bevy_egui::{
 	egui::{Color32, Pos2, RichText, Ui},
 	*,

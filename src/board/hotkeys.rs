@@ -1,5 +1,6 @@
+use super::visualization::colour_hotkeys;
 use super::{
-	automatic::ToggleAction, ui::control_ui_hotkeys_automatic, viz_colours::colour_hotkeys,
+	automatic::ToggleAction, ui::control_ui_hotkeys_automatic,
 };
 use crate::board::manual::control_ui_hotkeys_manual;
 use crate::ProgramState;
