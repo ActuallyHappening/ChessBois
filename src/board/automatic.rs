@@ -69,6 +69,7 @@ impl Plugin for AutomaticState {
 	}
 }
 
+#[derive(Resource)]
 pub struct AutoState {
 	pub algorithm: Algorithm,
 }

@@ -9,7 +9,7 @@ use crate::{
 	},
 	ChessPoint,
 };
-use bevy::prelude::*;
+use bevy::{prelude::*, ecs::schedule::ScheduleLabel};
 use bevy_mod_picking::prelude::*;
 use derive_more::From;
 use top_level_types::OptionsWrapper;
@@ -27,24 +27,27 @@ pub struct BoardPlugin;
 impl Plugin for BoardPlugin {
 	fn build(&self, app: &mut App) {
 		app
-			.add_plugin(VisualizationPlugin)
-			.add_plugin(UiPlugin)
-			.add_plugin(AutomaticState)
-			.add_plugin(ManualState)
+			// .add_plugin(VisualizationPlugin)
+			// .add_plugin(UiPlugin)
+			// .add_plugin(AutomaticState)
+			// .add_plugin(ManualState)
 			.add_plugins(
 				DefaultPickingPlugins
 					.build()
 					.disable::<DefaultHighlightingPlugin>()
 					.disable::<DebugPickingPlugin>(),
 			)
-			.add_plugin(HotkeysPlugin)
+			// .add_plugin(HotkeysPlugin)
 			.add_event::<CellClicked>()
 			.add_startup_system(setup);
 	}
 }
 
+#[derive(ScheduleLabel, Hash, Debug, PartialEq, Eq, Clone)]
+pub struct RenderSchedule;
+
 /// Re-rendered every frame
-#[derive(Resource)]
+#[derive(Default, Resource)]
 pub struct SharedState {
 	// inputs
 	/// Shape & structure of board
@@ -83,7 +86,7 @@ mod visuals {
 				_x if (0.1..=0.5).contains(&_x) => self.viz_width = viz_width,
 				_ => {
 					warn!("Setting viz_width to unnacceptable value: {viz_width}");
-				},
+				}
 			}
 		}
 	}
@@ -103,14 +106,14 @@ pub struct CurrentOptions {
 
 /// Sets up default resources + sends initial [NewOptions] event
 fn setup(mut commands: Commands) {
-	let mut default_options = CurrentOptions::from_options(Options::default());
+	let state = SharedState::default();
 
-	if let Some(state) = crate::weburl::try_load_state_from_url() {
-		info!("Loaded state from URL!");
-		default_options.current.options = state.options;
-	}
+	// if let Some(state) = crate::weburl::try_load_state_from_url() {
+	// 	info!("Loaded state from URL!");
+	// 	default_options.options = state.options;
+	// }
 
-	commands.insert_resource(default_options);
+	commands.insert_resource(state);
 }
 
 mod top_level_types {

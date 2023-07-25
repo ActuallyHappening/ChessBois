@@ -137,16 +137,17 @@ pub fn handle_manual_visualization(
 	visualization: Query<Entity, With<VisualizationComponent>>,
 	mut mma: ResSpawning,
 ) {
-	let moves = manual_moves.moves.clone();
-	super::visualization::despawn_visualization(&mut commands, visualization);
-	super::visualization::spawn_visualization(
-		moves,
-		options.into_inner().current.options.clone(),
-		&mut commands,
-		&mut mma,
-		manual_moves.colours.clone(),
-		&viz_options,
-	);
+	// let moves = manual_moves.moves.clone();
+	// super::visualization::despawn_visualization(&mut commands, visualization);
+	// super::visualization::spawn_visualization(
+	// 	moves,
+	// 	options.into_inner().current.options.clone(),
+	// 	&mut commands,
+	// 	&mut mma,
+	// 	manual_moves.colours.clone(),
+	// 	&viz_options,
+	// );
+	unimplemented!()
 
 	// warn!("re-spawning manual viz")
 }

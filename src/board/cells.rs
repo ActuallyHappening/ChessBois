@@ -17,6 +17,13 @@ mod coords;
 mod markers;
 mod targets;
 
+pub struct CellsPlugin;
+impl Plugin for CellsPlugin {
+	fn build(&self, _app: &mut App) {
+			
+	}
+}
+
 /// Marker for Markers lol
 #[derive(Component)]
 pub struct MarkerMarker;
@@ -27,6 +34,12 @@ pub struct CellMarker;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, From, Into, Deref, DerefMut)]
 pub struct CellClicked(pub ChessPoint);
+
+impl SharedState {
+	fn sys_render_cells() {
+		todo!()
+	}
+}
 
 // pub fn refresh_cells_on_new_options(options: Res<CurrentOptions>) {
 // 	if options.is_changed() {

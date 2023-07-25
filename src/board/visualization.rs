@@ -34,6 +34,12 @@ pub struct VizOptions {
 	pub(super) viz_width: f32,
 }
 
+impl SharedState {
+	pub fn sys_render_viz() {
+		todo!()
+	}
+}
+
 pub struct SpawnVisualizationEvent {
 	moves: Vec<(Move, VizColour)>,
 }
@@ -95,7 +101,7 @@ impl SpawnVisualizationEvent {
 }
 
 /// Actually spawn entities of new solution
-pub fn spawn_visualization(
+fn spawn_visualization(
 	moves: Moves,
 	options: BoardOptions,
 	commands: &mut Commands,
