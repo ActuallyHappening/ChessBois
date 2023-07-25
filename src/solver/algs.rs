@@ -136,6 +136,7 @@ pub struct Options {
 
 	// ignored by hash
 	pub show_markers: bool,
+	
 	#[derivative(PartialEq = "ignore")]
 	// must be ignored by Hash
 	pub requires_updating: bool,

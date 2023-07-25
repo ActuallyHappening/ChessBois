@@ -148,7 +148,7 @@ pub fn handle_manual_visualization(
 		&viz_options,
 	);
 
-	warn!("re-spawning manual viz")
+	// warn!("re-spawning manual viz")
 }
 
 pub fn handle_new_manual_selected(

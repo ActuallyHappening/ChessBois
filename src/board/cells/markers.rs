@@ -40,7 +40,7 @@ fn spawn_mark(
 		return;
 	}
 
-	if let Some(mark) = cached_info::get(&options.with_start(at)) {
+	if let Some(mark) = cache::get(&options.with_start(at)) {
 		let quad = shape::Quad::new(Vec2::new(CELL_SIZE, CELL_SIZE) * 0.7);
 		let mesh = meshes.add(Mesh::from(quad));
 

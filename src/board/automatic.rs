@@ -17,14 +17,14 @@ use super::{
 	*,
 };
 use bevy_egui::egui::Ui;
-use cached_info::*;
+use cache::*;
 use compute::*;
 
 pub use compute::ComputationResult;
 
 use strum::{EnumIs, EnumIter, IntoEnumIterator};
 
-pub mod cached_info;
+pub mod cache;
 mod compute;
 
 pub struct AutomaticState;
@@ -69,6 +69,10 @@ impl Plugin for AutomaticState {
 	}
 }
 
+pub struct AutoState {
+	pub algorithm: Algorithm,
+}
+
 /// Decides what happens when [NewOptions] event comes in.
 /// Triggers computation
 fn handle_new_options(
@@ -81,7 +85,7 @@ fn handle_new_options(
 	mut commands: Commands,
 	mut mma: ResSpawning,
 ) {
-	if options.is_changed() && options.requires_updating {
+	if options.is_changed() {
 		let options = &options.into_inner().current;
 
 		trace!("Automatic updating ...");

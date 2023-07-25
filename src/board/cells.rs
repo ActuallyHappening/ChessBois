@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 use std::f32::consts::TAU;
 
-use super::automatic::cached_info::CellMark;
+use super::automatic::cache::CellMark;
 use super::*;
-use crate::board::automatic::cached_info;
+use crate::board::automatic::cache;
 use crate::errors::{Error, LogLevel};
 use crate::solver::CellOption;
 use crate::utils::EntityCommandsExt;

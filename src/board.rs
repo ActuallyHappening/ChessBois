@@ -2,9 +2,12 @@ use self::{
 	automatic::AutomaticState, cells::CellClicked, hotkeys::HotkeysPlugin, manual::ManualState,
 	ui::UiPlugin, visualization::VisualizationPlugin,
 };
-use crate::solver::{
-	algs::{Algorithm, Options},
-	BoardOptions,
+use crate::{
+	solver::{
+		algs::{Algorithm, Options},
+		BoardOptions,
+	},
+	ChessPoint,
 };
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
@@ -37,6 +40,58 @@ impl Plugin for BoardPlugin {
 			.add_plugin(HotkeysPlugin)
 			.add_event::<CellClicked>()
 			.add_startup_system(setup);
+	}
+}
+
+/// Re-rendered every frame
+#[derive(Resource)]
+pub struct SharedState {
+	// inputs
+	/// Shape & structure of board
+	pub board_options: BoardOptions,
+	pub start: Option<ChessPoint>,
+
+	// visuals
+	pub visuals: Visuals,
+}
+
+use visuals::*;
+mod visuals {
+	use super::*;
+
+	pub struct Visuals {
+		pub show_numbers: bool,
+		pub show_dots: bool,
+		pub show_markers: bool,
+		viz_width: f32,
+	}
+
+	impl Visuals {
+		pub const DEFAULT: Self = Visuals {
+			show_numbers: true,
+			show_dots: true,
+			show_markers: true,
+			viz_width: 0.2,
+		};
+
+		pub fn dimensions(&self) -> Vec2 {
+			Vec2::new(self.viz_width, self.viz_width)
+		}
+
+		pub fn set_width(&mut self, viz_width: f32) {
+			match viz_width {
+				_x if (0.1..=0.5).contains(&_x) => self.viz_width = viz_width,
+				_ => {
+					warn!("Setting viz_width to unnacceptable value: {viz_width}");
+				},
+			}
+		}
+	}
+
+	impl Default for Visuals {
+		fn default() -> Self {
+			Self::DEFAULT
+		}
 	}
 }
 
