@@ -11,7 +11,7 @@ use crate::{ChessPoint, CELL_DISABLED_COLOUR};
 use derive_more::{From, Into};
 
 
-pub use markers::*;
+pub use markers::CellMark;
 use cells::*;
 use coords::*;
 

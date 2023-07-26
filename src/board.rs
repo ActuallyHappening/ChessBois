@@ -1,7 +1,3 @@
-// use self::{
-// 	automatic::AutomaticState, hotkeys::HotkeysPlugin, manual::ManualState,
-// 	ui::UiPlugin, visualization::VisualizationPlugin,
-// };
 use crate::{
 	solver::{algs::Algorithm, pieces::ChessPiece, BoardOptions, Moves},
 	ChessPoint,
@@ -9,9 +5,8 @@ use crate::{
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 
-// mod automatic;
+mod automatic;
 // mod manual;
-// pub(crate) use manual::ManualMoves;
 
 mod cells;
 mod compute;
@@ -24,9 +19,10 @@ impl Plugin for BoardPlugin {
 		app
 			// .add_plugin(VisualizationPlugin)
 			// .add_plugin(UiPlugin)
-			// .add_plugin(AutomaticState)
+			.add_plugin(AutomaticPlugin)
 			// .add_plugin(ManualState)
-			.add_systems((SharedState::sys_render_cells,))
+			.add_plugin(SharedState::default())
+			.add_plugin(CellsPlugin)
 			.add_plugins(
 				DefaultPickingPlugins
 					.build()
@@ -53,17 +49,32 @@ pub struct SharedState {
 	// visuals
 	pub moves: Option<Moves>,
 	pub visual_opts: VisualOpts,
+
+	// ui / interactions
+	pub on_click: ToggleAction,
 }
 
 mod shared_state {
 	use super::*;
 	use crate::solver::algs::ComputeInput;
 
+	impl Plugin for SharedState {
+		fn build(&self, app: &mut App) {
+			app.add_systems((SharedState::sys_render_cells,));
+		}
+	}
+
 	impl std::ops::Deref for SharedState {
 		type Target = BoardOptions;
 
 		fn deref(&self) -> &Self::Target {
 			&self.board_options
+		}
+	}
+
+	impl std::ops::DerefMut for SharedState {
+		fn deref_mut(&mut self) -> &mut Self::Target {
+			&mut self.board_options
 		}
 	}
 
@@ -93,6 +104,11 @@ mod shared_state {
 }
 
 use visuals::*;
+
+use self::{
+	automatic::{AutomaticPlugin, ToggleAction},
+	cells::CellsPlugin,
+};
 mod visuals {
 	use super::*;
 
