@@ -7,7 +7,18 @@ use crate::solver::algs::{self, Computation, ComputeInput};
 
 /// Syncs [SharedState] resource with computations
 pub fn compute_from_state(state: ResMut<SharedState>) {
-	let compute_state = state.clone().get_compute_state();
+	if let Some(compute_state) = state.clone().get_compute_state() {
+		// try get from algs cache
+		if let Some(comp) = algs::try_get_cached_solution(&compute_state) {
+			info!("Got from cache a computation!");
+			if let Computation::Successful { solution, explored_states } = comp {
+				state.into_inner().set_moves(solution);
+			}
+		} else {
+			// not cached
+			info!("Not cached, starting computation");
+		}
+	}
 }
 
 pub fn get_cached_mark(input: &ComputeInput) -> Option<CellMark> {
@@ -37,8 +48,8 @@ impl SharedState {
 	}
 }
 
-static COMPUTATIONS_TO_HANDLE: Lazy<Mutex<HashMap<ComputeInput, Computation>>> =
-	Lazy::new(|| Mutex::new(HashMap::new()));
+// static COMPUTATIONS_TO_HANDLE: Lazy<Mutex<HashMap<ComputeInput, Computation>>> =
+// 	Lazy::new(|| Mutex::new(HashMap::new()));
 	
 fn start_executing_task(state: ComputeInput, task: impl FnOnce() -> Computation + Send + 'static) {
 	#[cfg(not(target_arch = "wasm32"))]
@@ -49,14 +60,14 @@ fn start_executing_task(state: ComputeInput, task: impl FnOnce() -> Computation 
 		thread::spawn(move || {
 			let res = task();
 
-			COMPUTATIONS_TO_HANDLE.lock().unwrap().insert(state, res);
+			// COMPUTATIONS_TO_HANDLE.lock().unwrap().insert(state, res);
 		});
 	}
 
 	#[cfg(target_arch = "wasm32")]
 	{
 		let res = task();
-		COMPUTATIONS_TO_HANDLE.lock().unwrap().insert(state, res);
+		// COMPUTATIONS_TO_HANDLE.lock().unwrap().insert(state, res);
 	}
 	// TODO: Mess around with WebWorkers & don't break audio?
 	// futures::executor::block_on(async move {

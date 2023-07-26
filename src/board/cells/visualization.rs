@@ -23,6 +23,7 @@ impl Plugin for VisualizationPlugin {
 pub struct VisualizationComponent {
 	#[allow(dead_code)]
 	from: ChessPoint,
+
 	#[allow(dead_code)]
 	to: ChessPoint,
 }

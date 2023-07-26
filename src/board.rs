@@ -100,6 +100,11 @@ mod shared_state {
 			self.start = None;
 			self
 		}
+
+		pub fn set_moves(&mut self, moves: Moves) -> &mut Self {
+			self.moves = Some(moves);
+			self
+		}
 	}
 }
 
