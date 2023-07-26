@@ -25,6 +25,14 @@ pub enum Computation {
 	},
 }
 
+#[derive(Hash, PartialEq, Eq)]
+pub struct ComputeInput {
+	pub alg: Algorithm,
+	pub start: ChessPoint,
+	pub board_options: BoardOptions,
+	pub piece: ChessPiece,
+}
+
 #[derive(Clone)]
 pub enum PartialComputation {
 	Successful { solution: Moves },
@@ -33,38 +41,42 @@ pub enum PartialComputation {
 	GivenUp,
 }
 
-impl PartialComputation {
-	fn add_state_count(self, count: u128) -> Computation {
-		match self {
-			Self::Successful { solution } => Computation::Successful {
-				solution,
-				explored_states: count,
-			},
-			Self::Failed => Computation::Failed {
-				total_states: count,
-			},
-			Self::GivenUp => Computation::GivenUp {
-				explored_states: count,
-			},
+mod parital_computation {
+	use super::*;
+
+	impl PartialComputation {
+		pub fn add_state_count(self, count: u128) -> Computation {
+			match self {
+				Self::Successful { solution } => Computation::Successful {
+					solution,
+					explored_states: count,
+				},
+				Self::Failed => Computation::Failed {
+					total_states: count,
+				},
+				Self::GivenUp => Computation::GivenUp {
+					explored_states: count,
+				},
+			}
+		}
+
+		pub fn map(self, f: impl FnOnce(Moves) -> Moves) -> Self {
+			match self {
+				Self::Successful { solution } => Self::Successful {
+					solution: f(solution),
+				},
+				Self::Failed => Self::Failed,
+				Self::GivenUp => Self::GivenUp,
+			}
 		}
 	}
 
-	fn map(self, f: impl FnOnce(Moves) -> Moves) -> Self {
-		match self {
-			Self::Successful { solution } => Self::Successful {
-				solution: f(solution),
-			},
-			Self::Failed => Self::Failed,
-			Self::GivenUp => Self::GivenUp,
-		}
-	}
-}
-
-impl From<Option<Moves>> for PartialComputation {
-	fn from(moves: Option<Moves>) -> Self {
-		match moves {
-			Some(moves) => Self::Successful { solution: moves },
-			None => Self::Failed,
+	impl From<Option<Moves>> for PartialComputation {
+		fn from(moves: Option<Moves>) -> Self {
+			match moves {
+				Some(moves) => Self::Successful { solution: moves },
+				None => Self::Failed,
+			}
 		}
 	}
 }
@@ -122,78 +134,10 @@ impl Algorithm {
 	}
 }
 
-/// Represents information required to display cells + visual solutions.
-/// [Options.options]
-/// [Options.selected_start]
-/// [Options.selected_algorithm]
-#[derive(derivative::Derivative, Debug, Clone, Eq, PartialOrd, Ord)]
-#[derivative(PartialEq)]
-pub struct Options {
-	pub options: BoardOptions,
-
-	pub selected_start: Option<ChessPoint>,
-	pub selected_algorithm: Algorithm,
-
-	// ignored by hash
-	pub show_markers: bool,
-	
-	#[derivative(PartialEq = "ignore")]
-	// must be ignored by Hash
-	pub requires_updating: bool,
-}
-
-impl std::hash::Hash for Options {
-	fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-		self.options.hash(state);
-		self.selected_start.hash(state);
-		self.selected_algorithm.hash(state);
-	}
-}
-
-impl Default for Options {
-	fn default() -> Self {
-		Options {
-			options: BoardOptions::default(),
-			selected_start: None,
-			selected_algorithm: Algorithm::default(),
-			requires_updating: true,
-			show_markers: true,
-		}
-	}
-}
-
-impl Deref for Options {
-	type Target = BoardOptions;
-
-	fn deref(&self) -> &Self::Target {
-		&self.options
-	}
-}
-impl DerefMut for Options {
-	fn deref_mut(&mut self) -> &mut Self::Target {
-		&mut self.options
-	}
-}
-
-impl Options {
-	pub fn with_start(&self, start: ChessPoint) -> Self {
-		Self {
-			selected_start: Some(start),
-			..self.clone()
-		}
-	}
-
-	/// Requires a re-render
-	pub fn requires_updating(&mut self) -> &mut Self {
-		self.requires_updating = true;
-		self
-	}
-}
-
 impl Algorithm {
-	pub fn tour_computation<P: ChessPiece + 'static>(
+	pub fn tour_computation(
 		&self,
-		piece: &P,
+		piece: &ChessPiece,
 		options: BoardOptions,
 		start: ChessPoint,
 	) -> Computation {
@@ -210,47 +154,42 @@ impl Algorithm {
 		}
 	}
 
-	/// Returns None if options.selected_start is None
-	pub fn tour_computation_cached<P: ChessPiece + 'static>(
-		&self,
-		piece: &P,
-		options: Options,
-	) -> Option<Computation> {
-		if let Some(start) = options.selected_start {
-			if !options.options.get_available_points().contains(&start) {
-				return None;
-			}
-			Some(if let Some(comp) = try_get_cached_solution::<P>(&options) {
-				debug!("Solution cache hit!");
+	/// Actually compute, with caching
+	pub fn tour_computation_cached(
+		input: ComputeInput,
+		piece: &ChessPiece,
+	) -> Computation {
+		if !input.board_options.get_available_points().contains(&input.start) {
+			// TODO: determine if this should be bubbled into an Option return type
+			panic!("Trying to solve a board starting on a square that is not available!");
+		}
+		if let Some(cached_comp) = try_get_cached_solution(&input) {
+			debug!("Solution cache hit!");
 
-				if let Computation::GivenUp { explored_states } = comp {
-					if explored_states != *ALG_STATES_CAP.lock().unwrap() {
-						// must recompute
-						trace!(
-							"Cache hit and recomputing because {} != {}",
-							explored_states,
-							*ALG_STATES_CAP.lock().unwrap()
-						);
-						let comp = self.tour_computation(piece, options.options.clone(), start);
-						add_solution_to_cache::<P>(options, comp.clone());
-						return Some(comp);
-					} else {
-						trace!(
-							"Cache hit on GivenUp and same states limit ({})",
-							explored_states
-						);
-					}
+			if let Computation::GivenUp { explored_states } = cached_comp {
+				if explored_states != *ALG_STATES_CAP.lock().unwrap() {
+					// must recompute
+					trace!(
+						"Cache hit but recomputing because {} != {} (old != new)",
+						explored_states,
+						*ALG_STATES_CAP.lock().unwrap()
+					);
+					let comp = input.alg.tour_computation(piece, input.board_options.clone(), input.start);
+					add_solution_to_cache(input, comp.clone());
+				} else {
+					trace!(
+						"Cache hit on GivenUp and same states limit ({})",
+						explored_states
+					);
 				}
+			}
 
-				comp
-			} else {
-				debug!("Cache miss");
-				let comp = self.tour_computation(piece, options.options.clone(), start);
-				add_solution_to_cache::<P>(options, comp.clone());
-				comp
-			})
+			cached_comp
 		} else {
-			None
+			debug!("Cache miss");
+			let comp = input.alg.tour_computation(piece, input.board_options.clone(), input.start);
+			add_solution_to_cache(input, comp.clone());
+			comp
 		}
 	}
 }
@@ -294,7 +233,7 @@ impl Board {
 		}
 	}
 
-	fn get_available_moves_from(&self, p: &ChessPoint, piece: &impl ChessPiece) -> Vec<ChessPoint> {
+	fn get_available_moves_from(&self, p: &ChessPoint, piece: &ChessPiece) -> Vec<ChessPoint> {
 		let mut moves = Vec::new();
 		for &(dx, dy) in piece.relative_moves() {
 			if let Some(p) = p.displace(&(dx, dy)) {
@@ -305,7 +244,7 @@ impl Board {
 		}
 		moves
 	}
-	fn get_degree(&self, p: &ChessPoint, piece: &impl ChessPiece) -> u16 {
+	fn get_degree(&self, p: &ChessPoint, piece: &ChessPiece) -> u16 {
 		let mut degree = 0;
 		for &(dx, dy) in piece.relative_moves() {
 			if let Some(p) = p.displace(&(dx, dy)) {
@@ -377,7 +316,7 @@ impl Board {
 fn try_move_recursive(
 	tour_type: TourType,
 	num_moves_required: u16,
-	piece: &impl ChessPiece,
+	piece: &ChessPiece,
 	attempting_board: Board,
 	current_pos: ChessPoint,
 	state_counter: &mut u128,
@@ -481,8 +420,8 @@ enum TourType {
 	BruteForce,
 }
 
-fn brute_recursive_tour_repeatless<P: ChessPiece + 'static>(
-	piece: &P,
+fn brute_recursive_tour_repeatless(
+	piece: &ChessPiece,
 	options: BoardOptions,
 	start: ChessPoint,
 	tour_type: TourType,
@@ -510,7 +449,8 @@ fn brute_recursive_tour_repeatless<P: ChessPiece + 'static>(
 	.add_state_count(state_counter)
 }
 
-use cache::{add_solution_to_cache, try_get_cached_solution};
+use cache::add_solution_to_cache;
+pub use cache::try_get_cached_solution;
 
 mod cache {
 	use super::*;
@@ -519,46 +459,26 @@ mod cache {
 	use std::num::NonZeroUsize;
 	use std::{any::TypeId, collections::HashMap, sync::Mutex};
 
-	static CYCLE_CACHE: Lazy<Mutex<HashMap<TypeId, LruCache<Key, Solution>>>> =
-		Lazy::new(|| Mutex::new(HashMap::new()));
+	static COMPUTE_CACHE: Lazy<Mutex<LruCache<Key, Solution>>> =
+		Lazy::new(|| Mutex::new(new()));
 
 	fn new() -> LruCache<Key, Solution> {
 		LruCache::new(NonZeroUsize::new(10_000).unwrap())
 	}
 
-	type Key = Options;
+	type Key = ComputeInput;
 	type Solution = Computation;
 
-	pub fn try_get_cached_solution<P: ChessPiece + 'static>(options: &Key) -> Option<Solution> {
-		let mut caches = CYCLE_CACHE.lock().unwrap();
-		let id = TypeId::of::<P>();
-
-		let cache = match caches.get_mut(&id) {
-			Some(cache) => cache,
-			None => {
-				let cache = new();
-				caches.insert(id, cache);
-				caches.get_mut(&id).unwrap()
-			}
-		};
+	pub fn try_get_cached_solution(options: &Key) -> Option<Solution> {
+		let mut cache = COMPUTE_CACHE.lock().unwrap();
 
 		cache.get(options).cloned()
 	}
 
-	pub fn add_solution_to_cache<P: ChessPiece + 'static>(options: Key, moves: Solution) {
-		let mut caches = CYCLE_CACHE.lock().unwrap();
-		let id = TypeId::of::<P>();
+	pub fn add_solution_to_cache(options: Key, moves: Solution) {
+		let mut cache = COMPUTE_CACHE.lock().unwrap();
 
-		let cache = match caches.get_mut(&id) {
-			Some(cache) => cache,
-			None => {
-				let cache = new();
-				caches.insert(id, cache);
-				caches.get_mut(&id).unwrap()
-			}
-		};
-
-		debug!("Putting something in the cache");
+		debug!("Putting something in the algs cache");
 		cache.put(options, moves);
 	}
 }

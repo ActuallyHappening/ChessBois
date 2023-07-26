@@ -83,8 +83,8 @@ fn spawn_cell(
 		PickableBundle::default(),    // Makes the entity pickable
 		RaycastPickTarget::default(), // Marker for the `bevy_picking_raycast` backend
 		OnPointer::<Over>::run_callback(cell_hovered),
-		OnPointer::<Out>::run_callback(cell_deselected),
-		OnPointer::<Click>::run_callback(toggle_cell_availability),
+		OnPointer::<Out>::run_callback(cell_unhovered),
+		OnPointer::<Click>::run_callback(cell_clicked),
 	));
 
 	// add target symbol
@@ -117,7 +117,7 @@ fn spawn_cell(
 fn cell_hovered(
 	// The first parameter is always the `ListenedEvent`, passed in by the event listening system.
 	In(event): In<ListenedEvent<Over>>,
-	options: ResMut<CurrentOptions>,
+	options: ResMut<SharedState>,
 	cells: Query<(&Handle<StandardMaterial>, &ChessPoint)>,
 
 	mut materials: ResMut<Assets<StandardMaterial>>,
@@ -131,10 +131,9 @@ fn cell_hovered(
 			let material = materials.get_mut(mat).unwrap();
 			material.base_color = CELL_SELECTED_COLOUR;
 
-			if options.current.selected_start != Some(*point) {
+			if options.start != Some(*point) {
 				let options = options.into_inner();
-				options.current.selected_start = Some(*point);
-				options.requires_updating();
+				options.set_start(*point);
 			}
 		}
 		Some(CellOption::Unavailable) => {
@@ -151,9 +150,9 @@ fn cell_hovered(
 }
 
 /// Just undoes colour change to normal
-fn cell_deselected(
+fn cell_unhovered(
 	In(event): In<ListenedEvent<Out>>,
-	options: Res<CurrentOptions>,
+	options: Res<SharedState>,
 	square: Query<(&Handle<StandardMaterial>, &ChessPoint)>,
 
 	mut materials: ResMut<Assets<StandardMaterial>>,
@@ -162,12 +161,12 @@ fn cell_deselected(
 
 	// sets colour to selected
 	let material = materials.get_mut(mat).unwrap();
-	material.base_color = compute_colour(point, Some(&options.current.options), None);
+	material.base_color = compute_colour(point, Some(&options.board_options), None);
 
 	Bubble::Burst
 }
 
-fn toggle_cell_availability(
+fn cell_clicked(
 	In(event): In<ListenedEvent<Click>>,
 	mut send_event: EventWriter<CellClicked>,
 
@@ -180,8 +179,9 @@ fn toggle_cell_availability(
 			send_event.send(CellClicked(*point));
 		}
 		Err(_) => {
-			let err_msg = "Cell clicked but no ChessPoint found".to_string();
-			commands.insert_resource(Error::new(err_msg));
+			let err_msg = "Cell clicked but no ChessPoint found";
+			commands.insert_resource(Error::new(err_msg.to_owned()));
+			panic!("{}", err_msg);
 		}
 	}
 	Bubble::Up

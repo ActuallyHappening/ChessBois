@@ -3,22 +3,18 @@
 // 	ui::UiPlugin, visualization::VisualizationPlugin,
 // };
 use crate::{
-	solver::{
-		algs::{Algorithm, Options},
-		BoardOptions,
-	},
+	solver::{algs::Algorithm, pieces::ChessPiece, BoardOptions, Moves},
 	ChessPoint,
 };
-use bevy::{ecs::schedule::{ScheduleLabel, SystemSetConfig}, prelude::*};
+use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
-use derive_more::From;
-use top_level_types::OptionsWrapper;
 
 // mod automatic;
 // mod manual;
 // pub(crate) use manual::ManualMoves;
 
 mod cells;
+mod compute;
 // mod hotkeys;
 // mod ui;
 
@@ -30,7 +26,7 @@ impl Plugin for BoardPlugin {
 			// .add_plugin(UiPlugin)
 			// .add_plugin(AutomaticState)
 			// .add_plugin(ManualState)
-    .add_systems((SharedState::sys_render_cells,))
+			.add_systems((SharedState::sys_render_cells,))
 			.add_plugins(
 				DefaultPickingPlugins
 					.build()
@@ -43,30 +39,73 @@ impl Plugin for BoardPlugin {
 }
 
 /// Re-rendered every frame
-#[derive(Default, Resource)]
+#[derive(Resource, Default, Clone)]
 pub struct SharedState {
 	// inputs
-	/// Shape & structure of board
+	/// Set using [set_alg]
+	pub alg: Algorithm,
+	/// Set using [set_board_options]
 	pub board_options: BoardOptions,
+	/// Set using [set_start]
 	pub start: Option<ChessPoint>,
+	pub piece: ChessPiece,
 
 	// visuals
-	pub visuals: Visuals,
+	pub moves: Option<Moves>,
+	pub visual_opts: VisualOpts,
+}
+
+mod shared_state {
+	use super::*;
+	use crate::solver::algs::ComputeInput;
+
+	impl std::ops::Deref for SharedState {
+		type Target = BoardOptions;
+
+		fn deref(&self) -> &Self::Target {
+			&self.board_options
+		}
+	}
+
+	impl TryFrom<SharedState> for ComputeInput {
+		type Error = ();
+
+		fn try_from(value: SharedState) -> Result<Self, Self::Error> {
+			value.get_compute_state().ok_or(())
+		}
+	}
+
+	impl SharedState {
+		pub fn get_compute_state(self) -> Option<ComputeInput> {
+			Some(ComputeInput {
+				alg: self.alg,
+				start: self.start?,
+				board_options: self.board_options,
+				piece: self.piece,
+			})
+		}
+
+		pub fn remove_start(&mut self) -> &mut Self {
+			self.start = None;
+			self
+		}
+	}
 }
 
 use visuals::*;
 mod visuals {
 	use super::*;
 
-	pub struct Visuals {
+	#[derive(Clone)]
+	pub struct VisualOpts {
 		pub show_numbers: bool,
 		pub show_dots: bool,
 		pub show_markers: bool,
 		viz_width: f32,
 	}
 
-	impl Visuals {
-		pub const DEFAULT: Self = Visuals {
+	impl VisualOpts {
+		pub const DEFAULT: Self = VisualOpts {
 			show_numbers: true,
 			show_dots: true,
 			show_markers: true,
@@ -87,17 +126,11 @@ mod visuals {
 		}
 	}
 
-	impl Default for Visuals {
+	impl Default for VisualOpts {
 		fn default() -> Self {
 			Self::DEFAULT
 		}
 	}
-}
-
-/// What [Options] are currently selected / rendered
-#[derive(Resource, Debug, Clone, Deref, DerefMut, PartialEq, Eq, From)]
-pub struct CurrentOptions {
-	pub current: Options,
 }
 
 /// Sets up default resources + sends initial [NewOptions] event
@@ -110,31 +143,6 @@ fn setup(mut commands: Commands) {
 	// }
 
 	commands.insert_resource(state);
-}
-
-mod top_level_types {
-	use super::*;
-
-	pub trait OptionsWrapper {
-		fn into_options(self) -> Options;
-		fn as_options(&self) -> &Options;
-
-		fn from_options(options: Options) -> Self;
-	}
-
-	impl OptionsWrapper for CurrentOptions {
-		fn into_options(self) -> Options {
-			self.current
-		}
-
-		fn as_options(&self) -> &Options {
-			&self.current
-		}
-
-		fn from_options(options: Options) -> Self {
-			CurrentOptions { current: options }
-		}
-	}
 }
 
 type ResSpawning<'a> = (

@@ -1,11 +1,44 @@
+use crate::solver::algs::{Computation, ComputeInput};
+
 use super::*;
 
-pub fn spawn_markers(options: &Options, commands: &mut Commands, mma: &mut ResSpawning) {
-	for point in options.options.get_all_points() {
+#[derive(Clone, Copy)]
+pub enum CellMark {
+	Failed,
+	Succeeded,
+
+	GivenUp,
+}
+
+impl From<Computation> for CellMark {
+	fn from(c: Computation) -> Self {
+		match c {
+			Computation::Failed { .. } => CellMark::Failed,
+			Computation::Successful { .. } => CellMark::Succeeded,
+			Computation::GivenUp { .. } => CellMark::GivenUp,
+		}
+	}
+}
+
+impl SharedState {
+	/// Gets the [ComputeInput] from [SharedState] guarenteed given a start point.
+	/// Used to 'imagine' starting on a square
+	fn into_compute_state_with_start(self, start: ChessPoint) -> ComputeInput {
+		ComputeInput {
+			alg: self.alg,
+			start,
+			board_options: self.board_options,
+			piece: self.piece,
+		}
+	}
+}
+
+pub fn spawn_markers(state: &SharedState, commands: &mut Commands, mma: &mut ResSpawning) {
+	for point in state.get_all_points() {
 		spawn_mark(
 			point,
-			options,
-			cell_get_transform(point, &options.options),
+			state,
+			cell_get_transform(point, &state),
 			commands,
 			mma,
 		);
@@ -30,17 +63,17 @@ pub fn sys_despawn_markers(
 
 fn spawn_mark(
 	at: ChessPoint,
-	options: &Options,
+	state: &SharedState,
 	cell_transform: Transform,
 
 	commands: &mut Commands,
 	(meshes, materials, ass): &mut ResSpawning,
 ) {
-	if !options.show_markers {
+	if !state.visual_opts.show_markers {
 		return;
 	}
 
-	if let Some(mark) = cache::get(&options.with_start(at)) {
+	if let Some(mark) = compute::get_cached_mark(&state.clone().into_compute_state_with_start(at)) {
 		let quad = shape::Quad::new(Vec2::new(CELL_SIZE, CELL_SIZE) * 0.7);
 		let mesh = meshes.add(Mesh::from(quad));
 
