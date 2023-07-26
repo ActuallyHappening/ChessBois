@@ -12,14 +12,14 @@ mod cells;
 mod compute;
 mod coloured_moves;
 // mod hotkeys;
-// mod ui;
+mod ui;
 
 pub struct BoardPlugin;
 impl Plugin for BoardPlugin {
 	fn build(&self, app: &mut App) {
 		app
 			// .add_plugin(VisualizationPlugin)
-			// .add_plugin(UiPlugin)
+			.add_plugin(UiPlugin)
 			.add_plugin(AutomaticPlugin)
 			// .add_plugin(ManualState)
 			.add_plugin(SharedState::default())
@@ -118,7 +118,7 @@ mod shared_state {
 
 use self::{
 	automatic::{AutomaticPlugin, ToggleAction},
-	cells::CellsPlugin, coloured_moves::ColouredMoves,
+	cells::CellsPlugin, coloured_moves::ColouredMoves, ui::UiPlugin,
 };
 
 /// Sets up default resources + sends initial [NewOptions] event

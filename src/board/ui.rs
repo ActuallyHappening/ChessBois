@@ -1,17 +1,10 @@
-use std::ops::DerefMut;
-
 use super::{
-	automatic::{ComputationResult, ToggleAction},
-	cells::MarkerMarker,
-	manual::{ManualFreedom, ManualMoves},
-	visualization::{VizOptions, VizColour},
+	automatic::ToggleAction,
+	cells::{visualization::VisualOpts, MarkerMarker},
 	*,
 };
-use crate::{board::cells::despawn_markers, *};
 use crate::{
-	errors::{display_error, Error},
-	solver::algs::Computation,
-	MainCamera, ProgramState,
+	errors::Error, solver::algs::Computation, MainCamera, ProgramState, UI_ENABLED_COLOUR,
 };
 use bevy_egui::{
 	egui::{Color32, Pos2, RichText, Ui},
@@ -22,23 +15,13 @@ use strum::IntoEnumIterator;
 pub struct UiPlugin;
 impl Plugin for UiPlugin {
 	fn build(&self, app: &mut App) {
-		// app.add_systems((left_sidebar_ui, right_sidebar_ui).before(display_error));
-		app
-			// .add_system(display_error.in_set(OnUpdate(ProgramState::Manual)))
-			.add_systems(
-				(left_ui_auto, right_ui_auto, VizOptions::sys_viz_options_ui)
-					.in_set(OnUpdate(ProgramState::Automatic)),
-			)
-			.add_systems(
-				(left_ui_manual, right_ui_manual, ManualMoves::save_state_ui, VizOptions::sys_viz_options_ui)
-					.in_set(OnUpdate(ProgramState::Manual)),
-			);
+		app.add_systems((VisualOpts::sys_viz_options_ui,));
 	}
 }
 
-impl VizOptions {
+impl VisualOpts {
 	/// Renders array of buttons for changing if numbers should be shown or not
-	fn render(&mut self, ui: &mut Ui, should_show_markers: &mut bool) {
+	fn render(&mut self, ui: &mut Ui) {
 		// show numbers
 		ui.label("Show numbers:");
 		ui.horizontal_wrapped(|ui| {
@@ -59,469 +42,456 @@ impl VizOptions {
 			}
 		});
 
-		// show dots
-		ui.label("Show dots:");
-		ui.horizontal_wrapped(|ui| {
-			let mut yes_text = RichText::new("Yes");
-			if self.show_dots {
-				yes_text = yes_text.color(UI_ENABLED_COLOUR);
-			}
-			if ui.button(yes_text).clicked() {
-				self.show_dots = true;
-			}
+		// // show dots
+		// ui.label("Show dots:");
+		// ui.horizontal_wrapped(|ui| {
+		// 	let mut yes_text = RichText::new("Yes");
+		// 	if self.show_dots {
+		// 		yes_text = yes_text.color(UI_ENABLED_COLOUR);
+		// 	}
+		// 	if ui.button(yes_text).clicked() {
+		// 		self.show_dots = true;
+		// 	}
 
-			let mut no_text = RichText::new("No");
-			if !self.show_dots {
-				no_text = no_text.color(UI_ENABLED_COLOUR);
-			}
-			if ui.button(no_text).clicked() {
-				self.show_dots = false;
-			}
-		});
+		// 	let mut no_text = RichText::new("No");
+		// 	if !self.show_dots {
+		// 		no_text = no_text.color(UI_ENABLED_COLOUR);
+		// 	}
+		// 	if ui.button(no_text).clicked() {
+		// 		self.show_dots = false;
+		// 	}
+		// });
 
-		// viz width
-		ui.add(
-			egui::Slider::from_get_set((0.01)..=0.5, |val| {
-				if let Some(new_val) = val {
-					self.viz_width = new_val as f32;
-					new_val
-				} else {
-					self.viz_width as f64
-				}
-			})
-			.text("Visualization width"),
-		);
+		// // viz width
+		// ui.add(
+		// 	egui::Slider::from_get_set((0.01)..=0.5, |val| {
+		// 		if let Some(new_val) = val {
+		// 			self.viz_width = new_val as f32;
+		// 			new_val
+		// 		} else {
+		// 			self.viz_width as f64
+		// 		}
+		// 	})
+		// 	.text("Visualization width"),
+		// );
 
-		// show/hide markers
-		ui.label("Should show markers? \
-		([h] to hide temporarily, this hides permanently). Also note this only applies in Automatic mode");
-		ui.horizontal_wrapped(|ui| {
-			let mut yes_text = RichText::new("Yes");
-			if *should_show_markers {
-				yes_text = yes_text.color(UI_ENABLED_COLOUR);
-			}
-			if ui.button(yes_text).clicked() {
-				*should_show_markers = true;
-			}
+		// // show/hide markers
+		// ui.label(
+		// 	"Should show markers? \
+		// ([h] to hide temporarily, this hides permanently). Also note this only applies in Automatic mode",
+		// );
+		// ui.horizontal_wrapped(|ui| {
+		// 	let mut yes_text = RichText::new("Yes");
+		// 	if *should_show_markers {
+		// 		yes_text = yes_text.color(UI_ENABLED_COLOUR);
+		// 	}
+		// 	if ui.button(yes_text).clicked() {
+		// 		*should_show_markers = true;
+		// 	}
 
-			let mut no_text = RichText::new("No");
-			if !*should_show_markers {
-				no_text = no_text.color(UI_ENABLED_COLOUR);
-			}
-			if ui.button(no_text).clicked() {
-				*should_show_markers = false;
-			}
-		});
+		// 	let mut no_text = RichText::new("No");
+		// 	if !*should_show_markers {
+		// 		no_text = no_text.color(UI_ENABLED_COLOUR);
+		// 	}
+		// 	if ui.button(no_text).clicked() {
+		// 		*should_show_markers = false;
+			// }
+		// });
 	}
 
-	pub fn sys_viz_options_ui(
-		mut viz_options: ResMut<VizOptions>,
-		mut contexts: EguiContexts,
-		mut to_reload: ResMut<CurrentOptions>,
-
-		markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
-		mut commands: Commands,
-	) {
+	pub fn sys_viz_options_ui(mut contexts: EguiContexts, state: ResMut<SharedState>) {
 		egui::Window::new("Visualization options")
 			.default_pos(Pos2::new(4200., 4200.))
 			.default_open(false)
 			.show(contexts.ctx_mut(), |ui| {
 				ui.heading("Visualization options:");
 
-				let copy = *viz_options;
-				let prev_show_markers = to_reload.current.show_markers;
-
-				(*viz_options).render(ui, &mut to_reload.deref_mut().current.show_markers);
-				if *viz_options != copy || prev_show_markers != to_reload.current.show_markers {
-					(*to_reload).requires_updating();
-					trace!("Updating because of viz_options ui change detected or show_markers was mutated")
-				}
+				state.into_inner().visual_opts.render(ui);
 			});
 	}
 }
 
-impl ManualMoves {
-	pub fn save_state_ui(
-		mut contexts: EguiContexts,
-		state: ResMut<ManualMoves>,
-		options: Res<CurrentOptions>,
-		mut commands: Commands,
-	) {
-		let current_moves = state.into_inner();
+// impl ManualMoves {
+// 	pub fn save_state_ui(
+// 		mut contexts: EguiContexts,
+// 		state: ResMut<ManualMoves>,
+// 		options: Res<CurrentOptions>,
+// 		mut commands: Commands,
+// 	) {
+// 		let current_moves = state.into_inner();
 
-		egui::Window::new("Save / Loading")
-			.default_pos(Pos2::new(4200., 4200.))
-			.default_open(false)
-			.show(contexts.ctx_mut(), |ui| {
-				egui::ScrollArea::vertical().show(ui, |ui| {
-				ui.heading("Manually saving:");
-				ui.label("You can save your created chess creation into some JSON, and load it in at any time. \
-				This works only on desktop versions, web is not supported. I can add this, but it will take more effort");
+// 		egui::Window::new("Save / Loading")
+// 			.default_pos(Pos2::new(4200., 4200.))
+// 			.default_open(false)
+// 			.show(contexts.ctx_mut(), |ui| {
+// 				egui::ScrollArea::vertical().show(ui, |ui| {
+// 				ui.heading("Manually saving:");
+// 				ui.label("You can save your created chess creation into some JSON, and load it in at any time. \
+// 				This works only on desktop versions, web is not supported. I can add this, but it will take more effort");
 
-				// copy + paste functionality
+// 				// copy + paste functionality
 
-				// viewer
-				let state_str = current_moves.to_json();
-				let mut str = state_str.clone();
-				ui.collapsing("The actual data", |ui| {
-					if ui.code_editor(&mut str).changed() {
-						match ManualMoves::try_from(str.clone()) {
-							Ok(moves) => {
-								*current_moves = moves;
-							}
-							Err(e) => {
-								warn!("Could not parse state JSON string: {}", e);
-								commands.insert_resource(Error::new("Could not parse your data".into()));
-							}
-						}
-					}
-				});
-				
+// 				// viewer
+// 				let state_str = current_moves.to_json();
+// 				let mut str = state_str.clone();
+// 				ui.collapsing("The actual data", |ui| {
+// 					if ui.code_editor(&mut str).changed() {
+// 						match ManualMoves::try_from(str.clone()) {
+// 							Ok(moves) => {
+// 								*current_moves = moves;
+// 							}
+// 							Err(e) => {
+// 								warn!("Could not parse state JSON string: {}", e);
+// 								commands.insert_resource(Error::new("Could not parse your data".into()));
+// 							}
+// 						}
+// 					}
+// 				});
 
-				// copy to clipboard
-				// non wasm
-				#[cfg(not(target_arch = "wasm32"))]
-				if ui.button("Copy current state to clipboard").clicked() {
-					ui.output_mut(|o| o.copied_text = state_str);
+// 				// copy to clipboard
+// 				// non wasm
+// 				#[cfg(not(target_arch = "wasm32"))]
+// 				if ui.button("Copy current state to clipboard").clicked() {
+// 					ui.output_mut(|o| o.copied_text = state_str);
 
-					// #[cfg(target_arch = "wasm32")]
-					// crate::clipboard::set_to_clipboard(&state_str);
-				}
+// 					// #[cfg(target_arch = "wasm32")]
+// 					// crate::clipboard::set_to_clipboard(&state_str);
+// 				}
 
-				// copy to clipboard web
-				// #[cfg(target_arch = "wasm32")]
-				// if ui.button("Copy current state to clipboard").clicked() {
-				// 	crate::clipboard::set_to_clipboard(&state_str);
-				// }
+// 				// copy to clipboard web
+// 				// #[cfg(target_arch = "wasm32")]
+// 				// if ui.button("Copy current state to clipboard").clicked() {
+// 				// 	crate::clipboard::set_to_clipboard(&state_str);
+// 				// }
 
-				// paste from clipboard
-				#[cfg(not(target_arch = "wasm32"))]
-				if ui.button("Paste from your current clipboard").clicked() {
-					let clip = crate::clipboard::get_from_clipboard();
-					// if let Some(clip) = clipboard {
-					match ManualMoves::try_from(clip) {
-						Ok(moves) => {
-							*current_moves = moves;
-						}
-						Err(e) => {
-							warn!("Could not parse clipboard JSON string: {}", e);
-							commands.insert_resource(Error::new("Could not parse your data".into()));
-						}
-					}
-					// }
-				}
+// 				// paste from clipboard
+// 				#[cfg(not(target_arch = "wasm32"))]
+// 				if ui.button("Paste from your current clipboard").clicked() {
+// 					let clip = crate::clipboard::get_from_clipboard();
+// 					// if let Some(clip) = clipboard {
+// 					match ManualMoves::try_from(clip) {
+// 						Ok(moves) => {
+// 							*current_moves = moves;
+// 						}
+// 						Err(e) => {
+// 							warn!("Could not parse clipboard JSON string: {}", e);
+// 							commands.insert_resource(Error::new("Could not parse your data".into()));
+// 						}
+// 					}
+// 					// }
+// 				}
 
-				// URL saving
-				#[cfg(feature = "weburl")]
-				{
-					ui.heading("URL saving:");
-					ui.label("An alternative to saving your state as a dump of JSON is to generate an open link. \
-					This link will contain all the information needed to recreate your board.");
+// 				// URL saving
+// 				#[cfg(feature = "weburl")]
+// 				{
+// 					ui.heading("URL saving:");
+// 					ui.label("An alternative to saving your state as a dump of JSON is to generate an open link. \
+// 					This link will contain all the information needed to recreate your board.");
 
-					egui::ScrollArea::vertical().max_height(50.).show(ui, |ui| {
-						ui.hyperlink(crate::weburl::export_state_to_url(crate::weburl::State {
-							options: options.current.options.clone(),
-							manual_moves: current_moves.clone(),
-						}));
-					});
-				}
-			});
-		});
-	}
-}
+// 					egui::ScrollArea::vertical().max_height(50.).show(ui, |ui| {
+// 						ui.hyperlink(crate::weburl::export_state_to_url(crate::weburl::State {
+// 							options: options.current.options.clone(),
+// 							manual_moves: current_moves.clone(),
+// 						}));
+// 					});
+// 				}
+// 			});
+// 		});
+// 	}
+// }
 
-pub fn control_ui_hotkeys_automatic(
-	keys: Res<Input<KeyCode>>,
-	mut commands: Commands,
-	markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
-) {
-	if keys.just_pressed(KeyCode::H) {
-		despawn_markers(&mut commands, markers)
-	}
-}
+// pub fn control_ui_hotkeys_automatic(
+// 	keys: Res<Input<KeyCode>>,
+// 	mut commands: Commands,
+// 	markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
+// ) {
+// 	if keys.just_pressed(KeyCode::H) {
+// 		despawn_markers(&mut commands, markers)
+// 	}
+// }
 
-pub fn left_ui_auto(
-	mut contexts: EguiContexts,
-	mut cam: Query<&mut Transform, With<MainCamera>>,
-	mut next_state: ResMut<NextState<ProgramState>>,
-	mut options: ResMut<CurrentOptions>,
+// pub fn left_ui_auto(
+// 	mut contexts: EguiContexts,
+// 	mut cam: Query<&mut Transform, With<MainCamera>>,
+// 	mut next_state: ResMut<NextState<ProgramState>>,
+// 	mut options: ResMut<CurrentOptions>,
 
-	viz_options: ResMut<VizOptions>,
-	toggle_action: ResMut<ToggleAction>,
+// 	viz_options: ResMut<VizOptions>,
+// 	toggle_action: ResMut<ToggleAction>,
 
-	mut commands: Commands,
-	markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
-) {
-	egui::SidePanel::left("left_ui_auto").show(contexts.ctx_mut(), |ui| {
-		let options = &mut options.current;
+// 	mut commands: Commands,
+// 	markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
+// ) {
+// 	egui::SidePanel::left("left_ui_auto").show(contexts.ctx_mut(), |ui| {
+// 		let options = &mut options.current;
 
-		ui.heading("Controls Panel");
-				if ui.button("Switch to manual mode >").clicked() {
-					next_state.set(ProgramState::Manual);
-				}
+// 		ui.heading("Controls Panel");
+// 				if ui.button("Switch to manual mode >").clicked() {
+// 					next_state.set(ProgramState::Manual);
+// 				}
 
-				ui.label("Instructions: Hover over cell to begin knight there. Click cell to toggle availability (red = unavailable). You can alter the dimensions of the board (below) and the algorithm used.");
+// 				ui.label("Instructions: Hover over cell to begin knight there. Click cell to toggle availability (red = unavailable). You can alter the dimensions of the board (below) and the algorithm used.");
 
-				// board size
-				const SIZE_CAP: f64 = 20.;
-				ui.add(egui::Slider::from_get_set((2.)..=SIZE_CAP, |val| {
-					if let Some(new_val) = val {
-						let new = options.options.clone().update_width(new_val as u16);
-						if new != options.options {
-							options.options = new;
-							options.selected_start = None;
-							options.requires_updating();
-						}
+// 				// board size
+// 				const SIZE_CAP: f64 = 20.;
+// 				ui.add(egui::Slider::from_get_set((2.)..=SIZE_CAP, |val| {
+// 					if let Some(new_val) = val {
+// 						let new = options.options.clone().update_width(new_val as u16);
+// 						if new != options.options {
+// 							options.options = new;
+// 							options.selected_start = None;
+// 							options.requires_updating();
+// 						}
 
-						new_val
-					} else {
-						options.options.width() as f64
-					}
-				}).text("Width"));
-				ui.add(egui::Slider::from_get_set((2.)..=SIZE_CAP, |val| {
-					if let Some(new_val) = val {
-						let new = options.options.clone().update_height(new_val as u16);
-						if new != options.options {
-							options.options = new;
-							options.selected_start = None;
-							options.requires_updating();
-						}
-						new_val
-					} else {
-						options.options.height() as f64
-					}
-				}).text("Height"));
+// 						new_val
+// 					} else {
+// 						options.options.width() as f64
+// 					}
+// 				}).text("Width"));
+// 				ui.add(egui::Slider::from_get_set((2.)..=SIZE_CAP, |val| {
+// 					if let Some(new_val) = val {
+// 						let new = options.options.clone().update_height(new_val as u16);
+// 						if new != options.options {
+// 							options.options = new;
+// 							options.selected_start = None;
+// 							options.requires_updating();
+// 						}
+// 						new_val
+// 					} else {
+// 						options.options.height() as f64
+// 					}
+// 				}).text("Height"));
 
-				// algorithms
-				ui.label("Select algorithm:");
-				ui.horizontal_wrapped(|ui| {
-					for alg in Algorithm::iter() {
-						let str: &'static str = alg.into();
-						let mut text = RichText::new(str);
-						if alg == options.selected_algorithm {
-							text = text.color(UI_ENABLED_COLOUR);
-						}
-						if ui.button(text).clicked() && options.selected_algorithm != alg {
-							info!("Changing algorithm from {:?} to {:?}", options.selected_algorithm, alg);
-							options.selected_algorithm = alg;
-							options.selected_start = None;
-							options.requires_updating();
-						}
-					}
-				});
-				ui.label(options.selected_algorithm.get_description());
+// 				// algorithms
+// 				ui.label("Select algorithm:");
+// 				ui.horizontal_wrapped(|ui| {
+// 					for alg in Algorithm::iter() {
+// 						let str: &'static str = alg.into();
+// 						let mut text = RichText::new(str);
+// 						if alg == options.selected_algorithm {
+// 							text = text.color(UI_ENABLED_COLOUR);
+// 						}
+// 						if ui.button(text).clicked() && options.selected_algorithm != alg {
+// 							info!("Changing algorithm from {:?} to {:?}", options.selected_algorithm, alg);
+// 							options.selected_algorithm = alg;
+// 							options.selected_start = None;
+// 							options.requires_updating();
+// 						}
+// 					}
+// 				});
+// 				ui.label(options.selected_algorithm.get_description());
 
-				// saftey states cap
-				ui.add(egui::Slider::from_get_set((10.)..=10_000_000., |val| {
-					if let Some(new_val) = val {
-						*ALG_STATES_CAP.lock().unwrap() = new_val as u128;
-						new_val
-					} else {
-						*ALG_STATES_CAP.lock().unwrap() as f64
-					}
-				}).text("Safety States Cap"));
-				ui.label("If your computer is good, you can safely make this number higher. This cap is put in to stop your computer infinitely computing. I can allow it higher if you want");
+// 				// saftey states cap
+// 				ui.add(egui::Slider::from_get_set((10.)..=10_000_000., |val| {
+// 					if let Some(new_val) = val {
+// 						*ALG_STATES_CAP.lock().unwrap() = new_val as u128;
+// 						new_val
+// 					} else {
+// 						*ALG_STATES_CAP.lock().unwrap() as f64
+// 					}
+// 				}).text("Safety States Cap"));
+// 				ui.label("If your computer is good, you can safely make this number higher. This cap is put in to stop your computer infinitely computing. I can allow it higher if you want");
 
-				ui.add(egui::Slider::from_get_set(CAMERA_HEIGHT as f64..=(CAMERA_HEIGHT as f64 * 2.), |val| {
-					if let Some(new_val) = val {
-						cam.single_mut().translation.y = new_val as f32;
-						new_val
-					} else {
-						cam.single().translation.y as f64
-					}
-				}).text("Camera zoom"));
-				ui.label("You can change the camera zoom to see larger boards");
+// 				ui.add(egui::Slider::from_get_set(CAMERA_HEIGHT as f64..=(CAMERA_HEIGHT as f64 * 2.), |val| {
+// 					if let Some(new_val) = val {
+// 						cam.single_mut().translation.y = new_val as f32;
+// 						new_val
+// 					} else {
+// 						cam.single().translation.y as f64
+// 					}
+// 				}).text("Camera zoom"));
+// 				ui.label("You can change the camera zoom to see larger boards");
 
-				// viz options
-				// viz_options.into_inner().render(ui);
+// 				// viz options
+// 				// viz_options.into_inner().render(ui);
 
-				let toggle_action = toggle_action.into_inner();
-				toggle_action.render(ui);
+// 				let toggle_action = toggle_action.into_inner();
+// 				toggle_action.render(ui);
 
-				ui.label("Helper actions:");
-				if ui.button("Hide (temporarily) helper markers [h]").clicked() {
-					despawn_markers(&mut commands, markers);
-				}
-			},
-	);
-}
+// 				ui.label("Helper actions:");
+// 				if ui.button("Hide (temporarily) helper markers [h]").clicked() {
+// 					despawn_markers(&mut commands, markers);
+// 				}
+// 			},
+// 	);
+// }
 
-pub fn left_ui_manual(
-	mut next_state: ResMut<NextState<ProgramState>>,
-	mut commands: Commands,
-	mut contexts: EguiContexts,
-	current_level: ResMut<ManualFreedom>,
-	viz_colour: ResMut<VizColour>,
-	moves: ResMut<ManualMoves>,
-) {
-	let current_level = current_level.into_inner();
-	let current_colour = viz_colour.into_inner();
-	let current_moves = moves.into_inner();
+// pub fn left_ui_manual(
+// 	mut next_state: ResMut<NextState<ProgramState>>,
+// 	mut commands: Commands,
+// 	mut contexts: EguiContexts,
+// 	current_level: ResMut<ManualFreedom>,
+// 	viz_colour: ResMut<VizColour>,
+// 	moves: ResMut<ManualMoves>,
+// ) {
+// 	let current_level = current_level.into_inner();
+// 	let current_colour = viz_colour.into_inner();
+// 	let current_moves = moves.into_inner();
 
-	egui::SidePanel::left("left_ui_manual").show(contexts.ctx_mut(), |ui| {
-	if ui.button("< Switch back to automatic mode").clicked() {
-		next_state.set(ProgramState::Automatic);
-	}
+// 	egui::SidePanel::left("left_ui_manual").show(contexts.ctx_mut(), |ui| {
+// 	if ui.button("< Switch back to automatic mode").clicked() {
+// 		next_state.set(ProgramState::Automatic);
+// 	}
 
-	ui.label("Manual mode allows you to plot that path that you want. It has varying levels of freedom, from completely free which allows you to jump from any available square to any other available square\
-		to only allowing you to move to squares that are one knight move away from the current square. If you want to disable/re-enable a square, switch back to automatic then back to manual.\
-		To reset your drawing, change modes then change back.
-	");
+// 	ui.label("Manual mode allows you to plot that path that you want. It has varying levels of freedom, from completely free which allows you to jump from any available square to any other available square\
+// 		to only allowing you to move to squares that are one knight move away from the current square. If you want to disable/re-enable a square, switch back to automatic then back to manual.\
+// 		To reset your drawing, change modes then change back.
+// 	");
 
-	ui.label("Select a freedom level:");
-	ui.horizontal_wrapped(|ui| {
-		for level in ManualFreedom::iter() {
-			let name = format!("{}", level);
-			let mut text = RichText::new(name);
-			if &level == current_level {
-				text = text.color(UI_ENABLED_COLOUR);
-			}
-			if ui.button(text).clicked() {
-				*current_level = level;
-			}
-		}
-	});
-	ui.label(current_level.get_description());
+// 	ui.label("Select a freedom level:");
+// 	ui.horizontal_wrapped(|ui| {
+// 		for level in ManualFreedom::iter() {
+// 			let name = format!("{}", level);
+// 			let mut text = RichText::new(name);
+// 			if &level == current_level {
+// 				text = text.color(UI_ENABLED_COLOUR);
+// 			}
+// 			if ui.button(text).clicked() {
+// 				*current_level = level;
+// 			}
+// 		}
+// 	});
+// 	ui.label(current_level.get_description());
 
-	ui.label("Pick a manual visualization colour");
-	ui.horizontal_wrapped(|ui| {
-		for col in VizColour::iter() {
-			let str = format!("{}", col);
-			let mut text = RichText::new(str);
-			if &col == current_colour {
-				text = text.color(UI_ENABLED_COLOUR);
-			}
-			if ui.button(text).clicked() {
-				*current_colour = col;
-			}
-		}
-	});
+// 	ui.label("Pick a manual visualization colour");
+// 	ui.horizontal_wrapped(|ui| {
+// 		for col in VizColour::iter() {
+// 			let str = format!("{}", col);
+// 			let mut text = RichText::new(str);
+// 			if &col == current_colour {
+// 				text = text.color(UI_ENABLED_COLOUR);
+// 			}
+// 			if ui.button(text).clicked() {
+// 				*current_colour = col;
+// 			}
+// 		}
+// 	});
 
-	// undo button
-	ui.label("Control actions:");
-	if ui.button("Undo moves [u]").clicked() {
-		current_moves.undo_move();
-	}
-	if ui.button(RichText::new("Reset").color(Color32::RED)).clicked() {
-		current_moves.reset();
-	}
-});
-}
+// 	// undo button
+// 	ui.label("Control actions:");
+// 	if ui.button("Undo moves [u]").clicked() {
+// 		current_moves.undo_move();
+// 	}
+// 	if ui.button(RichText::new("Reset").color(Color32::RED)).clicked() {
+// 		current_moves.reset();
+// 	}
+// });
+// }
 
-pub fn right_ui_auto(
-	options: Res<CurrentOptions>,
-	computation: Option<Res<ComputationResult>>,
-	mut contexts: EguiContexts,
-) {
-	let options = &options.current;
-	let solution = computation.map(|comp| comp.into_comp());
+// pub fn right_ui_auto(
+// 	options: Res<CurrentOptions>,
+// 	computation: Option<Res<ComputationResult>>,
+// 	mut contexts: EguiContexts,
+// ) {
+// 	let options = &options.current;
+// 	let solution = computation.map(|comp| comp.into_comp());
 
-	egui::SidePanel::right("auto_right_sidebar").show(contexts.ctx_mut(), |ui| {
-		ui.heading("Results Panel");
+// 	egui::SidePanel::right("auto_right_sidebar").show(contexts.ctx_mut(), |ui| {
+// 		ui.heading("Results Panel");
 
-		// quick status
-		if let Some(solution) = &solution {
-			match solution {
-				Computation::Successful {
-					explored_states: states,
-					..
-				} => {
-					let msg = format!("Solution found in {} states considered", states);
-					ui.label(RichText::new(msg).color(Color32::GREEN));
-				}
-				Computation::Failed {
-					total_states: states,
-				} => {
-					let msg = format!("No solution found, with {} states considered", states);
-					ui.label(RichText::new(msg).color(Color32::RED));
-				}
-				Computation::GivenUp { explored_states: states } => {
-					let msg = format!("To avoid excessive computation finding a solution was given up, with {} states considered", states);
-					ui.label(RichText::new(msg).color(Color32::RED));
-				}
-			}
-		}
+// 		// quick status
+// 		if let Some(solution) = &solution {
+// 			match solution {
+// 				Computation::Successful {
+// 					explored_states: states,
+// 					..
+// 				} => {
+// 					let msg = format!("Solution found in {} states considered", states);
+// 					ui.label(RichText::new(msg).color(Color32::GREEN));
+// 				}
+// 				Computation::Failed {
+// 					total_states: states,
+// 				} => {
+// 					let msg = format!("No solution found, with {} states considered", states);
+// 					ui.label(RichText::new(msg).color(Color32::RED));
+// 				}
+// 				Computation::GivenUp { explored_states: states } => {
+// 					let msg = format!("To avoid excessive computation finding a solution was given up, with {} states considered", states);
+// 					ui.label(RichText::new(msg).color(Color32::RED));
+// 				}
+// 			}
+// 		}
 
-		if let Some(start) = &options.selected_start {
-			let alg_selected: &str = options.selected_algorithm.into();
-			ui.label(format!(
-				"Current info: Starting at {start} with {} algorithm. {}",
-				alg_selected,
-				options.options.get_description()
-			));
-		}
+// 		if let Some(start) = &options.selected_start {
+// 			let alg_selected: &str = options.selected_algorithm.into();
+// 			ui.label(format!(
+// 				"Current info: Starting at {start} with {} algorithm. {}",
+// 				alg_selected,
+// 				options.options.get_description()
+// 			));
+// 		}
 
-		if let Some(Computation::Successful { solution: moves, .. }) = &solution {
-			// printing solution moves
-			egui::ScrollArea::vertical().show(ui, |ui| {
-				let moves = format!("Moves taken: \n{}", moves);
-				ui.label(moves);
-			});
-		}
-	
-	});
-}
+// 		if let Some(Computation::Successful { solution: moves, .. }) = &solution {
+// 			// printing solution moves
+// 			egui::ScrollArea::vertical().show(ui, |ui| {
+// 				let moves = format!("Moves taken: \n{}", moves);
+// 				ui.label(moves);
+// 			});
+// 		}
 
-pub fn right_ui_manual(
-	moves: Res<ManualMoves>,
-	options: Res<CurrentOptions>,
+// 	});
+// }
 
-	mut contexts: EguiContexts,
-) {
-	egui::SidePanel::right("manual_right_sidebar").show(contexts.ctx_mut(), |ui| {
-		ui.heading("Results Panel");
+// pub fn right_ui_manual(
+// 	moves: Res<ManualMoves>,
+// 	options: Res<CurrentOptions>,
 
-		let required_points: Vec<_> = options.get_available_points();
-		let mut required_points: Vec<_> = required_points.iter().map(|m| (m, false)).collect();
-		for completed_point in moves.get_all_passed_through_points().iter() {
-			if let Some((_, b)) = required_points
-				.iter_mut()
-				.find(|(p, _)| p == &completed_point)
-			{
-				*b = true
-			}
-		}
+// 	mut contexts: EguiContexts,
+// ) {
+// 	egui::SidePanel::right("manual_right_sidebar").show(contexts.ctx_mut(), |ui| {
+// 		ui.heading("Results Panel");
 
-		if required_points.iter().all(|(_, b)| *b) {
-			ui.colored_label(Color32::GREEN, "You have completed the board!");
-		} else {
-			ui.colored_label(Color32::YELLOW, "You have not completed the board yet");
-		}
+// 		let required_points: Vec<_> = options.get_available_points();
+// 		let mut required_points: Vec<_> = required_points.iter().map(|m| (m, false)).collect();
+// 		for completed_point in moves.get_all_passed_through_points().iter() {
+// 			if let Some((_, b)) = required_points
+// 				.iter_mut()
+// 				.find(|(p, _)| p == &completed_point)
+// 			{
+// 				*b = true
+// 			}
+// 		}
 
-		// if let Some(solution) = solution {
-		// 	let alg: Algorithm = options.selected_algorithm;
-		// 	match solution {
-		// 		Computation::Successful {
-		// 			explored_states: states,
-		// 			solution: moves,
-		// 		} => {
-		// 			let mut msg = format!("Solution found in {} states considered", states);
-		// 			if !alg.should_show_states() {
-		// 				msg = "Solution found".to_string();
-		// 			}
-		// 			ui.label(RichText::new(msg).color(Color32::GREEN));
+// 		if required_points.iter().all(|(_, b)| *b) {
+// 			ui.colored_label(Color32::GREEN, "You have completed the board!");
+// 		} else {
+// 			ui.colored_label(Color32::YELLOW, "You have not completed the board yet");
+// 		}
 
-		// 			// printing solution moves
-		// 			let moves = format!("{}", moves);
-		// 			ui.label(moves);
-		// 		}
-		// 		Computation::Failed {
-		// 			total_states: states,
-		// 		} => {
-		// 			let mut msg = format!("No solution found, with {} states considered", states);
-		// 			if !alg.should_show_states() {
-		// 				msg = "Solution found".to_string();
-		// 			}
-		// 			ui.label(RichText::new(msg).color(Color32::RED));
-		// 		}
-		// 		Computation::GivenUp { explored_states: states } => {
-		// 			let mut msg = format!("To avoid excessive computation finding a solution was given up, with {} states considered", states);
-		// 			if !alg.should_show_states() {
-		// 				msg = "Solution found".to_string();
-		// 			}
-		// 			ui.label(RichText::new(msg).color(Color32::RED));
-		// 		}
-		// 	}
-		// }
-	});
-}
+// 		// if let Some(solution) = solution {
+// 		// 	let alg: Algorithm = options.selected_algorithm;
+// 		// 	match solution {
+// 		// 		Computation::Successful {
+// 		// 			explored_states: states,
+// 		// 			solution: moves,
+// 		// 		} => {
+// 		// 			let mut msg = format!("Solution found in {} states considered", states);
+// 		// 			if !alg.should_show_states() {
+// 		// 				msg = "Solution found".to_string();
+// 		// 			}
+// 		// 			ui.label(RichText::new(msg).color(Color32::GREEN));
+
+// 		// 			// printing solution moves
+// 		// 			let moves = format!("{}", moves);
+// 		// 			ui.label(moves);
+// 		// 		}
+// 		// 		Computation::Failed {
+// 		// 			total_states: states,
+// 		// 		} => {
+// 		// 			let mut msg = format!("No solution found, with {} states considered", states);
+// 		// 			if !alg.should_show_states() {
+// 		// 				msg = "Solution found".to_string();
+// 		// 			}
+// 		// 			ui.label(RichText::new(msg).color(Color32::RED));
+// 		// 		}
+// 		// 		Computation::GivenUp { explored_states: states } => {
+// 		// 			let mut msg = format!("To avoid excessive computation finding a solution was given up, with {} states considered", states);
+// 		// 			if !alg.should_show_states() {
+// 		// 				msg = "Solution found".to_string();
+// 		// 			}
+// 		// 			ui.label(RichText::new(msg).color(Color32::RED));
+// 		// 		}
+// 		// 	}
+// 		// }
+// 	});
+// }
