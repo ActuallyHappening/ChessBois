@@ -6,8 +6,7 @@ use crate::{
 
 use super::{
 	cells::{
-		despawn_cells, despawn_markers, spawn_cells, spawn_markers, sys_despawn_markers, CellClicked,
-		CellMarker, MarkerMarker,
+		despawn_markers, spawn_markers, sys_despawn_markers, CellClicked,
 	},
 	manual::{add_default_manual_viz_colour, get_manual_moves_from_automatic_state},
 	visualization::{
@@ -86,34 +85,35 @@ fn handle_new_options(
 	mut commands: Commands,
 	mut mma: ResSpawning,
 ) {
-	if options.is_changed() {
-		let options = &options.into_inner().current;
+	// FIXME:
+	// if options.is_changed() {
+	// 	let options = &options.into_inner().current;
 
-		trace!("Automatic updating ...");
+	// 	trace!("Automatic updating ...");
 
-		despawn_visualization(&mut commands, viz);
+	// 	despawn_visualization(&mut commands, viz);
 
-		// markers
-		despawn_markers(&mut commands, markers);
-		spawn_markers(options, &mut commands, &mut mma);
+	// 	// markers
+	// 	despawn_markers(&mut commands, markers);
+	// 	spawn_markers(options, &mut commands, &mut mma);
 
-		// cells
-		despawn_cells(&mut commands, cells);
-		spawn_cells(options, &mut commands, &mut mma);
+	// 	// cells
+	// 	// despawn_cells(&mut commands, cells);
+	// 	// spawn_cells(options, &mut commands, &mut mma);
 
-		// begin recomputing visualization
-		if options.selected_start.is_some() {
-			begin_background_compute(options.selected_algorithm, &StandardKnight, options.clone());
-		} else {
-			debug!("Not beginning background compute")
-		}
+	// 	// begin recomputing visualization
+	// 	if options.selected_start.is_some() {
+	// 		begin_background_compute(options.selected_algorithm, &StandardKnight, options.clone());
+	// 	} else {
+	// 		debug!("Not beginning background compute")
+	// 	}
 
-		// add new options as current
-		commands.insert_resource(CurrentOptions::from(Options {
-			requires_updating: false,
-			..options.clone()
-		}));
-	}
+	// 	// add new options as current
+	// 	commands.insert_resource(CurrentOptions::from(Options {
+	// 		requires_updating: false,
+	// 		..options.clone()
+	// 	}));
+	// }
 }
 
 /// WHat happens when you click on a cell.

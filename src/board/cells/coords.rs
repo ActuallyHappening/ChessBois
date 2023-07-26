@@ -30,6 +30,11 @@ pub fn get_spacial_coord_2d(board: &BoardOptions, chess_position: ChessPoint) ->
 	Vec2::new(normalized.x, -normalized.y)
 }
 
+pub fn cell_get_transform(at: ChessPoint, options: &BoardOptions) -> Transform {
+	Transform::from_translation(get_spacial_coord(options, at))
+		.with_rotation(Quat::from_rotation_x(-TAU / 4.))
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;

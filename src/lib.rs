@@ -18,7 +18,7 @@ mod clipboard;
 mod errors;
 mod textmesh;
 mod utils;
-mod weburl;
+// mod weburl;
 
 #[derive(Default)]
 pub struct ChessSolverPlugin;

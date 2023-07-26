@@ -25,7 +25,7 @@ pub fn sys_despawn_markers(
 	mut commands: Commands,
 	markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
 ) {
-	super::cells::despawn_markers(&mut commands, markers);
+	despawn_markers(&mut commands, markers);
 }
 
 fn spawn_mark(

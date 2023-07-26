@@ -1,7 +1,7 @@
-use self::{
-	automatic::AutomaticState, cells::CellClicked, hotkeys::HotkeysPlugin, manual::ManualState,
-	ui::UiPlugin, visualization::VisualizationPlugin,
-};
+// use self::{
+// 	automatic::AutomaticState, hotkeys::HotkeysPlugin, manual::ManualState,
+// 	ui::UiPlugin, visualization::VisualizationPlugin,
+// };
 use crate::{
 	solver::{
 		algs::{Algorithm, Options},
@@ -9,19 +9,18 @@ use crate::{
 	},
 	ChessPoint,
 };
-use bevy::{prelude::*, ecs::schedule::ScheduleLabel};
+use bevy::{ecs::schedule::{ScheduleLabel, SystemSetConfig}, prelude::*};
 use bevy_mod_picking::prelude::*;
 use derive_more::From;
 use top_level_types::OptionsWrapper;
 
-mod automatic;
-mod manual;
-pub(crate) use manual::ManualMoves;
+// mod automatic;
+// mod manual;
+// pub(crate) use manual::ManualMoves;
 
 mod cells;
-mod hotkeys;
-mod ui;
-mod visualization;
+// mod hotkeys;
+// mod ui;
 
 pub struct BoardPlugin;
 impl Plugin for BoardPlugin {
@@ -31,6 +30,7 @@ impl Plugin for BoardPlugin {
 			// .add_plugin(UiPlugin)
 			// .add_plugin(AutomaticState)
 			// .add_plugin(ManualState)
+    .add_systems((SharedState::sys_render_cells,))
 			.add_plugins(
 				DefaultPickingPlugins
 					.build()
@@ -38,13 +38,9 @@ impl Plugin for BoardPlugin {
 					.disable::<DebugPickingPlugin>(),
 			)
 			// .add_plugin(HotkeysPlugin)
-			.add_event::<CellClicked>()
 			.add_startup_system(setup);
 	}
 }
-
-#[derive(ScheduleLabel, Hash, Debug, PartialEq, Eq, Clone)]
-pub struct RenderSchedule;
 
 /// Re-rendered every frame
 #[derive(Default, Resource)]

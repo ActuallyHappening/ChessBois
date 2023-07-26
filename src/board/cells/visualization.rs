@@ -1,4 +1,4 @@
-use super::{cells::get_spacial_coord_2d, *};
+use super::*;
 use crate::{
 	solver::{Move, Moves},
 	textmesh::{get_text_mesh, Fonts},
@@ -13,7 +13,9 @@ pub use colours::*;
 pub struct VisualizationPlugin;
 impl Plugin for VisualizationPlugin {
 	fn build(&self, app: &mut App) {
-			app.add_event::<SpawnVisualizationEvent>().add_system(handle_spawning_visualization);
+		app
+			.add_event::<SpawnVisualizationEvent>()
+			.add_system(handle_spawning_visualization);
 	}
 }
 
@@ -92,10 +94,7 @@ impl SpawnVisualizationEvent {
 	pub fn new_constant_colour(moves: Vec<Move>, col: impl Into<VizColour>) -> Self {
 		let col = col.into();
 		Self {
-			moves: moves
-				.into_iter()
-				.map(|m| (m, col))
-				.collect(),
+			moves: moves.into_iter().map(|m| (m, col)).collect(),
 		}
 	}
 }
@@ -117,9 +116,7 @@ fn spawn_visualization(
 
 /// Infuses [EventReader<SpawnVisualizationEvent>]s with current frame's state to spawn
 /// concrete visualisation.
-pub fn handle_spawning_visualization(viz: EventReader<SpawnVisualizationEvent>) {
-
-}
+pub fn handle_spawning_visualization(viz: EventReader<SpawnVisualizationEvent>) {}
 
 pub fn despawn_visualization(
 	commands: &mut Commands,
