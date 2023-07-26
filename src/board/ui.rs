@@ -42,61 +42,58 @@ impl VisualOpts {
 			}
 		});
 
-		// // show dots
-		// ui.label("Show dots:");
-		// ui.horizontal_wrapped(|ui| {
-		// 	let mut yes_text = RichText::new("Yes");
-		// 	if self.show_dots {
-		// 		yes_text = yes_text.color(UI_ENABLED_COLOUR);
-		// 	}
-		// 	if ui.button(yes_text).clicked() {
-		// 		self.show_dots = true;
-		// 	}
+		// show dots
+		ui.label("Show dots:");
+		ui.horizontal_wrapped(|ui| {
+			let mut yes_text = RichText::new("Yes");
+			if self.show_dots {
+				yes_text = yes_text.color(UI_ENABLED_COLOUR);
+			}
+			if ui.button(yes_text).clicked() {
+				self.show_dots = true;
+			}
 
-		// 	let mut no_text = RichText::new("No");
-		// 	if !self.show_dots {
-		// 		no_text = no_text.color(UI_ENABLED_COLOUR);
-		// 	}
-		// 	if ui.button(no_text).clicked() {
-		// 		self.show_dots = false;
-		// 	}
-		// });
+			let mut no_text = RichText::new("No");
+			if !self.show_dots {
+				no_text = no_text.color(UI_ENABLED_COLOUR);
+			}
+			if ui.button(no_text).clicked() {
+				self.show_dots = false;
+			}
+		});
 
-		// // viz width
-		// ui.add(
-		// 	egui::Slider::from_get_set((0.01)..=0.5, |val| {
-		// 		if let Some(new_val) = val {
-		// 			self.viz_width = new_val as f32;
-		// 			new_val
-		// 		} else {
-		// 			self.viz_width as f64
-		// 		}
-		// 	})
-		// 	.text("Visualization width"),
-		// );
+		// viz width
+		ui.add(
+			egui::Slider::from_get_set((0.1)..=0.5, |val| {
+				if let Some(new_val) = val {
+					self.set_width(new_val as f32);
+					new_val
+				} else {
+					self.get_width() as f64
+				}
+			})
+			.text("Visualization width"),
+		);
 
-		// // show/hide markers
-		// ui.label(
-		// 	"Should show markers? \
-		// ([h] to hide temporarily, this hides permanently). Also note this only applies in Automatic mode",
-		// );
-		// ui.horizontal_wrapped(|ui| {
-		// 	let mut yes_text = RichText::new("Yes");
-		// 	if *should_show_markers {
-		// 		yes_text = yes_text.color(UI_ENABLED_COLOUR);
-		// 	}
-		// 	if ui.button(yes_text).clicked() {
-		// 		*should_show_markers = true;
-		// 	}
+		// show markers
+		ui.label("Show markers:");
+		ui.horizontal_wrapped(|ui| {
+			let mut yes_text = RichText::new("Yes");
+			if self.show_markers {
+				yes_text = yes_text.color(UI_ENABLED_COLOUR);
+			}
+			if ui.button(yes_text).clicked() {
+				self.show_markers = true;
+			}
 
-		// 	let mut no_text = RichText::new("No");
-		// 	if !*should_show_markers {
-		// 		no_text = no_text.color(UI_ENABLED_COLOUR);
-		// 	}
-		// 	if ui.button(no_text).clicked() {
-		// 		*should_show_markers = false;
-			// }
-		// });
+			let mut no_text = RichText::new("No");
+			if !self.show_markers {
+				no_text = no_text.color(UI_ENABLED_COLOUR);
+			}
+			if ui.button(no_text).clicked() {
+				self.show_markers = false;
+			}
+		});
 	}
 
 	pub fn sys_viz_options_ui(mut contexts: EguiContexts, state: ResMut<SharedState>) {

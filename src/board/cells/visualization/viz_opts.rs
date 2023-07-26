@@ -5,7 +5,7 @@ pub struct VisualOpts {
 	pub show_numbers: bool,
 	pub show_dots: bool,
 	pub show_markers: bool,
-	
+
 	viz_width: f32,
 }
 
@@ -28,6 +28,9 @@ impl VisualOpts {
 				warn!("Setting viz_width to unnacceptable value: {viz_width}");
 			}
 		}
+	}
+	pub fn get_width(&mut self) -> f32 {
+		self.viz_width
 	}
 }
 
