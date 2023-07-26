@@ -1,9 +1,10 @@
 use super::*;
 use crate::{
-	solver::{Move, Moves},
+	board::coloured_moves::ColouredMoves,
+	solver::Move,
 	textmesh::{get_text_mesh, Fonts},
 	utils::{EntityCommandsExt, TransformExt},
-	ChessPoint, CELL_SIZE, VISUALIZATION_HEIGHT, board::coloured_moves::ColouredMoves,
+	ChessPoint, CELL_SIZE, VISUALIZATION_HEIGHT,
 };
 use std::f32::consts::TAU;
 
@@ -13,19 +14,19 @@ pub use viz_opts::VisualOpts;
 mod colours;
 mod viz_opts;
 
-#[derive(Component, Debug, Clone)]
-pub struct VisualizationComponent {
-	#[allow(dead_code)]
+#[derive(Component, Debug, Clone, Copy)]
+pub struct VisComponent {
 	from: ChessPoint,
-
-	#[allow(dead_code)]
 	to: ChessPoint,
+
+	colour: Color,
+	number: usize,
 }
 
 impl SharedState {
 	pub fn sys_render_viz(
 		state: Res<SharedState>,
-		visualization: Query<Entity, With<VisualizationComponent>>,
+		visualization: Query<Entity, With<VisComponent>>,
 
 		mut commands: Commands,
 		mut mma: ResSpawning,
@@ -36,7 +37,6 @@ impl SharedState {
 				moves.clone(),
 				state.board_options.clone(),
 				&state.visual_opts,
-
 				&mut commands,
 				&mut mma,
 			);
@@ -54,13 +54,24 @@ fn spawn_visualization(
 	mma: &mut ResSpawning,
 ) {
 	for (i, (Move { from, to }, colour)) in moves.iter().enumerate() {
-		spawn_path_line(from, to, &options, viz_options, (*colour).into(), i, commands, mma)
+		spawn_path_line(
+			VisComponent {
+				from: *from,
+				to: *to,
+				colour: (*colour).into(),
+				number: i,
+			},
+			&options,
+			viz_options,
+			commands,
+			mma,
+		)
 	}
 }
 
 fn despawn_visualization(
 	commands: &mut Commands,
-	visualization: Query<Entity, With<VisualizationComponent>>,
+	visualization: Query<Entity, With<VisComponent>>,
 ) {
 	for entity in visualization.iter() {
 		commands.entity(entity).despawn_recursive();
@@ -68,18 +79,21 @@ fn despawn_visualization(
 }
 
 fn spawn_path_line(
-	from: &ChessPoint,
-	to: &ChessPoint,
+	vis: VisComponent,
 	options: &BoardOptions,
 	viz_options: &VisualOpts,
-	colour: Color,
-	number: usize,
 
 	commands: &mut Commands,
 	(meshs, mat, _ass): &mut ResSpawning,
 ) {
-	let start_pos = get_spacial_coord_2d(options, *from);
-	let end_pos = get_spacial_coord_2d(options, *to);
+	let VisComponent {
+		from,
+		to,
+		colour,
+		number,
+	} = vis;
+	let start_pos = get_spacial_coord_2d(options, from);
+	let end_pos = get_spacial_coord_2d(options, to);
 	let start_vec = &Vec3::new(start_pos.x, VISUALIZATION_HEIGHT * 1.1, start_pos.y);
 	let _end_vec = Vec3::new(end_pos.x, VISUALIZATION_HEIGHT * 1.1, end_pos.y);
 
@@ -113,10 +127,7 @@ fn spawn_path_line(
 			transform,
 			..default()
 		},
-		VisualizationComponent {
-			from: *from,
-			to: *to,
-		},
+		vis,
 	));
 
 	// small dot at start
@@ -137,10 +148,7 @@ fn spawn_path_line(
 				),
 				..default()
 			})
-			.insert(VisualizationComponent {
-				from: *from,
-				to: *to,
-			});
+			.insert(vis);
 	}
 
 	// text
@@ -159,11 +167,8 @@ fn spawn_path_line(
 					material: mat.add(Color::RED.into()),
 					..default()
 				},
-				VisualizationComponent {
-					from: *from,
-					to: *to,
-				},
+				vis,
 			))
-			.name(format!("Number for {}", *from));
+			.name(format!("Number for {}", from));
 	}
 }
