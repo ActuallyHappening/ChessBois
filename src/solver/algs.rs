@@ -25,7 +25,7 @@ pub enum Computation {
 	},
 }
 
-#[derive(Hash, PartialEq, Eq)]
+#[derive(Hash, PartialEq, Eq, Clone)]
 pub struct ComputeInput {
 	pub alg: Algorithm,
 	pub start: ChessPoint,
@@ -157,7 +157,6 @@ impl Algorithm {
 	/// Actually compute, with caching
 	pub fn tour_computation_cached(
 		input: ComputeInput,
-		piece: &ChessPiece,
 	) -> Computation {
 		if !input.board_options.get_available_points().contains(&input.start) {
 			// TODO: determine if this should be bubbled into an Option return type
@@ -174,7 +173,7 @@ impl Algorithm {
 						explored_states,
 						*ALG_STATES_CAP.lock().unwrap()
 					);
-					let comp = input.alg.tour_computation(piece, input.board_options.clone(), input.start);
+					let comp = input.alg.tour_computation(&input.piece, input.board_options.clone(), input.start);
 					add_solution_to_cache(input, comp.clone());
 				} else {
 					trace!(
@@ -187,7 +186,7 @@ impl Algorithm {
 			cached_comp
 		} else {
 			debug!("Cache miss");
-			let comp = input.alg.tour_computation(piece, input.board_options.clone(), input.start);
+			let comp = input.alg.tour_computation(&input.piece, input.board_options.clone(), input.start);
 			add_solution_to_cache(input, comp.clone());
 			comp
 		}

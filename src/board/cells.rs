@@ -20,7 +20,7 @@ pub use cells::CellClicked;
 mod cells;
 mod coords;
 mod markers;
-mod visualization;
+pub mod visualization;
 
 pub struct CellsPlugin;
 impl Plugin for CellsPlugin {

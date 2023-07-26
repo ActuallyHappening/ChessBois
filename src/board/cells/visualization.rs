@@ -7,17 +7,11 @@ use crate::{
 };
 use std::f32::consts::TAU;
 
-mod colours;
 pub use colours::*;
+pub use viz_opts::VisualOpts;
 
-pub struct VisualizationPlugin;
-impl Plugin for VisualizationPlugin {
-	fn build(&self, app: &mut App) {
-		app
-			.add_event::<SpawnVisualizationEvent>()
-			.add_system(handle_spawning_visualization);
-	}
-}
+mod colours;
+mod viz_opts;
 
 #[derive(Component, Debug, Clone)]
 pub struct VisualizationComponent {
@@ -28,75 +22,9 @@ pub struct VisualizationComponent {
 	to: ChessPoint,
 }
 
-/// Options for converting visualization into concrete entities
-#[derive(Resource, PartialEq, Clone, Copy)]
-pub struct VizOptions {
-	pub show_numbers: bool,
-	pub show_dots: bool,
-	/// Width of lines
-	pub(super) viz_width: f32,
-}
-
 impl SharedState {
 	pub fn sys_render_viz() {
 		todo!()
-	}
-}
-
-pub struct SpawnVisualizationEvent {
-	moves: Vec<(Move, VizColour)>,
-}
-
-impl Default for VizOptions {
-	fn default() -> Self {
-		Self {
-			show_numbers: true,
-			show_dots: true,
-			viz_width: 0.2,
-		}
-	}
-}
-
-impl VizOptions {
-	pub fn with_numbers(mut self, show_numbers: bool) -> Self {
-		self.show_numbers = show_numbers;
-		self
-	}
-
-	pub fn dimensions(&self) -> Vec2 {
-		Vec2::new(self.viz_width, self.viz_width)
-	}
-}
-
-impl VizOptions {
-	pub fn sys_with_numbers(mut commands: Commands, old: Option<Res<VizOptions>>) {
-		commands.insert_resource(
-			old
-				.map(|o| *o)
-				.unwrap_or(VizOptions::default())
-				.with_numbers(true),
-		);
-	}
-	pub fn sys_without_numbers(mut commands: Commands, old: Option<Res<VizOptions>>) {
-		commands.insert_resource(
-			old
-				.map(|o| *o)
-				.unwrap_or(VizOptions::default())
-				.with_numbers(false),
-		);
-	}
-}
-
-impl SpawnVisualizationEvent {
-	pub fn new(moves: Vec<(Move, VizColour)>) -> Self {
-		Self { moves }
-	}
-
-	pub fn new_constant_colour(moves: Vec<Move>, col: impl Into<VizColour>) -> Self {
-		let col = col.into();
-		Self {
-			moves: moves.into_iter().map(|m| (m, col)).collect(),
-		}
 	}
 }
 
@@ -107,7 +35,7 @@ fn spawn_visualization(
 	commands: &mut Commands,
 	mma: &mut ResSpawning,
 	viz_cols: Vec<VizColour>,
-	viz_options: &VizOptions,
+	viz_options: &VisualOpts,
 ) {
 	for (i, Move { from, to }) in moves.iter().enumerate() {
 		let colour = (*viz_cols.get(i).expect("Colour to have index")).into();
@@ -115,11 +43,7 @@ fn spawn_visualization(
 	}
 }
 
-/// Infuses [EventReader<SpawnVisualizationEvent>]s with current frame's state to spawn
-/// concrete visualisation.
-pub fn handle_spawning_visualization(viz: EventReader<SpawnVisualizationEvent>) {}
-
-pub fn despawn_visualization(
+fn despawn_visualization(
 	commands: &mut Commands,
 	visualization: Query<Entity, With<VisualizationComponent>>,
 ) {
@@ -128,18 +52,11 @@ pub fn despawn_visualization(
 	}
 }
 
-pub fn sys_despawn_visualization(
-	mut commands: Commands,
-	visualization: Query<Entity, With<VisualizationComponent>>,
-) {
-	super::visualization::despawn_visualization(&mut commands, visualization);
-}
-
 fn spawn_path_line(
 	from: &ChessPoint,
 	to: &ChessPoint,
 	options: &BoardOptions,
-	viz_options: &VizOptions,
+	viz_options: &VisualOpts,
 	colour: Color,
 	number: usize,
 
