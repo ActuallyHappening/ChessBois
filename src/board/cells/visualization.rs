@@ -3,7 +3,7 @@ use crate::{
 	solver::{Move, Moves},
 	textmesh::{get_text_mesh, Fonts},
 	utils::{EntityCommandsExt, TransformExt},
-	ChessPoint, CELL_SIZE, VISUALIZATION_HEIGHT,
+	ChessPoint, CELL_SIZE, VISUALIZATION_HEIGHT, board::coloured_moves::ColouredMoves,
 };
 use std::f32::consts::TAU;
 
@@ -23,23 +23,38 @@ pub struct VisualizationComponent {
 }
 
 impl SharedState {
-	pub fn sys_render_viz() {
-		todo!()
+	pub fn sys_render_viz(
+		state: Res<SharedState>,
+		visualization: Query<Entity, With<VisualizationComponent>>,
+
+		mut commands: Commands,
+		mut mma: ResSpawning,
+	) {
+		despawn_visualization(&mut commands, visualization);
+		if let Some(moves) = &state.moves {
+			spawn_visualization(
+				moves.clone(),
+				state.board_options.clone(),
+				&state.visual_opts,
+
+				&mut commands,
+				&mut mma,
+			);
+		}
 	}
 }
 
 /// Actually spawn entities of new solution
 fn spawn_visualization(
-	moves: Moves,
+	moves: ColouredMoves,
 	options: BoardOptions,
+	viz_options: &VisualOpts,
+
 	commands: &mut Commands,
 	mma: &mut ResSpawning,
-	viz_cols: Vec<VizColour>,
-	viz_options: &VisualOpts,
 ) {
-	for (i, Move { from, to }) in moves.iter().enumerate() {
-		let colour = (*viz_cols.get(i).expect("Colour to have index")).into();
-		spawn_path_line(from, to, &options, viz_options, colour, i, commands, mma)
+	for (i, (Move { from, to }, colour)) in moves.iter().enumerate() {
+		spawn_path_line(from, to, &options, viz_options, (*colour).into(), i, commands, mma)
 	}
 }
 

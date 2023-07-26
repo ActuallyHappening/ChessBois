@@ -10,13 +10,11 @@ pub fn compute_from_state(state: ResMut<SharedState>) {
 	if let Some(compute_state) = state.clone().get_compute_state() {
 		// try get from algs cache
 		if let Some(comp) = algs::try_get_cached_solution(&compute_state) {
-			info!("Got from cache a computation!");
 			if let Computation::Successful { solution, .. } = comp {
 				state.into_inner().set_moves(solution);
 			}
 		} else {
 			// not cached
-			info!("Not cached, starting computation");
 			let comp_state = compute_state.clone();
 			start_executing_task(compute_state.clone(), || {
 				algs::Algorithm::tour_computation_cached(comp_state)

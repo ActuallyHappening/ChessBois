@@ -10,6 +10,7 @@ mod automatic;
 
 mod cells;
 mod compute;
+mod coloured_moves;
 // mod hotkeys;
 // mod ui;
 
@@ -47,7 +48,7 @@ pub struct SharedState {
 	pub piece: ChessPiece,
 
 	// visuals
-	pub moves: Option<Moves>,
+	pub moves: Option<ColouredMoves>,
 	pub visual_opts: cells::visualization::VisualOpts,
 
 	// ui / interactions
@@ -55,12 +56,12 @@ pub struct SharedState {
 }
 
 mod shared_state {
-	use super::*;
+	use super::{*, cells::visualization};
 	use crate::solver::algs::ComputeInput;
 
 	impl Plugin for SharedState {
 		fn build(&self, app: &mut App) {
-			app.add_systems((SharedState::sys_render_cells,));
+			app.add_systems((SharedState::sys_render_cells, SharedState::sys_render_viz));
 		}
 	}
 
@@ -101,8 +102,15 @@ mod shared_state {
 			self
 		}
 
-		pub fn set_moves(&mut self, moves: Moves) -> &mut Self {
+		pub fn set_coloured_moves(&mut self, moves: ColouredMoves) -> &mut Self {
 			self.moves = Some(moves);
+			self
+		}
+
+		/// Sets moves using default colour
+		/// suitable in automatic mode
+		pub fn set_moves(&mut self, moves: Moves) -> &mut Self {
+			self.set_coloured_moves(moves.using_colour(visualization::VizColour::default()));
 			self
 		}
 	}
@@ -110,7 +118,7 @@ mod shared_state {
 
 use self::{
 	automatic::{AutomaticPlugin, ToggleAction},
-	cells::CellsPlugin,
+	cells::CellsPlugin, coloured_moves::ColouredMoves,
 };
 
 /// Sets up default resources + sends initial [NewOptions] event

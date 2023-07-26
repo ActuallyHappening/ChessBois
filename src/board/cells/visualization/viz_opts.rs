@@ -5,6 +5,7 @@ pub struct VisualOpts {
 	pub show_numbers: bool,
 	pub show_dots: bool,
 	pub show_markers: bool,
+	
 	viz_width: f32,
 }
 
