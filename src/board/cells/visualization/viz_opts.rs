@@ -5,9 +5,11 @@ use super::*;
 #[derive(Clone, ControlPanel)]
 pub struct VisualOpts {
 	/// Whether to show the red numbers
+	#[control(bool)]
 	pub show_numbers: bool,
 
 	/// Whether to show the helper dots
+	#[control(bool)]
 	pub show_dots : bool,
 
 	/// Whether to show the markers
