@@ -20,82 +20,6 @@ impl Plugin for UiPlugin {
 }
 
 impl VisualOpts {
-	/// Renders array of buttons for changing if numbers should be shown or not
-	fn render(&mut self, ui: &mut Ui) {
-		// show numbers
-		ui.label("Show numbers:");
-		ui.horizontal_wrapped(|ui| {
-			let mut yes_text = RichText::new("Yes");
-			if self.show_numbers {
-				yes_text = yes_text.color(UI_ENABLED_COLOUR);
-			}
-			if ui.button(yes_text).clicked() {
-				self.show_numbers = true;
-			}
-
-			let mut no_text = RichText::new("No");
-			if !self.show_numbers {
-				no_text = no_text.color(UI_ENABLED_COLOUR);
-			}
-			if ui.button(no_text).clicked() {
-				self.show_numbers = false;
-			}
-		});
-
-		// show dots
-		ui.label("Show dots:");
-		ui.horizontal_wrapped(|ui| {
-			let mut yes_text = RichText::new("Yes");
-			if self.show_dots {
-				yes_text = yes_text.color(UI_ENABLED_COLOUR);
-			}
-			if ui.button(yes_text).clicked() {
-				self.show_dots = true;
-			}
-
-			let mut no_text = RichText::new("No");
-			if !self.show_dots {
-				no_text = no_text.color(UI_ENABLED_COLOUR);
-			}
-			if ui.button(no_text).clicked() {
-				self.show_dots = false;
-			}
-		});
-
-		// viz width
-		ui.add(
-			egui::Slider::from_get_set((0.1)..=0.5, |val| {
-				if let Some(new_val) = val {
-					self.set_width(new_val as f32);
-					new_val
-				} else {
-					self.get_width() as f64
-				}
-			})
-			.text("Visualization width"),
-		);
-
-		// show markers
-		ui.label("Show markers:");
-		ui.horizontal_wrapped(|ui| {
-			let mut yes_text = RichText::new("Yes");
-			if self.show_markers {
-				yes_text = yes_text.color(UI_ENABLED_COLOUR);
-			}
-			if ui.button(yes_text).clicked() {
-				self.show_markers = true;
-			}
-
-			let mut no_text = RichText::new("No");
-			if !self.show_markers {
-				no_text = no_text.color(UI_ENABLED_COLOUR);
-			}
-			if ui.button(no_text).clicked() {
-				self.show_markers = false;
-			}
-		});
-	}
-
 	pub fn sys_viz_options_ui(mut contexts: EguiContexts, state: ResMut<SharedState>) {
 		egui::Window::new("Visualization options")
 			.default_pos(Pos2::new(4200., 4200.))
@@ -103,7 +27,7 @@ impl VisualOpts {
 			.show(contexts.ctx_mut(), |ui| {
 				ui.heading("Visualization options:");
 
-				state.into_inner().visual_opts.render(ui);
+				state.into_inner().visual_opts.ui(ui);
 			});
 	}
 }

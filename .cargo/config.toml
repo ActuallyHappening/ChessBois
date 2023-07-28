@@ -3,7 +3,8 @@ bw = "b --target wasm32-unknown-unknown"
 cw = "c --target wasm32-unknown-unknown"
 bwindows = "b --target=x86_64-pc-windows-gnu"
 r = "run -F dev"
-w = "watch -q -c -w src/ -x 'r'"
+wo = "watch -q -c -w src/ -x 'r'"
+w = "watch -q -c -x 'r'"
 # cargo +nightly -Z build-std bwindows
 
 # # [build]

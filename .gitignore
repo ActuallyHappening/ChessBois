@@ -4,3 +4,5 @@ dist
 releases/*
 !releases/.gitkeep
 # !releases/*.dist
+
+bevy_egui_controls

@@ -1,11 +1,21 @@
+use bevy_egui_controls::ControlPanel;
+
 use super::*;
 
-#[derive(Clone)]
+#[derive(Clone, ControlPanel)]
 pub struct VisualOpts {
+	/// Whether to show the red numbers
 	pub show_numbers: bool,
-	pub show_dots: bool,
+
+	/// Whether to show the helper dots
+	pub show_dots : bool,
+
+	/// Whether to show the markers
+	#[control(bool)]
 	pub show_markers: bool,
 
+	/// The width of the visualisation lines
+	#[control(slider(0.1..=0.5))]
 	viz_width: f32,
 }
 
@@ -19,18 +29,6 @@ impl VisualOpts {
 
 	pub fn dimensions(&self) -> Vec2 {
 		Vec2::new(self.viz_width, self.viz_width)
-	}
-
-	pub fn set_width(&mut self, viz_width: f32) {
-		match viz_width {
-			_x if (0.1..=0.5).contains(&_x) => self.viz_width = viz_width,
-			_ => {
-				warn!("Setting viz_width to unnacceptable value: {viz_width}");
-			}
-		}
-	}
-	pub fn get_width(&mut self) -> f32 {
-		self.viz_width
 	}
 }
 

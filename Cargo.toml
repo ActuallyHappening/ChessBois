@@ -3,15 +3,16 @@ name = "cap_solver"
 version = "0.2.2"
 edition = "2021"
 
-# [lib]
-# crate-type = ["rlib"]
+[workspace]
+members = ["bevy_egui_controls"]
+
+[dependencies.bevy_egui_controls]
+path = "./bevy_egui_controls"
 
 [features]
 dev = ["bevy/dynamic_linking", "dep:bevy_editor_pls"]
 # default = ["bevy/dynamic_linking", "editor"]
 # editor = ["dep:bevy_editor_pls"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]
