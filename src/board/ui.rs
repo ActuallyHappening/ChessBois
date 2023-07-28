@@ -18,19 +18,6 @@ impl Plugin for UiPlugin {
 	}
 }
 
-// impl Algorithm {
-// 	pub fn ui(&mut self, ui: &mut ::bevy_egui::egui::Ui) -> ::bevy_egui::egui::Response {
-// 		ui.with_layout(
-// 			::bevy_egui::egui::Layout::top_down(::bevy_egui::egui::Align::Center),
-// 			|ui| {
-// 				for variant in <Algorithm as ::strum::IntoEnumIterator>::iter() {
-// 					ui.selectable_value(self, variant, format!("{}", variant));
-// 				}
-// 			},
-// 		).response
-// 	}
-// }
-
 pub fn left_ui(mut contexts: EguiContexts, state: ResMut<SharedState>) {
 	egui::SidePanel::left("Left sidebar").show(contexts.ctx_mut(), |ui| {
 		ui.heading("Controls Panel");
@@ -41,6 +28,8 @@ pub fn left_ui(mut contexts: EguiContexts, state: ResMut<SharedState>) {
 			.default_open(true)
 			.show(ui, |ui| {
 				state.alg.ui(ui);
+
+				ui.label(state.alg.get_description());
 			});
 
 		ui.collapsing("Visualisation options", |ui| {

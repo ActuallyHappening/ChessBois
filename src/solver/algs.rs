@@ -100,31 +100,20 @@ pub enum Algorithm {
 impl Algorithm {
 	pub fn get_description(&self) -> &'static str {
 		match self {
-			// Algorithm::WarnsdorfUnreliable => "A standard knights tour.\
-			// This algorithm is always guaranteed to terminate in finite time, however it sometimes misses solutions e.g. 8x8 board @ (5, 3).\
-			// Warnsdorf's Rule is very easy to implement and is very popular because of its simplicity. The implementation used is sub-optimal, but should suffice.\
-			// Also, in the case that Warnsdorf's Rule doesn't fully specify what to do, as in where you have to guess, this algorithm acts *deterministically* but\
-			// *not correctly*. A fuller implementation would implement backtracking, which the Reliable Warnsdorf algorithm does.\
-			// ", 
-			Algorithm::WarnsdorfBacktrack => "A standard knights tour.\
-			This algorithm applies Warnsdorf's Rule, which tells you to always move to the square with the fewest available moves. \
-			This algorithm is a fuller implementation of Warnsdorf's Rule, including backtracking when Warnsdorf's Rule doesn't fully specify what to do.\
-			HOWEVER, it does not check every possible state, so its completeness / correctness still depends on the completeness of the Warnsdorf algorithm!
-			i.e., I am not certain this algorithm is ALWAYS correct!
+			Algorithm::WarnsdorfBacktrack => "INCOMPLETE open knights tour.
+This algorithm fully implemented Warnsdorf's rule, in that it tries all equal possibilities by backtracking. \
+			As such it is not complete, it won't find a solution to every board (but never finds a false solution). \
+			This algorithm works best with no targets.
 			",
-			// Algorithm::HamiltonianPath => "A standard knights tour.\
-			// This algorithm attempts to find a hamiltonian path from the start to any end point with brute force.\
-			// Therefore, if there is a knights tour it is guarenteed to find it, just not as fast as the Warnsdorf algorithm!\
-			// ",
-			Algorithm::HamiltonianCycle => "NOT a knights tour!\
-			This algorithm tries to find a hamiltonian cycle, as in a path starting and ending at the same point.\
-			This is significantly slower than other algorithms, but when found it provides solutions to knights tour for every start point.\
-			I believe this is guarenteed to give the correct answer, although I have not tested it thoroughly.\
+			Algorithm::BruteForceWarnsford => "COMPLETE open knights tour.
+This algorithm is a Warnsdorf-biased brute force, which checks every possible path a knight can take (without repeating squares). \
+			It contains no heuristics for targets, and will finish after the first valid path is found. \
+			This algorithm works best with small boards and with a high saftey-states cap (preferrably not on web).
 			",
-			Algorithm::BruteForceWarnsford => "A standard knights tour.\
-			This algorithm applies Warnsdorf's Rule, which tells you to always move to the square with the fewest available moves. \
-			This algorithm is a fuller implementation of Warnsdorf's Rule, including backtracking when Warnsdorf's Rule doesn't fully specify what to do.\
-			AND, it checks every possible state, so it is complete and GUARENTEED to find a solution if one exists.\
+			Algorithm::HamiltonianCycle => "UNTESTED closed knights tour, ignores targets.
+This algorithm tries to find a hamiltonian cycle using a copy-pasted algorithm from the internet. \
+			It appears to work but I haven't audited the code. It will stop if it has surpassed the saftey states cap. \
+			This algorithm is not recommended for use, but is added because I am lazy.
 			",
 		}
 	}
