@@ -2,7 +2,8 @@ use crate::{
 	solver::{pieces::ChessPiece, *},
 	ALG_STATES_CAP,
 };
-use strum::{EnumIter, IntoStaticStr};
+use bevy_egui_controls::ControlPanel;
+use strum::{EnumIter, IntoStaticStr, Display};
 
 mod hamiltonian;
 use hamiltonian::hamiltonian_tour_repeatless;
@@ -82,20 +83,15 @@ mod parital_computation {
 }
 
 #[derive(
-	Copy, Debug, Clone, Default, PartialEq, Eq, EnumIter, IntoStaticStr, Hash, PartialOrd, Ord,
+	Copy, Debug, Clone, Default, PartialEq, Eq, EnumIter, IntoStaticStr, Hash, PartialOrd, Ord, Display, ControlPanel
 )]
 pub enum Algorithm {
-	#[strum(serialize = "Warnsdorf")]
-	WarnsdorfBacktrack,
-
-	// #[strum(serialize = "Warnsdorf (Unreliable)")]
-	// WarnsdorfUnreliable,
-
-	// #[strum(serialize = "Brute Force (SLOW)")]
-	// HamiltonianPath,
-	#[strum(serialize = "Brute Force (slow)")]
+	#[strum(serialize = "Brute Force")]
 	#[default]
 	BruteForceWarnsford,
+
+	#[strum(serialize = "Warnsdorf (incomplete)")]
+	WarnsdorfBacktrack,
 
 	#[strum(serialize = "Hamiltonian Cycle")]
 	HamiltonianCycle,
