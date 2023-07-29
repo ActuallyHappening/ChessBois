@@ -1,3 +1,5 @@
+use crate::ProgramState;
+
 use super::*;
 
 use bevy_egui::*;
@@ -5,7 +7,7 @@ use bevy_egui::*;
 pub struct UiPlugin;
 impl Plugin for UiPlugin {
 	fn build(&self, app: &mut App) {
-		app.add_system(left_ui);
+		app.add_system(left_ui).add_system(right_ui_automatic.in_set(OnUpdate(ProgramState::Automatic)));
 	}
 }
 
@@ -22,7 +24,7 @@ pub fn left_ui(mut contexts: EguiContexts, state: ResMut<SharedState>) {
 
 				ui.label(state.alg.get_description());
 			});
-		
+
 		egui::CollapsingHeader::new("Change board")
 			.default_open(true)
 			.show(ui, |ui| {
@@ -32,6 +34,21 @@ pub fn left_ui(mut contexts: EguiContexts, state: ResMut<SharedState>) {
 		ui.collapsing("Visualisation options", |ui| {
 			state.visual_opts.ui(ui);
 		});
+	});
+}
+
+pub fn right_ui_automatic(mut contexts: EguiContexts, state: ResMut<SharedState>) {
+	egui::SidePanel::right("Right sidebar (automatic)").show(contexts.ctx_mut(), |ui| {
+		ui.heading("Automatic mode");
+
+		let state = state.into_inner();
+
+		egui::CollapsingHeader::new("Automatic options")
+			.default_open(true)
+			.show(ui, |ui| {
+				ui.label("What happens when you click a cell?");
+				state.on_click.ui(ui);
+			});
 	});
 }
 

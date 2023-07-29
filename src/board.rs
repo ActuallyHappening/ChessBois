@@ -111,6 +111,7 @@ mod shared_state {
 			})
 		}
 
+		// doesn't invalidate
 		pub fn remove_start(&mut self) -> &mut Self {
 			self.start = None;
 			self

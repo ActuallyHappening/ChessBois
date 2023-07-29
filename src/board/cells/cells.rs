@@ -85,7 +85,7 @@ fn spawn_cell(
 		RaycastPickTarget::default(), // Marker for the `bevy_picking_raycast` backend
 		OnPointer::<Over>::run_callback(cell_hovered),
 		OnPointer::<Out>::run_callback(cell_unhovered),
-		OnPointer::<Click>::run_callback(cell_clicked),
+		OnPointer::<Down>::run_callback(cell_clicked),
 	));
 
 	// add target symbol
@@ -168,7 +168,7 @@ fn cell_unhovered(
 }
 
 fn cell_clicked(
-	In(event): In<ListenedEvent<Click>>,
+	In(event): In<ListenedEvent<Down>>,
 	mut send_event: EventWriter<CellClicked>,
 
 	cells: Query<&ChessPoint, With<CellMarker>>,
@@ -177,6 +177,7 @@ fn cell_clicked(
 ) -> Bubble {
 	match cells.get(event.target) {
 		Ok(point) => {
+			info!("Cell clicked");
 			send_event.send(CellClicked(*point));
 		}
 		Err(_) => {

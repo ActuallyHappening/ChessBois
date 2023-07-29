@@ -61,9 +61,8 @@ const CELL_DISABLED_COLOUR: Color = Color::RED;
 
 const VISUALIZATION_HEIGHT: f32 = 3.;
 
+// TODO: Move into SharedState and add as key to cache
 static ALG_STATES_CAP: Mutex<u128> = Mutex::new(1_000);
-
-const UI_ENABLED_COLOUR: Color32 = Color32::GREEN;
 
 #[derive(Component)]
 pub struct MainCamera;

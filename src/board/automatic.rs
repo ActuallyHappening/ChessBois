@@ -56,7 +56,7 @@ fn handle_cell_clicked(
 	mut commands: Commands,
 ) {
 	if let Some(CellClicked(point)) = event.iter().next() {
-		debug!("Cell clicked in auto mode, toggling: {:?}", point);
+		info!("Cell clicked in auto mode, toggling: {:?}", point);
 
 		let state = state.into_inner();
 		match state.get(point) {
@@ -65,6 +65,7 @@ fn handle_cell_clicked(
 					CellOption::Available { .. } => {
 						state.rm(*point);
 						state.remove_start();
+						state.invalidate();
 					}
 					CellOption::Unavailable => {
 						state.add(*point);
@@ -90,7 +91,5 @@ fn handle_cell_clicked(
 				panic!("Cell out of bounds");
 			}
 		}
-
-		state.invalidate();
 	}
 }
