@@ -1,6 +1,7 @@
 use bevy_egui::egui::Ui;
 use derive_more::Constructor;
 use serde::{Deserialize, Serialize};
+use anyhow::Context;
 
 use crate::{
 	board::{coloured_moves::ColouredMoves, SharedState},
@@ -27,11 +28,24 @@ impl TryFrom<SharedState> for SavedState {
 
 impl SavedState {
 	pub fn to_json(&self) -> String {
-		serde_json::to_string(self).unwrap()
+		use jsonm::packer::*;
+		let mut packer = Packer::new();
+		let options = PackOptions::new();
+		
+		let packed = packer.pack(&self, &options).expect("Couldn't pack data");
+
+		serde_json::to_string(&packed).unwrap()
 	}
 
-	pub fn from_json(json: &str) -> Result<Self, serde_json::Error> {
-		serde_json::from_str(json)
+	pub fn from_json(json: &str) -> Result<Self, anyhow::Error> {
+		use jsonm::unpacker::Unpacker;
+
+		let json: serde_json::Value = serde_json::from_str(json).context("Cannot parse data as JSON")?;
+
+		let mut unpacker = Unpacker::new();
+		let unpacked: Self = unpacker.unpack(&json).context("Couldn't unpack data")?;
+
+		Ok(unpacked)
 	}
 }
 
