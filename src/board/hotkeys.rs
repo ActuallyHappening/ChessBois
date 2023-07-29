@@ -23,6 +23,7 @@ pub fn hotkeys(state: ResMut<SharedState>, keys: Res<Input<KeyCode>>) {
 	let state = state.into_inner();
 	state.on_click.activate_hotkeys(&keys);
 	state.alg.activate_hotkeys(&keys);
+	state.viz_colour.activate_hotkeys(&keys);
 
 	if keys.just_pressed(KeyCode::Escape) {
 		state.start = None;

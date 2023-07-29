@@ -8,10 +8,10 @@ use crate::{
 };
 use std::f32::consts::TAU;
 
-pub use colours::*;
+pub use viz_colours::*;
 pub use viz_opts::VisualOpts;
 
-mod colours;
+mod viz_colours;
 mod viz_opts;
 
 #[derive(Component, Debug, Clone, Copy)]
