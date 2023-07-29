@@ -7,6 +7,7 @@ use bevy_mod_picking::prelude::*;
 
 pub use cam_zoom::CAMERA_HEIGHT;
 pub use hotkeys::Hotkeyable;
+use serde::{Serialize, Deserialize};
 
 mod automatic;
 mod manual;
@@ -43,7 +44,7 @@ impl Plugin for BoardPlugin {
 }
 
 /// Re-rendered every frame
-#[derive(Resource, Default, Clone)]
+#[derive(Resource, Default, Clone,)]
 #[non_exhaustive]
 pub struct SharedState {
 	// inputs

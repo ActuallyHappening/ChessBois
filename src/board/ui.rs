@@ -123,6 +123,12 @@ pub fn right_ui_manual(
 					warning.ui(ui);
 				}
 			});
+
+		egui::CollapsingHeader::new("Save / Load")
+			.default_open(true)
+			.show(ui, |ui| {
+				state.saved_state_ui(ui);
+			});
 	});
 }
 

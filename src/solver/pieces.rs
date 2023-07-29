@@ -1,7 +1,9 @@
+use serde::{Serialize, Deserialize};
+
 use crate::ChessPoint;
 
 /// Holds info on valid moves
-#[derive(Hash, Clone, PartialEq, Eq)]
+#[derive(Hash, Clone, PartialEq, Eq, Serialize, Deserialize, Debug)]
 pub struct ChessPiece {
 	valid_moves: Vec<(i16, i16)>,
 }

@@ -3,8 +3,10 @@ use crate::ProgramState;
 use super::{*, squares::{CellHovered, CellClicked}};
 
 pub use freedom::ManualFreedom;
+pub use save::SavedState;
 mod freedom;
 mod check_move;
+mod save;
 
 pub struct ManualState;
 impl Plugin for ManualState {
