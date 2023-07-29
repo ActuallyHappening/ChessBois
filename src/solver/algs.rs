@@ -96,7 +96,7 @@ mod parital_computation {
 	ControlPanel,
 )]
 pub enum Algorithm {
-	#[strum(serialize = "Brute Force [b]")]
+	#[strum(serialize = "Brute Force [f]")]
 	#[default]
 	BruteForceWarnsford,
 
@@ -110,7 +110,7 @@ pub enum Algorithm {
 impl From<Algorithm> for KeyCode {
 	fn from(value: Algorithm) -> Self {
 		match value {
-			Algorithm::BruteForceWarnsford => KeyCode::B,
+			Algorithm::BruteForceWarnsford => KeyCode::F,
 			Algorithm::WarnsdorfBacktrack => KeyCode::W,
 			Algorithm::HamiltonianCycle => KeyCode::C,
 		}

@@ -1,10 +1,11 @@
+use bevy_egui_controls::ControlPanel;
 use serde::{Deserialize, Serialize};
-use strum::{Display, EnumIter, IntoEnumIterator};
+use strum::{Display, EnumIter};
 
 use super::*;
 
 #[derive(
-	Resource, Copy, Clone, Default, Display, EnumIter, PartialEq, Eq, Debug, Serialize, Deserialize,
+	Resource, Copy, Clone, Default, Display, EnumIter, PartialEq, Eq, Debug, Serialize, Deserialize, ControlPanel
 )]
 pub enum VizColour {
 	#[default]
@@ -13,7 +14,7 @@ pub enum VizColour {
 
 	#[strum(serialize = "Red [r]")]
 	Red,
-	#[strum(serialize = "Blue [b]")]
+	#[strum(serialize = "Blue [b]]")]
 	Blue,
 	#[strum(serialize = "Orange [o]")]
 	Orange,
@@ -21,6 +22,7 @@ pub enum VizColour {
 	#[strum(serialize = "Invisible [i]")]
 	Invisible,
 }
+impl Hotkeyable for VizColour {}
 
 impl From<VizColour> for Color {
 	fn from(colour: VizColour) -> Self {
@@ -39,18 +41,10 @@ impl From<VizColour> for KeyCode {
 	fn from(value: VizColour) -> Self {
 		match value {
 			VizColour::Green => KeyCode::G,
-			VizColour::Blue => KeyCode::B,
-			VizColour::Invisible => KeyCode::I,
-			VizColour::Orange => KeyCode::O,
 			VizColour::Red => KeyCode::R,
-		}
-	}
-}
-
-pub fn colour_hotkeys(keys: Res<Input<KeyCode>>, mut viz_col: ResMut<VizColour>) {
-	for key in VizColour::iter() {
-		if keys.just_pressed(KeyCode::from(key)) {
-			*viz_col = key;
+			VizColour::Blue => KeyCode::B,
+			VizColour::Orange => KeyCode::O,
+			VizColour::Invisible => KeyCode::I,
 		}
 	}
 }

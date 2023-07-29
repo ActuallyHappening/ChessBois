@@ -109,6 +109,12 @@ pub fn right_ui_manual(
 				}
 			});
 
+		egui::CollapsingHeader::new("Colours")
+			.default_open(true)
+			.show(ui, |ui| {
+				state.viz_colour.ui(ui);
+			});
+
 		egui::CollapsingHeader::new("Move warnings")
 			.default_open(true)
 			.show(ui, |ui| {
