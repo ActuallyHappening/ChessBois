@@ -33,7 +33,7 @@ impl SavedState {
 		match serde_json::from_str::<Self>(json) {
 			Ok(state) => Ok(state),
 			Err(new_err) => {
-				let old_err = old::try_depreciated_from_json(json);
+				let old_err = v0_2_x::try_depreciated_from_json(json);
 				if let Ok(state) = old_err {
 					return Ok(state);
 				}
@@ -43,7 +43,74 @@ impl SavedState {
 	}
 }
 
-mod old {
+mod v0_3_x {
+	use std::collections::HashMap;
+
+	use serde::{Deserialize, Serialize};
+
+	#[derive(Serialize, Deserialize)]
+	struct State {
+		moves: Vec<(Point, Point)>,
+		options: HashMap<Point, Cell>,
+	}
+
+	#[derive(Serialize, Deserialize, Hash, PartialEq, Eq)]
+	/// row column
+	struct Point(u16, u16);
+
+	impl From<Point> for crate::solver::ChessPoint {
+		fn from(value: Point) -> Self {
+			Self {
+				column: value.1,
+				row: value.0,
+			}
+		}
+	}
+
+	impl From<crate::solver::ChessPoint> for Point {
+		fn from(value: crate::solver::ChessPoint) -> Self {
+			Self(value.row, value.column)
+		}
+	}
+
+	#[derive(Serialize_repr, Deserialize_repr)]
+	enum Cell {
+		Disabled = 0,
+		Finishable = 1,
+		NoFinishable = 2,
+	}
+
+	impl From<Cell> for crate::solver::CellOption {
+		fn from(value: Cell) -> Self {
+			match value {
+				Cell::Disabled => Self::Unavailable,
+				Cell::Finishable => Self::Available {
+					can_finish_on: true,
+				},
+				Cell::NoFinishable => Self::Available {
+					can_finish_on: false,
+				},
+			}
+		}
+	}
+
+	impl From<crate::solver::CellOption> for Cell {
+		fn from(value: crate::solver::CellOption) -> Self {
+			match value {
+				crate::solver::CellOption::Unavailable => Self::Disabled,
+				crate::solver::CellOption::Available { can_finish_on } => {
+					if can_finish_on {
+						Self::Finishable
+					} else {
+						Self::NoFinishable
+					}
+				}
+			}
+		}
+	}
+}
+
+mod v0_2_x {
 	use std::collections::HashSet;
 
 	use anyhow::Context;
@@ -70,7 +137,8 @@ mod old {
 
 		let board_options = BoardOptions::new(max_width, max_height);
 		let moves = data
-			.moves.moves
+			.moves
+			.moves
 			.into_iter()
 			.map(|m| (m.into(), data.colours.pop().unwrap().into()))
 			.collect();
@@ -92,7 +160,6 @@ mod old {
 		moves: Moves,
 		colours: Vec<Colour>,
 	}
-
 
 	#[derive(Serialize, Deserialize, PartialEq, Eq, Hash)]
 	struct Moves {
