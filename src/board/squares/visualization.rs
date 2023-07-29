@@ -32,7 +32,9 @@ impl SharedState {
 		mut mma: ResSpawning,
 	) {
 		despawn_visualization(&mut commands, visualization);
-		if !state.visual_opts.show_visualisation { return }
+		if !state.visual_opts.show_visualisation {
+			return;
+		}
 		if let Some(moves) = &state.moves {
 			spawn_visualization(
 				moves.clone(),
@@ -120,7 +122,11 @@ fn spawn_path_line(
 		.into(),
 	);
 
-	let material = mat.add(colour.into());
+	let material = mat.add({
+		let mut mat: StandardMaterial = colour.into();
+		mat.depth_bias = number as f32;
+		mat
+	});
 	commands.spawn((
 		PbrBundle {
 			mesh: mesh_thin_rectangle,
