@@ -37,7 +37,7 @@ impl SavedState {
 				if let Ok(state) = old_err {
 					return Ok(state);
 				}
-				Err(new_err).context("JSON dec`oding failed & depreciated failed")
+				Err(new_err).context("JSON decoding failed & depreciated failed")
 			}
 		}
 	}
@@ -164,9 +164,10 @@ impl SharedState {
 		#[cfg(not(target_arch = "wasm32"))]
 		if ui.button("Load").clicked() {
 			let json = crate::clipboard::get_from_clipboard();
-			let state = SavedState::from_json(&json).unwrap();
-			self.moves = Some(state.moves);
-			self.board_options = state.board_options;
+			if let Ok(state) = SavedState::from_json(&json) {
+				self.moves = Some(state.moves);
+				self.board_options = state.board_options;
+			};
 		}
 	}
 }
