@@ -34,7 +34,3 @@ pub struct AnnotatedCellOptions {
 	tint: Color,
 	board_option: CellOption,
 }
-
-/// Marker for Markers lol
-#[derive(Component)]
-pub struct MarkerMarker;

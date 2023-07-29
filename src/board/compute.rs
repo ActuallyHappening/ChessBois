@@ -1,4 +1,4 @@
-use super::{cells::CellMark, *};
+use super::{squares::CellMark, *};
 use crate::solver::algs::{self, Computation, ComputeInput};
 
 /// Syncs [SharedState] resource with computations

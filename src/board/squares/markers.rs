@@ -1,6 +1,10 @@
-use crate::solver::algs::{Computation};
+use crate::solver::algs::Computation;
 
 use super::*;
+
+/// Marker for Markers lol
+#[derive(Component)]
+pub struct MarkerMarker;
 
 #[derive(Clone, Copy)]
 pub enum CellMark {

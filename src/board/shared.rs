@@ -2,7 +2,7 @@
 
 use bevy::prelude::*;
 
-use super::{cells::CellClicked, *};
+use super::{squares::CellClicked, *};
 use crate::{errors::Error, solver::CellOption, GroundClicked, ProgramState};
 
 pub struct SharedPlugin;

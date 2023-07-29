@@ -2,7 +2,7 @@ use derive_more::{Deref, DerefMut, From, Into};
 
 use crate::solver::{Move, Moves};
 
-use super::cells::visualization::VizColour;
+use super::squares::visualization::VizColour;
 
 /// Wrapper around [Vec<(Move, VizColour)>] with some extra functionality
 #[derive(Clone, From, Into, Deref, DerefMut)]

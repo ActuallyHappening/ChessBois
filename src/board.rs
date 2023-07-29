@@ -11,7 +11,7 @@ pub use hotkeys::Hotkeyable;
 mod automatic;
 mod manual;
 mod cam_zoom;
-mod cells;
+mod squares;
 mod coloured_moves;
 mod compute;
 mod hotkeys;
@@ -59,7 +59,7 @@ pub struct SharedState {
 
 	// visuals
 	pub moves: Option<ColouredMoves>,
-	pub visual_opts: cells::visualization::VisualOpts,
+	pub visual_opts: squares::visualization::VisualOpts,
 	pub cam_zoom: CameraZoom,
 
 	// ui / interactions
@@ -68,7 +68,7 @@ pub struct SharedState {
 
 pub use self::shared_state::StateInvalidated;
 mod shared_state {
-	use super::{cells::visualization, *};
+	use super::{squares::visualization, *};
 	use crate::solver::algs::ComputeInput;
 
 	impl Plugin for SharedState {
@@ -170,7 +170,7 @@ mod shared_state {
 use self::{
 	automatic::{AutomaticPlugin, ToggleAction},
 	cam_zoom::{CamZoomPlugin, CameraZoom},
-	cells::CellsPlugin,
+	squares::CellsPlugin,
 	coloured_moves::ColouredMoves,
 	hotkeys::HotkeysPlugin,
 	saftey_cap::SafteyCap,
