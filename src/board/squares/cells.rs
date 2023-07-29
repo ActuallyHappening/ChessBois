@@ -33,7 +33,7 @@ fn spawn_cells(state: &SharedState, commands: &mut Commands, mma: &mut ResSpawni
 	let options = &state.board_options;
 
 	for point in options.get_all_points() {
-		let colour = compute_colour(&point, Some(options), start);
+		let colour = compute_colour(&point, options, start);
 		spawn_cell(point, options, colour, commands, mma);
 	}
 }
@@ -48,16 +48,12 @@ fn despawn_cells(
 }
 
 /// Takes as much information as it can get and returns the colour the cell should be.
-///
-/// - Pass None to options to skip checking if cell is disabled
-/// - Pass None to start to skip checking if cell is selected
 fn compute_colour(
 	point: &ChessPoint,
-	options: Option<&BoardOptions>,
+	options: &BoardOptions,
 	start: Option<ChessPoint>,
 ) -> Color {
-	if options.is_some_and(|options| options.get_unavailable_points().contains(point)) {
-		// info!("Point {} is unavailable", point);
+	if options.get_unavailable_points().contains(point) {
 		CELL_DISABLED_COLOUR
 	} else if Some(*point) == start {
 		CELL_SELECTED_COLOUR
