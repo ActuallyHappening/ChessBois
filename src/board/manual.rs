@@ -29,7 +29,9 @@ fn handle_cell_clicked(
 		if state.moves.is_none() {
 			state.moves = Some(ColouredMoves::default());
 		}
-		let col = state.viz_colour;
-		state.moves.as_mut().unwrap().manual_add_move(*point, col);
+		if let (true, _) = state.manual_freedom.check_move(&state, *point) {
+			let col = state.viz_colour;
+			state.moves.as_mut().unwrap().manual_add_move(*point, col);
+		}
 	}
 }
