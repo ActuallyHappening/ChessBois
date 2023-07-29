@@ -14,6 +14,20 @@ impl Plugin for SharedPlugin {
 	}
 }
 
+impl ProgramState {
+	pub fn switch(&self, to: Self, state: &mut SharedState) {
+		match (self, to) {
+			(ProgramState::Automatic, ProgramState::Manual) => {
+				
+			}
+			(ProgramState::Manual, ProgramState::Automatic) => {
+
+			}
+			(from, to) => panic!("Unacceptable state transition {:?}", (from, to)),
+		}
+	}
+}
+
 fn handle_plane_clicked(mut click: EventReader<GroundClicked>, state: ResMut<SharedState>) {
 	if click.iter().next().is_some() {
 		debug!("Plane clicked");

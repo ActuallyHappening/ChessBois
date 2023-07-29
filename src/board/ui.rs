@@ -7,7 +7,10 @@ use bevy_egui::*;
 pub struct UiPlugin;
 impl Plugin for UiPlugin {
 	fn build(&self, app: &mut App) {
-		app.add_system(left_ui).add_system(right_ui_automatic.in_set(OnUpdate(ProgramState::Automatic)));
+		app
+			.add_system(left_ui)
+			.add_system(right_ui_automatic.in_set(OnUpdate(ProgramState::Automatic)))
+			.add_system(right_ui_manual.in_set(OnUpdate(ProgramState::Manual)));
 	}
 }
 
@@ -37,14 +40,14 @@ pub fn left_ui(mut contexts: EguiContexts, state: ResMut<SharedState>) {
 			state.visual_opts.ui(ui);
 			state.cam_zoom.ui(ui);
 		});
-
-		ui.collapsing("Results summary", |ui| {
-			state.summarize(ui);
-		});
 	});
 }
 
-pub fn right_ui_automatic(mut contexts: EguiContexts, state: ResMut<SharedState>, mut to_manual: ResMut<NextState<ProgramState>>) {
+pub fn right_ui_automatic(
+	mut contexts: EguiContexts,
+	state: ResMut<SharedState>,
+	mut to_manual: ResMut<NextState<ProgramState>>,
+) {
 	egui::SidePanel::right("Right sidebar (automatic)").show(contexts.ctx_mut(), |ui| {
 		ui.heading("Mode options");
 		if ui.button("Switch to manual").clicked() {
@@ -59,10 +62,18 @@ pub fn right_ui_automatic(mut contexts: EguiContexts, state: ResMut<SharedState>
 				ui.label("What happens when you click a cell?");
 				state.on_click.ui(ui);
 			});
+
+		ui.collapsing("Results summary", |ui| {
+			state.summarize(ui);
+		});
 	});
 }
 
-pub fn right_ui_manual(mut contexts: EguiContexts, state: ResMut<SharedState>, mut to_manual: ResMut<NextState<ProgramState>>) {
+pub fn right_ui_manual(
+	mut contexts: EguiContexts,
+	state: ResMut<SharedState>,
+	mut to_manual: ResMut<NextState<ProgramState>>,
+) {
 	egui::SidePanel::right("Right sidebar (manual)").show(contexts.ctx_mut(), |ui| {
 		ui.heading("Mode options");
 		if ui.button("Switch to automatic").clicked() {

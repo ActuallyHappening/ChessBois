@@ -43,10 +43,6 @@ pub enum ProgramState {
 	Manual,
 }
 
-pub struct AutomaticState;
-pub struct ManualState;
-pub struct BothStates;
-
 use board::CAMERA_HEIGHT;
 const LIGHT_HEIGHT: f32 = CAMERA_HEIGHT;
 
