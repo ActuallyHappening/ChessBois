@@ -51,7 +51,7 @@ impl MoveWarning {
 			{
 				if self <= &MoveWarning::NoMoves {
 					Color32::GREEN
-				} else if self <= &MoveWarning::NotValid {
+				} else if self <= &MoveWarning::AlreadyDone {
 					Color32::YELLOW
 				} else {
 					Color32::RED
