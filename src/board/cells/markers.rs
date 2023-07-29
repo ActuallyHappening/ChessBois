@@ -44,7 +44,7 @@ impl SharedState {
 	}
 }
 
-pub fn spawn_markers(state: &SharedState, commands: &mut Commands, mma: &mut ResSpawning) {
+fn spawn_markers(state: &SharedState, commands: &mut Commands, mma: &mut ResSpawning) {
 	for point in state.get_all_points() {
 		spawn_mark(
 			point,
@@ -56,20 +56,13 @@ pub fn spawn_markers(state: &SharedState, commands: &mut Commands, mma: &mut Res
 	}
 }
 
-pub fn despawn_markers(
+fn despawn_markers(
 	commands: &mut Commands,
 	markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
 ) {
 	for mark in markers.iter() {
 		commands.entity(mark).despawn_recursive();
 	}
-}
-
-pub fn sys_despawn_markers(
-	mut commands: Commands,
-	markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
-) {
-	despawn_markers(&mut commands, markers);
 }
 
 fn spawn_mark(
