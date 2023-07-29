@@ -31,6 +31,17 @@ impl SharedState {
 			piece: self.piece,
 		}
 	}
+
+	pub fn sys_render_markers(
+		state: Res<SharedState>,
+
+		mut commands: Commands,
+		markers: Query<Entity, (With<MarkerMarker>, With<ChessPoint>)>,
+		mut mma: ResSpawning,
+	) {
+		despawn_markers(&mut commands, markers);
+		spawn_markers(&state, &mut commands, &mut mma);
+	}
 }
 
 pub fn spawn_markers(state: &SharedState, commands: &mut Commands, mma: &mut ResSpawning) {
@@ -38,7 +49,7 @@ pub fn spawn_markers(state: &SharedState, commands: &mut Commands, mma: &mut Res
 		spawn_mark(
 			point,
 			state,
-			cell_get_transform(point, &state),
+			cell_get_transform(point, state),
 			commands,
 			mma,
 		);

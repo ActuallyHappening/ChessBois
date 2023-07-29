@@ -63,7 +63,7 @@ mod shared_state {
 
 	impl Plugin for SharedState {
 		fn build(&self, app: &mut App) {
-			app.add_systems((SharedState::sys_render_cells, SharedState::sys_render_viz));
+			app.add_systems((SharedState::sys_render_cells, SharedState::sys_render_viz, SharedState::sys_render_markers));
 		}
 	}
 
