@@ -1,4 +1,4 @@
-use crate::solver::{pieces::ChessPiece, *};
+use crate::{solver::{pieces::ChessPiece, *}, board::Hotkeyable};
 use bevy_egui_controls::ControlPanel;
 use strum::{Display, EnumIter, IntoStaticStr};
 
@@ -96,16 +96,27 @@ mod parital_computation {
 	ControlPanel,
 )]
 pub enum Algorithm {
-	#[strum(serialize = "Brute Force")]
+	#[strum(serialize = "Brute Force [b]")]
 	#[default]
 	BruteForceWarnsford,
 
-	#[strum(serialize = "Warnsdorf (incomplete)")]
+	#[strum(serialize = "Warnsdorf (incomplete) [w]")]
 	WarnsdorfBacktrack,
 
-	#[strum(serialize = "Hamiltonian Cycle")]
+	#[strum(serialize = "Hamiltonian Cycle [c]")]
 	HamiltonianCycle,
 }
+
+impl From<Algorithm> for KeyCode {
+	fn from(value: Algorithm) -> Self {
+		match value {
+			Algorithm::BruteForceWarnsford => KeyCode::B,
+			Algorithm::WarnsdorfBacktrack => KeyCode::W,
+			Algorithm::HamiltonianCycle => KeyCode::C,
+		}
+	}
+}
+impl Hotkeyable for Algorithm {}
 
 impl Algorithm {
 	pub fn get_description(&self) -> &'static str {
@@ -130,20 +141,31 @@ This algorithm tries to find a hamiltonian cycle using a copy-pasted algorithm f
 }
 
 impl Algorithm {
-	pub fn tour_computation(
-		&self,
-		input: ComputeInput,
-	) -> Computation {
+	pub fn tour_computation(&self, input: ComputeInput) -> Computation {
 		match self {
 			// Algorithm::WarnsdorfUnreliable => warnsdorf_tour_repeatless(piece, options, start),
-			Algorithm::WarnsdorfBacktrack => {
-				brute_recursive_tour_repeatless(&input.piece, input.board_options, input.start, TourType::Weak, input.safety_cap)
-			}
-			Algorithm::BruteForceWarnsford => {
-				brute_recursive_tour_repeatless(&input.piece, input.board_options, input.start, TourType::BruteForce, input.safety_cap)
-			}
+			Algorithm::WarnsdorfBacktrack => brute_recursive_tour_repeatless(
+				&input.piece,
+				input.board_options,
+				input.start,
+				TourType::Weak,
+				input.safety_cap,
+			),
+			Algorithm::BruteForceWarnsford => brute_recursive_tour_repeatless(
+				&input.piece,
+				input.board_options,
+				input.start,
+				TourType::BruteForce,
+				input.safety_cap,
+			),
 			// Algorithm::HamiltonianPath => hamiltonian_tour_repeatless(piece, options, start, false),
-			Algorithm::HamiltonianCycle => hamiltonian_tour_repeatless(&input.piece, input.board_options, input.start, input.safety_cap, true),
+			Algorithm::HamiltonianCycle => hamiltonian_tour_repeatless(
+				&input.piece,
+				input.board_options,
+				input.start,
+				input.safety_cap,
+				true,
+			),
 		}
 	}
 
@@ -168,10 +190,7 @@ impl Algorithm {
 						explored_states,
 						input.safety_cap
 					);
-					let comp =
-						input
-							.alg
-							.tour_computation(input.clone());
+					let comp = input.alg.tour_computation(input.clone());
 					add_solution_to_cache(input, comp.clone());
 				} else {
 					trace!(
@@ -184,9 +203,7 @@ impl Algorithm {
 			cached_comp
 		} else {
 			debug!("Cache miss");
-			let comp = input
-				.alg
-				.tour_computation(input.clone());
+			let comp = input.alg.tour_computation(input.clone());
 			add_solution_to_cache(input, comp.clone());
 			comp
 		}

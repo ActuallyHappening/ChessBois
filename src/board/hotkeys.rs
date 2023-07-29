@@ -1,28 +1,38 @@
-use super::visualization::colour_hotkeys;
-use super::{
-	automatic::ToggleAction, ui::control_ui_hotkeys_automatic,
-};
-use crate::board::manual::control_ui_hotkeys_manual;
-use crate::ProgramState;
+use super::*;
 use bevy::prelude::*;
+use strum::IntoEnumIterator;
 
 pub struct HotkeysPlugin;
 impl Plugin for HotkeysPlugin {
 	fn build(&self, app: &mut App) {
-		app
-			// automatic
-			.add_systems(
-				(
-					ToggleAction::change_toggle_action_hotkeys,
-					control_ui_hotkeys_automatic,
-				)
-					.in_set(OnUpdate(ProgramState::Automatic)),
-			)
-			// manual
-			.add_systems(
-				(colour_hotkeys, control_ui_hotkeys_manual).in_set(OnUpdate(ProgramState::Manual)),
-			)
-			// both
-			.add_systems(());
+		app.add_system(hotkeys);
+	}
+}
+
+pub trait Hotkeyable: Into<KeyCode> + Clone + IntoEnumIterator {
+	fn activate_hotkeys(&mut self, keys: &Res<Input<KeyCode>>) {
+		for key in Self::iter() {
+			if keys.just_pressed(key.clone().into()) {
+				*self = key
+			}
+		}
+	}
+}
+
+pub fn hotkeys(state: ResMut<SharedState>, keys: Res<Input<KeyCode>>) {
+	let state = state.into_inner();
+	state.on_click.activate_hotkeys(&keys);
+	state.alg.activate_hotkeys(&keys);
+
+	if keys.just_pressed(KeyCode::Escape) {
+		state.start = None;
+	}
+	if keys.just_pressed(KeyCode::Space) || keys.just_pressed(KeyCode::Delete) {
+		state.start = None;
+		// state.moves = None;
+	}
+
+	if keys.just_pressed(KeyCode::H) {
+		state.visual_opts.show_visualisation = !state.visual_opts.show_visualisation;
 	}
 }

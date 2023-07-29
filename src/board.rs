@@ -6,16 +6,17 @@ use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 
 pub use cam_zoom::CAMERA_HEIGHT;
+pub use hotkeys::Hotkeyable;
 
 mod automatic;
 // mod manual;
+mod cam_zoom;
 mod cells;
 mod coloured_moves;
 mod compute;
-// mod hotkeys;
-mod cam_zoom;
-mod ui;
+mod hotkeys;
 mod saftey_cap;
+mod ui;
 
 pub struct BoardPlugin;
 impl Plugin for BoardPlugin {
@@ -25,6 +26,7 @@ impl Plugin for BoardPlugin {
 			.add_plugin(UiPlugin)
 			.add_plugin(AutomaticPlugin)
 			// .add_plugin(ManualState)
+			.add_plugin(HotkeysPlugin)
 			.add_plugin(SharedState::default())
 			.add_plugin(CellsPlugin)
 			.add_plugin(CamZoomPlugin)
@@ -169,7 +171,8 @@ use self::{
 	cam_zoom::{CamZoomPlugin, CameraZoom},
 	cells::CellsPlugin,
 	coloured_moves::ColouredMoves,
-	ui::UiPlugin, saftey_cap::SafteyCap,
+	saftey_cap::SafteyCap,
+	ui::UiPlugin, hotkeys::HotkeysPlugin,
 };
 
 /// Sets up default resources + sends initial [NewOptions] event

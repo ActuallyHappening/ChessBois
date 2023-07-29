@@ -1,6 +1,6 @@
 use crate::{errors::Error, solver::CellOption, GroundClicked, ProgramState};
 
-use super::{cells::CellClicked, compute::compute_from_state, *};
+use super::{cells::CellClicked, compute::compute_from_state, *, hotkeys::Hotkeyable};
 use bevy_egui_controls::ControlPanel;
 use strum::{EnumIs, EnumIter};
 
@@ -31,6 +31,7 @@ pub enum ToggleAction {
 	#[strum(serialize = "Target / Untarget [t]")]
 	TargetCell,
 }
+impl Hotkeyable for ToggleAction {}
 
 impl From<ToggleAction> for KeyCode {
 	fn from(value: ToggleAction) -> Self {
