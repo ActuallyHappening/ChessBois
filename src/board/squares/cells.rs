@@ -125,34 +125,12 @@ fn spawn_cell(
 fn cell_hovered(
 	// The first parameter is always the `ListenedEvent`, passed in by the event listening system.
 	In(event): In<ListenedEvent<Over>>,
-	options: ResMut<SharedState>,
-	cells: Query<(&Handle<StandardMaterial>, &ChessPoint)>,
-
-	mut materials: ResMut<Assets<StandardMaterial>>,
-	mut commands: Commands,
+	cells: Query<&ChessPoint, With<CellMarker>>,
+	mut send_event: EventWriter<CellHovered>,
 ) -> Bubble {
-	let (mat, point) = cells.get(event.target).unwrap();
+	let point = cells.get(event.target).unwrap();
 
-	match options.get(point) {
-		Some(CellOption::Available { .. }) => {
-			// sets colour to selected
-			let material = materials.get_mut(mat).unwrap();
-			material.base_color = CELL_SELECTED_COLOUR;
-
-			if options.start != Some(*point) {
-				let options = options.into_inner();
-				options.set_start(*point);
-			}
-		}
-		Some(CellOption::Unavailable) => {
-			// unavailable
-		}
-		None => Error::handle_error(
-			LogLevel::Error,
-			"Cell selected but no ChessPoint found",
-			&mut commands,
-		),
-	}
+	send_event.send(CellHovered(*point));	
 
 	Bubble::Burst
 }
@@ -160,16 +138,12 @@ fn cell_hovered(
 /// Just undoes colour change to normal
 fn cell_unhovered(
 	In(event): In<ListenedEvent<Out>>,
-	options: Res<SharedState>,
-	square: Query<(&Handle<StandardMaterial>, &ChessPoint)>,
-
-	mut materials: ResMut<Assets<StandardMaterial>>,
+	cells: Query<&ChessPoint>,
+	mut send_event: EventWriter<CellUnhovered>
 ) -> Bubble {
-	let (mat, point) = square.get(event.target).unwrap();
+	let point = cells.get(event.target).unwrap();
 
-	// sets colour to selected
-	let material = materials.get_mut(mat).unwrap();
-	material.base_color = compute_colour(point, Some(&options.board_options), None);
+	send_event.send(CellUnhovered(*point));
 
 	Bubble::Burst
 }
@@ -193,5 +167,5 @@ fn cell_clicked(
 			panic!("{}", err_msg);
 		}
 	}
-	Bubble::Up
+	Bubble::Burst
 }

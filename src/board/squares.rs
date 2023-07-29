@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use std::f32::consts::TAU;
 
 use super::*;
-use crate::errors::{Error, LogLevel};
+use crate::errors::Error;
 use crate::solver::CellOption;
 use crate::utils::EntityCommandsExt;
 use crate::*;
@@ -13,17 +13,20 @@ pub use markers::CellMark;
 
 use coords::*;
 
-pub use cells::CellClicked;
+pub use cells::{CellClicked, CellHovered, CellUnhovered};
 
 mod cells;
 mod coords;
 mod markers;
 pub mod visualization;
 
-pub struct CellsPlugin;
-impl Plugin for CellsPlugin {
+pub struct SquaresPlugin;
+impl Plugin for SquaresPlugin {
 	fn build(&self, app: &mut App) {
-		app.add_event::<CellClicked>();
+		app
+			.add_event::<CellClicked>()
+			.add_event::<CellHovered>()
+			.add_event::<CellUnhovered>();
 	}
 }
 

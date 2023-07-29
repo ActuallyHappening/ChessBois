@@ -31,7 +31,7 @@ impl Plugin for BoardPlugin {
 			.add_plugin(SharedPlugin)
 			.add_plugin(HotkeysPlugin)
 			.add_plugin(SharedState::default())
-			.add_plugin(CellsPlugin)
+			.add_plugin(SquaresPlugin)
 			.add_plugin(CamZoomPlugin)
 			.add_plugins(
 				DefaultPickingPlugins
@@ -171,7 +171,7 @@ mod shared_state {
 use self::{
 	automatic::{AutomaticPlugin, ToggleAction},
 	cam_zoom::{CamZoomPlugin, CameraZoom},
-	squares::CellsPlugin,
+	squares::SquaresPlugin,
 	coloured_moves::ColouredMoves,
 	hotkeys::HotkeysPlugin,
 	saftey_cap::SafteyCap,
