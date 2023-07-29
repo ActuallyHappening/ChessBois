@@ -1,0 +1,22 @@
+{
+	"folders": [
+		{
+			"path": "src"
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"cSpell.words": [
+			"algs",
+			"denormalized",
+			"Egui",
+			"Fullscreen",
+			"Itertools",
+			"Pickable",
+			"Raycast",
+			"warnsdorf"
+		]
+	}
+}
