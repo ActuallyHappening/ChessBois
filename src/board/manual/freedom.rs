@@ -1,10 +1,11 @@
 use bevy::prelude::Resource;
+use bevy_egui::egui::Color32;
 use bevy_egui_controls::ControlPanel;
 use strum::{EnumIs, EnumIter};
 
 use crate::{
 	board::SharedState,
-	solver::{pieces::ChessPiece, Moves},
+	solver::Moves,
 	ChessPoint,
 };
 
@@ -46,33 +47,54 @@ impl ManualFreedom {
 		let warning = state.check_move(next);
 		let ok = match self {
 			ManualFreedom::Free => !matches!(warning, MoveWarning::NonExistant),
-			ManualFreedom::AnyPossible => !matches!(warning, MoveWarning::NonExistant | MoveWarning::NotValid),
-			ManualFreedom::ValidOnly => matches!(warning, MoveWarning::OK | MoveWarning::NoMoves),
+			ManualFreedom::AnyPossible => warning < MoveWarning::NotValid,
+			ManualFreedom::ValidOnly => warning <= MoveWarning::NoMoves,
 		};
 		(ok, warning)
 	}
 }
 
-#[derive(PartialOrd, PartialEq)]
+/// `<= MoveWarning::NoMoves` is always a valid move
+#[derive(PartialOrd, PartialEq, strum::Display)]
 pub enum MoveWarning {
-	// (potential) ERRs
-	/// Not on board
-	NonExistant,
+	// smallest
+	OK,
 
-	/// Not a valid knight/piece move
-	NotValid,
-
-	/// Same as *any* previous move
-	AlreadyDone,
-
-	/// Same as *last* move
-	Repeated,
-
-	// OK
 	/// No moves to judge agains
+	#[strum(serialize = "No moves to judge against")]
 	NoMoves,
 
-	OK,
+	/// Same as *last* move
+	#[strum(serialize = "Cell is the same as the last cell.")]
+	Repeated,
+
+	/// Same as *any* previous move
+	#[strum(serialize = "Cell already passed through")]
+	AlreadyDone,
+
+	// (potential) ERRs
+	/// Not on board
+	#[strum(serialize = "Point does not exist on the board")]
+	NonExistant,
+
+	// largest
+	/// Not a valid knight/piece move
+	#[strum(serialize = "Not a valid knight/piece move")]
+	NotValid,
+}
+
+impl MoveWarning {
+	pub fn ui(&self, ui: &mut bevy_egui::egui::Ui) {
+		ui.colored_label({
+			if self <= &MoveWarning::NoMoves {
+				Color32::GREEN
+			} else if self <= &MoveWarning::NotValid {
+				Color32::YELLOW
+			} else {
+				Color32::RED
+			}
+		}, format!("{}", self));
+	}
 }
 
 impl SharedState {

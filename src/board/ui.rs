@@ -108,6 +108,15 @@ pub fn right_ui_manual(
 					state.moves = None;
 				}
 			});
+
+		egui::CollapsingHeader::new("Move warnings")
+			.default_open(true)
+			.show(ui, |ui| {
+				if let Some(next) = state.start {
+					let (_, warning) = state.manual_freedom.check_move(state, next);
+					warning.ui(ui);
+				}
+			});
 	});
 }
 
