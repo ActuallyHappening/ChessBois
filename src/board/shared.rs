@@ -30,6 +30,7 @@ impl SharedState {
 			ProgramState::Automatic => {
 				self.visual_opts.show_numbers = true;
 				self.visual_opts.show_markers = true;
+				self.invalidate();
 			}
 		}
 	}
