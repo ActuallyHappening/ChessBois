@@ -57,6 +57,7 @@ pub struct SharedState {
 	pub on_click: ToggleAction,
 }
 
+pub use self::shared_state::StateInvalidated;
 mod shared_state {
 	use super::{cells::visualization, *};
 	use crate::solver::algs::ComputeInput;
@@ -69,6 +70,13 @@ mod shared_state {
 				SharedState::sys_render_markers,
 			));
 		}
+	}
+
+	#[must_use = "Not using this skips invalidating state, use .invalidates(state) to fix"]
+	pub enum StateInvalidated {
+		Invalidated,
+		InvalidatedAndClearStart,
+		Valid,
 	}
 
 	impl std::ops::Deref for SharedState {
@@ -118,6 +126,17 @@ mod shared_state {
 		pub fn set_moves(&mut self, moves: Moves) -> &mut Self {
 			self.set_coloured_moves(moves.using_colour(visualization::VizColour::default()));
 			self
+		}
+	}
+
+	impl StateInvalidated {
+		pub fn invalidates(self, state: &mut SharedState) {
+			if matches!(self, StateInvalidated::Invalidated | StateInvalidated::InvalidatedAndClearStart) {
+				state.invalidate();
+			}
+			if let StateInvalidated::InvalidatedAndClearStart = self {
+				state.start = None;
+			}
 		}
 	}
 }

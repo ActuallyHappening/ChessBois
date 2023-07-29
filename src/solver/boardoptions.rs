@@ -1,6 +1,9 @@
 use std::num::NonZeroUsize;
 
+use crate::board::StateInvalidated;
+
 use super::*;
+use bevy_egui::*;
 
 /// Necessary information to make custom board.
 /// Derefs to `Vec<Vec<CellOption>>`, is mutable.
@@ -12,6 +15,40 @@ pub struct BoardOptions {
 impl Default for BoardOptions {
 	fn default() -> Self {
 		Self::new(8, 8)
+	}
+}
+
+impl BoardOptions {
+	const MAX_SIZE: u8 = 20;
+
+	pub fn ui(&mut self, ui: &mut egui::Ui) -> StateInvalidated {
+		let mut state = StateInvalidated::Valid;
+
+		ui.add(
+			egui::Slider::from_get_set(1.0..=(Self::MAX_SIZE as f64), |val| {
+				if let Some(new_val) = val {
+					self.set_width(new_val as u16);
+					state = StateInvalidated::InvalidatedAndClearStart;
+				}
+
+				self.width() as f64
+			})
+			.step_by(1.0).text("Width")
+		);
+
+		ui.add(
+			egui::Slider::from_get_set(1.0..=(Self::MAX_SIZE as f64), |val| {
+				if let Some(new_val) = val {
+					self.set_height(new_val as u16);
+					state = StateInvalidated::InvalidatedAndClearStart;
+				}
+
+				self.height() as f64
+			})
+			.step_by(1.0).text("Height")
+		);
+
+		state
 	}
 }
 
@@ -232,7 +269,7 @@ impl BoardOptions {
 		}
 	}
 
-	pub fn update_width(mut self, new_width: u16) -> Self {
+	pub fn set_width(&mut self, new_width: u16) -> &mut Self {
 		let new_cell = self.targets_state().into_available_cell_option();
 		for row in self.options.iter_mut() {
 			if row.len() < new_width as usize {
@@ -242,14 +279,10 @@ impl BoardOptions {
 			}
 		}
 		self.check_for_targets_reset();
-		Self {
-			options: self.options,
-		}
+		self
 	}
 
-	/// Increases/decreases the height of the options,
-	/// defaulting to Available for new cells
-	pub fn update_height(mut self, new_height: u16) -> Self {
+	pub fn set_height(&mut self, new_height: u16) -> &mut Self {
 		let width = self.width() as usize;
 		let new_cell = self.targets_state().into_available_cell_option();
 		if self.options.len() < new_height as usize {
@@ -260,9 +293,7 @@ impl BoardOptions {
 			self.options.truncate(new_height as usize);
 		}
 		self.check_for_targets_reset();
-		Self {
-			options: self.options,
-		}
+		self
 	}
 
 	pub fn get_unavailable_points(&self) -> Vec<ChessPoint> {

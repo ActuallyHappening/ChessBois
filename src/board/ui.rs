@@ -22,6 +22,12 @@ pub fn left_ui(mut contexts: EguiContexts, state: ResMut<SharedState>) {
 
 				ui.label(state.alg.get_description());
 			});
+		
+		egui::CollapsingHeader::new("Change board")
+			.default_open(true)
+			.show(ui, |ui| {
+				state.board_options.ui(ui).invalidates(state);
+			});
 
 		ui.collapsing("Visualisation options", |ui| {
 			state.visual_opts.ui(ui);
