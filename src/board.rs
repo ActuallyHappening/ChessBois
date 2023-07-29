@@ -16,6 +16,7 @@ mod coloured_moves;
 mod compute;
 mod hotkeys;
 mod saftey_cap;
+mod shared;
 mod ui;
 
 pub struct BoardPlugin;
@@ -26,6 +27,7 @@ impl Plugin for BoardPlugin {
 			.add_plugin(UiPlugin)
 			.add_plugin(AutomaticPlugin)
 			// .add_plugin(ManualState)
+			.add_plugin(SharedPlugin)
 			.add_plugin(HotkeysPlugin)
 			.add_plugin(SharedState::default())
 			.add_plugin(CellsPlugin)
@@ -36,7 +38,6 @@ impl Plugin for BoardPlugin {
 					.disable::<DefaultHighlightingPlugin>()
 					.disable::<DebugPickingPlugin>(),
 			)
-			// .add_plugin(HotkeysPlugin)
 			.add_startup_system(setup);
 	}
 }
@@ -171,8 +172,10 @@ use self::{
 	cam_zoom::{CamZoomPlugin, CameraZoom},
 	cells::CellsPlugin,
 	coloured_moves::ColouredMoves,
+	hotkeys::HotkeysPlugin,
 	saftey_cap::SafteyCap,
-	ui::UiPlugin, hotkeys::HotkeysPlugin,
+	shared::SharedPlugin,
+	ui::UiPlugin,
 };
 
 /// Sets up default resources + sends initial [NewOptions] event
