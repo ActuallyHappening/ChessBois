@@ -1,9 +1,6 @@
-use crate::{
-	errors::Error,
-	solver::CellOption, GroundClicked, ProgramState,
-};
+use crate::{errors::Error, solver::CellOption, GroundClicked, ProgramState};
 
-use super::{cells::CellClicked, *, compute::compute_from_state};
+use super::{cells::CellClicked, compute::compute_from_state, *};
 use bevy_egui::egui::Ui;
 
 use strum::{EnumIs, EnumIter, IntoEnumIterator};
@@ -11,7 +8,14 @@ use strum::{EnumIs, EnumIter, IntoEnumIterator};
 pub struct AutomaticPlugin;
 impl Plugin for AutomaticPlugin {
 	fn build(&self, app: &mut App) {
-		app.add_systems((handle_plane_clicked, handle_cell_clicked, compute_from_state).in_set(OnUpdate(ProgramState::Automatic)));
+		app.add_systems(
+			(
+				handle_plane_clicked,
+				handle_cell_clicked,
+				compute_from_state,
+			)
+				.in_set(OnUpdate(ProgramState::Automatic)),
+		);
 	}
 }
 

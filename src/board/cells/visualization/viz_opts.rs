@@ -10,7 +10,7 @@ pub struct VisualOpts {
 
 	/// Whether to show the helper dots
 	#[control(bool)]
-	pub show_dots : bool,
+	pub show_dots: bool,
 
 	/// Whether to show the markers
 	#[control(bool)]

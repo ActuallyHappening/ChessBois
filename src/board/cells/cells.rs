@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use super::*;
+use bevy::prelude::*;
 
 /// Marker for cells
 #[derive(Component)]
@@ -11,7 +11,7 @@ pub struct CellClicked(pub ChessPoint);
 impl SharedState {
 	pub fn sys_render_cells(
 		state: Res<SharedState>,
-		
+
 		mut commands: Commands,
 		cells: Query<Entity, (With<CellMarker>, With<ChessPoint>)>,
 		mut mma: ResSpawning,

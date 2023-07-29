@@ -3,7 +3,7 @@ use crate::{
 	ALG_STATES_CAP,
 };
 use bevy_egui_controls::ControlPanel;
-use strum::{EnumIter, IntoStaticStr, Display};
+use strum::{Display, EnumIter, IntoStaticStr};
 
 mod hamiltonian;
 use hamiltonian::hamiltonian_tour_repeatless;
@@ -83,7 +83,19 @@ mod parital_computation {
 }
 
 #[derive(
-	Copy, Debug, Clone, Default, PartialEq, Eq, EnumIter, IntoStaticStr, Hash, PartialOrd, Ord, Display, ControlPanel
+	Copy,
+	Debug,
+	Clone,
+	Default,
+	PartialEq,
+	Eq,
+	EnumIter,
+	IntoStaticStr,
+	Hash,
+	PartialOrd,
+	Ord,
+	Display,
+	ControlPanel,
 )]
 pub enum Algorithm {
 	#[strum(serialize = "Brute Force")]
@@ -140,10 +152,12 @@ impl Algorithm {
 	}
 
 	/// Actually compute, with caching
-	pub fn tour_computation_cached(
-		input: ComputeInput,
-	) -> Computation {
-		if !input.board_options.get_available_points().contains(&input.start) {
+	pub fn tour_computation_cached(input: ComputeInput) -> Computation {
+		if !input
+			.board_options
+			.get_available_points()
+			.contains(&input.start)
+		{
 			// TODO: determine if this should be bubbled into an Option return type
 			panic!("Trying to solve a board starting on a square that is not available!");
 		}
@@ -158,7 +172,10 @@ impl Algorithm {
 						explored_states,
 						*ALG_STATES_CAP.lock().unwrap()
 					);
-					let comp = input.alg.tour_computation(&input.piece, input.board_options.clone(), input.start);
+					let comp =
+						input
+							.alg
+							.tour_computation(&input.piece, input.board_options.clone(), input.start);
 					add_solution_to_cache(input, comp.clone());
 				} else {
 					trace!(
@@ -171,7 +188,9 @@ impl Algorithm {
 			cached_comp
 		} else {
 			debug!("Cache miss");
-			let comp = input.alg.tour_computation(&input.piece, input.board_options.clone(), input.start);
+			let comp = input
+				.alg
+				.tour_computation(&input.piece, input.board_options.clone(), input.start);
 			add_solution_to_cache(input, comp.clone());
 			comp
 		}
@@ -441,10 +460,9 @@ mod cache {
 	use lru::LruCache;
 	use once_cell::sync::Lazy;
 	use std::num::NonZeroUsize;
-	use std::{any::TypeId, collections::HashMap, sync::Mutex};
+	use std::sync::Mutex;
 
-	static COMPUTE_CACHE: Lazy<Mutex<LruCache<Key, Solution>>> =
-		Lazy::new(|| Mutex::new(new()));
+	static COMPUTE_CACHE: Lazy<Mutex<LruCache<Key, Solution>>> = Lazy::new(|| Mutex::new(new()));
 
 	fn new() -> LruCache<Key, Solution> {
 		LruCache::new(NonZeroUsize::new(10_000).unwrap())

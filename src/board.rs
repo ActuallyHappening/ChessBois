@@ -9,8 +9,8 @@ mod automatic;
 // mod manual;
 
 mod cells;
-mod compute;
 mod coloured_moves;
+mod compute;
 // mod hotkeys;
 mod ui;
 
@@ -58,12 +58,16 @@ pub struct SharedState {
 }
 
 mod shared_state {
-	use super::{*, cells::visualization};
+	use super::{cells::visualization, *};
 	use crate::solver::algs::ComputeInput;
 
 	impl Plugin for SharedState {
 		fn build(&self, app: &mut App) {
-			app.add_systems((SharedState::sys_render_cells, SharedState::sys_render_viz, SharedState::sys_render_markers));
+			app.add_systems((
+				SharedState::sys_render_cells,
+				SharedState::sys_render_viz,
+				SharedState::sys_render_markers,
+			));
 		}
 	}
 
@@ -120,7 +124,9 @@ mod shared_state {
 
 use self::{
 	automatic::{AutomaticPlugin, ToggleAction},
-	cells::CellsPlugin, coloured_moves::ColouredMoves, ui::UiPlugin,
+	cells::CellsPlugin,
+	coloured_moves::ColouredMoves,
+	ui::UiPlugin,
 };
 
 /// Sets up default resources + sends initial [NewOptions] event

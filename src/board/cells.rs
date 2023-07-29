@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 use std::f32::consts::TAU;
 
-
 use super::*;
 use crate::errors::{Error, LogLevel};
 use crate::solver::CellOption;
@@ -10,9 +9,8 @@ use crate::*;
 use crate::{ChessPoint, CELL_DISABLED_COLOUR};
 use derive_more::{From, Into};
 
-
 pub use markers::CellMark;
-use cells::*;
+
 use coords::*;
 
 pub use cells::CellClicked;
@@ -30,9 +28,7 @@ impl Plugin for CellsPlugin {
 }
 
 /// Immutable version of board_options, used for rendering
-pub struct AnnotatedBoardOptions {
-	
-}
+pub struct AnnotatedBoardOptions {}
 
 pub struct AnnotatedCellOptions {
 	tint: Color,
@@ -42,5 +38,3 @@ pub struct AnnotatedCellOptions {
 /// Marker for Markers lol
 #[derive(Component)]
 pub struct MarkerMarker;
-
-

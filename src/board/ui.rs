@@ -1,15 +1,6 @@
-use super::{
-	automatic::ToggleAction,
-	cells::{visualization::VisualOpts, MarkerMarker},
-	*,
-};
-use crate::{
-	errors::Error, solver::algs::Computation, MainCamera, ProgramState, UI_ENABLED_COLOUR,
-};
-use bevy_egui::{
-	egui::{Color32, Pos2, RichText, Ui},
-	*,
-};
+use super::*;
+
+use bevy_egui::*;
 
 pub struct UiPlugin;
 impl Plugin for UiPlugin {

@@ -1,7 +1,3 @@
-use std::{collections::HashMap, sync::Mutex};
-
-use once_cell::sync::Lazy;
-
 use super::{cells::CellMark, *};
 use crate::solver::algs::{self, Computation, ComputeInput};
 
@@ -52,15 +48,15 @@ impl SharedState {
 
 // static COMPUTATIONS_TO_HANDLE: Lazy<Mutex<HashMap<ComputeInput, Computation>>> =
 // 	Lazy::new(|| Mutex::new(HashMap::new()));
-	
-fn start_executing_task(state: ComputeInput, task: impl FnOnce() -> Computation + Send + 'static) {
+
+fn start_executing_task(_state: ComputeInput, task: impl FnOnce() -> Computation + Send + 'static) {
 	#[cfg(not(target_arch = "wasm32"))]
 	{
 		use std::thread;
 
 		// create a new thread to run the task on
 		thread::spawn(move || {
-			let res = task();
+			let _res = task();
 
 			// COMPUTATIONS_TO_HANDLE.lock().unwrap().insert(state, res);
 		});
