@@ -37,6 +37,10 @@ pub fn left_ui(mut contexts: EguiContexts, state: ResMut<SharedState>) {
 			state.visual_opts.ui(ui);
 			state.cam_zoom.ui(ui);
 		});
+
+		ui.collapsing("Results summary", |ui| {
+			state.summarize(ui);
+		});
 	});
 }
 
