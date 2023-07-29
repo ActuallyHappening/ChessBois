@@ -6,3 +6,5 @@ releases/*
 # !releases/*.dist
 
 bevy_egui_controls
+
+*.icloud
