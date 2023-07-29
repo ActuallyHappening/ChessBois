@@ -82,7 +82,7 @@ pub fn right_ui_manual(
 
 		let state = state.into_inner();
 
-		egui::CollapsingHeader::new("Manual options")
+		egui::CollapsingHeader::new("Move freedom")
 			.default_open(true)
 			.show(ui, |ui| {
 				ui.label("How are manual moves verified?");
