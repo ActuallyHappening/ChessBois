@@ -21,17 +21,6 @@ impl From<Computation> for CellMark {
 }
 
 impl SharedState {
-	/// Gets the [ComputeInput] from [SharedState] guarenteed given a start point.
-	/// Used to 'imagine' starting on a square
-	fn into_compute_state_with_start(self, start: ChessPoint) -> ComputeInput {
-		ComputeInput {
-			alg: self.alg,
-			start,
-			board_options: self.board_options,
-			piece: self.piece,
-		}
-	}
-
 	pub fn sys_render_markers(
 		state: Res<SharedState>,
 

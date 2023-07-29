@@ -23,6 +23,8 @@ pub fn left_ui(mut contexts: EguiContexts, state: ResMut<SharedState>) {
 				state.alg.ui(ui);
 
 				ui.label(state.alg.get_description());
+
+				state.safety_cap.ui(ui);
 			});
 
 		egui::CollapsingHeader::new("Change board")

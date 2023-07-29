@@ -20,12 +20,13 @@ impl Default for BoardOptions {
 
 impl BoardOptions {
 	const MAX_SIZE: u8 = 20;
+	const MIN_SIZE: u8 = 2;
 
 	pub fn ui(&mut self, ui: &mut egui::Ui) -> StateInvalidated {
 		let mut state = StateInvalidated::Valid;
 
 		ui.add(
-			egui::Slider::from_get_set(1.0..=(Self::MAX_SIZE as f64), |val| {
+			egui::Slider::from_get_set((Self::MIN_SIZE as f64)..=(Self::MAX_SIZE as f64), |val| {
 				if let Some(new_val) = val {
 					self.set_width(new_val as u16);
 					state = StateInvalidated::InvalidatedAndClearStart;
@@ -37,7 +38,7 @@ impl BoardOptions {
 		);
 
 		ui.add(
-			egui::Slider::from_get_set(1.0..=(Self::MAX_SIZE as f64), |val| {
+			egui::Slider::from_get_set((Self::MIN_SIZE as f64)..=(Self::MAX_SIZE as f64), |val| {
 				if let Some(new_val) = val {
 					self.set_height(new_val as u16);
 					state = StateInvalidated::InvalidatedAndClearStart;

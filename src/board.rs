@@ -15,6 +15,7 @@ mod compute;
 // mod hotkeys;
 mod cam_zoom;
 mod ui;
+mod saftey_cap;
 
 pub struct BoardPlugin;
 impl Plugin for BoardPlugin {
@@ -44,6 +45,7 @@ pub struct SharedState {
 	// inputs
 	/// Set using [set_alg]
 	pub alg: Algorithm,
+	pub safety_cap: SafteyCap,
 
 	/// Set using [set_board_options]
 	pub board_options: BoardOptions,
@@ -112,7 +114,20 @@ mod shared_state {
 				start: self.start?,
 				board_options: self.board_options,
 				piece: self.piece,
+				safety_cap: self.safety_cap.into(),
 			})
+		}
+
+		/// Gets the [ComputeInput] from [SharedState] guarenteed given a start point.
+		/// Used to 'imagine' starting on a square
+		pub fn into_compute_state_with_start(self, start: ChessPoint) -> ComputeInput {
+			ComputeInput {
+				alg: self.alg,
+				start,
+				board_options: self.board_options,
+				piece: self.piece,
+				safety_cap: self.safety_cap.into(),
+			}
 		}
 
 		// doesn't invalidate
@@ -154,7 +169,7 @@ use self::{
 	cam_zoom::{CamZoomPlugin, CameraZoom},
 	cells::CellsPlugin,
 	coloured_moves::ColouredMoves,
-	ui::UiPlugin,
+	ui::UiPlugin, saftey_cap::SafteyCap,
 };
 
 /// Sets up default resources + sends initial [NewOptions] event

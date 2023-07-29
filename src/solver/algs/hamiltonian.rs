@@ -4,7 +4,7 @@ use tracing::{debug, trace};
 
 use crate::{
 	solver::{pieces::ChessPiece, BoardOptions, Move, Moves},
-	ChessPoint, ALG_STATES_CAP,
+	ChessPoint,
 };
 
 use super::Computation;
@@ -19,9 +19,10 @@ fn find_hamiltonian_path(
 	P: &Path,
 	g: &Graph,
 	state_counter: &mut u128,
+	safety_cap: u128,
 ) -> Result<Option<Path>, ()> {
 	*state_counter += 1;
-	if *state_counter >= *ALG_STATES_CAP.lock().unwrap() {
+	if *state_counter >= safety_cap {
 		return Err(());
 	}
 
@@ -37,7 +38,7 @@ fn find_hamiltonian_path(
 			}
 			let mut Q = P.clone();
 			Q.push(*w);
-			let H = find_hamiltonian_path(end, &Q, g, state_counter)?;
+			let H = find_hamiltonian_path(end, &Q, g, state_counter, safety_cap)?;
 			if H.is_some() {
 				return Ok(H);
 			}
@@ -63,6 +64,7 @@ pub fn hamiltonian_tour_repeatless(
 	piece: &ChessPiece,
 	options: BoardOptions,
 	start: ChessPoint,
+	safety_cap: u128,
 	cycle: bool,
 ) -> Computation {
 	assert!(options.get_available_points().contains(&start));
@@ -102,7 +104,7 @@ pub fn hamiltonian_tour_repeatless(
 		// show any path that works
 		let mut state_counter: u128 = 0;
 		for valid_end_point in available_mapped_points.values() {
-			match find_hamiltonian_path(*valid_end_point, &start_vec, &graph, &mut state_counter) {
+			match find_hamiltonian_path(*valid_end_point, &start_vec, &graph, &mut state_counter, safety_cap) {
 				Err(_) => return Computation::Failed { total_states: 0 },
 				Ok(None) => continue,
 				Ok(Some(mut path)) => {
@@ -125,7 +127,7 @@ pub fn hamiltonian_tour_repeatless(
 		Computation::Failed { total_states: 0 }
 	} else {
 		let mut state_counter: u128 = 0;
-		match find_hamiltonian_path(start, &start_vec, &graph, &mut state_counter) {
+		match find_hamiltonian_path(start, &start_vec, &graph, &mut state_counter, safety_cap) {
 			Err(_) => Computation::GivenUp {
 				explored_states: state_counter,
 			},

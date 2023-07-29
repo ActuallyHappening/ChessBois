@@ -1,7 +1,4 @@
-use crate::{
-	solver::{pieces::ChessPiece, *},
-	ALG_STATES_CAP,
-};
+use crate::solver::{pieces::ChessPiece, *};
 use bevy_egui_controls::ControlPanel;
 use strum::{Display, EnumIter, IntoStaticStr};
 
@@ -29,6 +26,7 @@ pub enum Computation {
 #[derive(Hash, PartialEq, Eq, Clone)]
 pub struct ComputeInput {
 	pub alg: Algorithm,
+	pub safety_cap: u128,
 	pub start: ChessPoint,
 	pub board_options: BoardOptions,
 	pub piece: ChessPiece,
@@ -134,20 +132,18 @@ This algorithm tries to find a hamiltonian cycle using a copy-pasted algorithm f
 impl Algorithm {
 	pub fn tour_computation(
 		&self,
-		piece: &ChessPiece,
-		options: BoardOptions,
-		start: ChessPoint,
+		input: ComputeInput,
 	) -> Computation {
 		match self {
 			// Algorithm::WarnsdorfUnreliable => warnsdorf_tour_repeatless(piece, options, start),
 			Algorithm::WarnsdorfBacktrack => {
-				brute_recursive_tour_repeatless(piece, options, start, TourType::Weak)
+				brute_recursive_tour_repeatless(&input.piece, input.board_options, input.start, TourType::Weak, input.safety_cap)
 			}
 			Algorithm::BruteForceWarnsford => {
-				brute_recursive_tour_repeatless(piece, options, start, TourType::BruteForce)
+				brute_recursive_tour_repeatless(&input.piece, input.board_options, input.start, TourType::BruteForce, input.safety_cap)
 			}
 			// Algorithm::HamiltonianPath => hamiltonian_tour_repeatless(piece, options, start, false),
-			Algorithm::HamiltonianCycle => hamiltonian_tour_repeatless(piece, options, start, true),
+			Algorithm::HamiltonianCycle => hamiltonian_tour_repeatless(&input.piece, input.board_options, input.start, input.safety_cap, true),
 		}
 	}
 
@@ -165,17 +161,17 @@ impl Algorithm {
 			debug!("Solution cache hit!");
 
 			if let Computation::GivenUp { explored_states } = cached_comp {
-				if explored_states != *ALG_STATES_CAP.lock().unwrap() {
+				if explored_states != input.safety_cap {
 					// must recompute
 					trace!(
 						"Cache hit but recomputing because {} != {} (old != new)",
 						explored_states,
-						*ALG_STATES_CAP.lock().unwrap()
+						input.safety_cap
 					);
 					let comp =
 						input
 							.alg
-							.tour_computation(&input.piece, input.board_options.clone(), input.start);
+							.tour_computation(input.clone());
 					add_solution_to_cache(input, comp.clone());
 				} else {
 					trace!(
@@ -190,7 +186,7 @@ impl Algorithm {
 			debug!("Cache miss");
 			let comp = input
 				.alg
-				.tour_computation(&input.piece, input.board_options.clone(), input.start);
+				.tour_computation(input.clone());
 			add_solution_to_cache(input, comp.clone());
 			comp
 		}
@@ -323,9 +319,10 @@ fn try_move_recursive(
 	attempting_board: Board,
 	current_pos: ChessPoint,
 	state_counter: &mut u128,
+	state_cap: u128,
 ) -> PartialComputation {
 	*state_counter += 1;
-	if *state_counter >= *ALG_STATES_CAP.lock().unwrap() {
+	if *state_counter >= state_cap {
 		// base case to avoid excessive computation
 		return PartialComputation::GivenUp;
 	}
@@ -389,6 +386,7 @@ fn try_move_recursive(
 			board_with_potential_move,
 			potential_next_move,
 			state_counter,
+			state_cap,
 		);
 
 		match result {
@@ -428,6 +426,7 @@ fn brute_recursive_tour_repeatless(
 	options: BoardOptions,
 	start: ChessPoint,
 	tour_type: TourType,
+	safety_cap: u128,
 ) -> Computation {
 	let all_available_points = options.get_available_points();
 	let num_moves_required = all_available_points.len() as u16 - 1;
@@ -442,6 +441,7 @@ fn brute_recursive_tour_repeatless(
 		board,
 		start,
 		&mut state_counter,
+		safety_cap,
 	)
 	.map(|moves| {
 		let mut moves = moves.into_iter().rev().collect::<Vec<Move>>();
