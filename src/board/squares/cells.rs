@@ -1,13 +1,11 @@
 use super::*;
 
-
 /// Marker for cells
 #[derive(Component)]
 pub struct CellMarker;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, From, Into, Deref, DerefMut)]
 pub struct CellClicked(pub ChessPoint);
-
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, From, Into, Deref, DerefMut)]
 pub struct CellHovered(pub ChessPoint);
@@ -33,7 +31,7 @@ fn spawn_cells(state: &SharedState, commands: &mut Commands, mma: &mut ResSpawni
 	let options = &state.board_options;
 
 	for point in options.get_all_points() {
-		let colour = compute_colour(&point, options, start);
+		let colour = compute_colour(&point, state, start);
 		spawn_cell(point, options, colour, commands, mma);
 	}
 }
@@ -48,15 +46,19 @@ fn despawn_cells(
 }
 
 /// Takes as much information as it can get and returns the colour the cell should be.
-fn compute_colour(
-	point: &ChessPoint,
-	options: &BoardOptions,
-	start: Option<ChessPoint>,
-) -> Color {
-	if options.get_unavailable_points().contains(point) {
+fn compute_colour(point: &ChessPoint, state: &SharedState, start: Option<ChessPoint>) -> Color {
+	if state.get_unavailable_points().contains(point) {
 		CELL_DISABLED_COLOUR
 	} else if Some(*point) == start {
 		CELL_SELECTED_COLOUR
+	} else if state.moves.as_ref().is_some_and(|moves| {
+		moves
+			.moves()
+			.into_iter()
+			.last()
+			.is_some_and(|last| last.to == *point)
+	}) {
+		CELL_END_COLOUR_FACTOR
 	} else {
 		point.get_standard_colour()
 	}
@@ -126,7 +128,7 @@ fn cell_hovered(
 ) -> Bubble {
 	let point = cells.get(event.target).unwrap();
 
-	send_event.send(CellHovered(*point));	
+	send_event.send(CellHovered(*point));
 
 	Bubble::Burst
 }
@@ -135,7 +137,7 @@ fn cell_hovered(
 fn cell_unhovered(
 	In(event): In<ListenedEvent<Out>>,
 	cells: Query<&ChessPoint>,
-	mut send_event: EventWriter<CellUnhovered>
+	mut send_event: EventWriter<CellUnhovered>,
 ) -> Bubble {
 	let point = cells.get(event.target).unwrap();
 

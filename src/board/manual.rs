@@ -8,7 +8,7 @@ mod freedom;
 pub struct ManualState;
 impl Plugin for ManualState {
 	fn build(&self, app: &mut App) {
-		app.add_system(highlight_hovered_cell.in_set(OnUpdate(ProgramState::Automatic)));
+		app.add_system(highlight_hovered_cell.in_set(OnUpdate(ProgramState::Manual)));
 	}
 }
 
@@ -20,3 +20,4 @@ fn highlight_hovered_cell(
 		state.start = Some(*point);
 	}
 }
+
