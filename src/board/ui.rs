@@ -80,12 +80,15 @@ pub fn right_ui_manual(
 			to_manual.set(ProgramState::Automatic);
 		}
 
-		let _state = state.into_inner();
+		let state = state.into_inner();
 
 		egui::CollapsingHeader::new("Manual options")
 			.default_open(true)
 			.show(ui, |ui| {
 				ui.label("How are manual moves verified?");
+				state.manual_freedom.ui(ui);
+
+				ui.label(state.manual_freedom.get_description());
 			});
 	});
 }

@@ -1,14 +1,14 @@
 use bevy::prelude::Resource;
-use derive_more::Display;
+use bevy_egui_controls::ControlPanel;
 use strum::{EnumIs, EnumIter};
 
-#[derive(Resource, Display, EnumIs, EnumIter, Default, Debug, Clone, PartialEq, Eq)]
+#[derive(Resource, strum::Display, EnumIs, Default, Debug, Clone, Copy, PartialEq, Eq, EnumIter, ControlPanel)]
 pub enum ManualFreedom {
-	#[strum(serialize = "Only valid knights moves")]
+	#[strum(serialize = "Only valid")]
 	#[default]
 	ValidOnly,
 
-	#[strum(serialize = "Any possible knights move")]
+	#[strum(serialize = "Any possible")]
 	AnyPossible,
 
 	#[strum(serialize = "Completely free")]

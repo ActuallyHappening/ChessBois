@@ -45,6 +45,7 @@ impl Plugin for BoardPlugin {
 
 /// Re-rendered every frame
 #[derive(Resource, Default, Clone)]
+#[non_exhaustive]
 pub struct SharedState {
 	// inputs
 	/// Set using [set_alg]
@@ -65,6 +66,7 @@ pub struct SharedState {
 
 	// ui / interactions
 	pub on_click: ToggleAction,
+	pub manual_freedom: ManualFreedom,
 }
 
 pub use self::shared_state::StateInvalidated;
@@ -176,7 +178,7 @@ use self::{
 	hotkeys::HotkeysPlugin,
 	saftey_cap::SafteyCap,
 	shared::SharedPlugin,
-	ui::UiPlugin,
+	ui::UiPlugin, manual::ManualFreedom,
 };
 
 /// Sets up default resources + sends initial [NewOptions] event

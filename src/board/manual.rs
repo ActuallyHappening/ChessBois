@@ -1,5 +1,6 @@
 use super::*;
 
+pub use freedom::ManualFreedom;
 mod freedom;
 
 pub struct ManualState;
