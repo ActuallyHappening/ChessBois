@@ -4,6 +4,8 @@ use super::{compute::compute_from_state, *, hotkeys::Hotkeyable, squares::{CellC
 use bevy_egui_controls::ControlPanel;
 use strum::{EnumIs, EnumIter};
 
+mod summary;
+
 pub struct AutomaticPlugin;
 impl Plugin for AutomaticPlugin {
 	fn build(&self, app: &mut App) {
