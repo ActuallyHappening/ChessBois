@@ -35,4 +35,10 @@ pub fn hotkeys(state: ResMut<SharedState>, keys: Res<Input<KeyCode>>) {
 	if keys.just_pressed(KeyCode::H) {
 		state.visual_opts.show_visualisation = !state.visual_opts.show_visualisation;
 	}
+
+	if keys.just_pressed(KeyCode::U) {
+		if let Some(moves) = &mut state.moves {
+			moves.undo();
+		}
+	}
 }

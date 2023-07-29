@@ -34,7 +34,7 @@ impl Plugin for ChessSolverPlugin {
 }
 
 #[derive(
-	States, derive_more::Display, strum::EnumIs, Default, Clone, PartialEq, Eq, Debug, Hash,
+	States, derive_more::Display, strum::EnumIs, Default, Clone, Copy, PartialEq, Eq, Debug, Hash,
 )]
 pub enum ProgramState {
 	#[default]
