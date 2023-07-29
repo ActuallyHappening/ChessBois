@@ -6,5 +6,7 @@ Download a desktop version in this repo's releases page: https://github.com/Actu
 First install rust.
 Prerequisites: `brew install llvm && cargo install cargo-watch && cargo install trunk` (macos only).
 
+Clone local dep: `git clone git@github.com:ActuallyHappening/bevy_egui_controls.git`
+
 Then, `cargo r` and `cargo w` run and reload the project respectively.
 `trunk serve` to view in a web browser.
