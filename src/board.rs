@@ -18,7 +18,6 @@ mod hotkeys;
 mod saftey_cap;
 mod shared;
 mod ui;
-mod summary;
 
 pub struct BoardPlugin;
 impl Plugin for BoardPlugin {

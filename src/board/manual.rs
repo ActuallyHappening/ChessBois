@@ -4,6 +4,7 @@ use super::{*, squares::{CellHovered, CellClicked}};
 
 pub use freedom::ManualFreedom;
 mod freedom;
+mod check_move;
 
 pub struct ManualState;
 impl Plugin for ManualState {
