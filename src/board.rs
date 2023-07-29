@@ -1,5 +1,5 @@
 use crate::{
-	solver::{algs::Algorithm, pieces::ChessPiece, BoardOptions, Moves},
+	solver::{algs::Algorithm, pieces::{ChessPiece, StandardPieces}, BoardOptions, Moves},
 	ChessPoint,
 };
 use bevy::prelude::*;
@@ -57,7 +57,7 @@ pub struct SharedState {
 
 	/// Set using [set_start]
 	pub start: Option<ChessPoint>,
-	pub piece: ChessPiece,
+	pub piece: StandardPieces,
 
 	// visuals
 	pub moves: Option<ColouredMoves>,
@@ -124,7 +124,7 @@ mod shared_state {
 				alg: self.alg,
 				start: self.start?,
 				board_options: self.board_options,
-				piece: self.piece,
+				piece: self.piece.into(),
 				safety_cap: self.safety_cap.into(),
 			})
 		}
@@ -136,7 +136,7 @@ mod shared_state {
 				alg: self.alg,
 				start,
 				board_options: self.board_options,
-				piece: self.piece,
+				piece: self.piece.into(),
 				safety_cap: self.safety_cap.into(),
 			}
 		}

@@ -1,6 +1,6 @@
 use bevy_egui::egui::Color32;
 
-use crate::{board::SharedState, ChessPoint, solver::Moves};
+use crate::{board::SharedState, ChessPoint, solver::{Moves, pieces::ChessPiece}};
 
 use super::ManualFreedom;
 
@@ -74,7 +74,7 @@ impl SharedState {
 				let moves: Moves = moves.moves();
 				if moves.is_empty() {
 					MoveWarning::NoMoves
-				} else if !self.piece.is_valid_move(moves.last().unwrap().to, next) {
+				} else if !ChessPiece::from(self.piece).is_valid_move(moves.last().unwrap().to, next) {
 					MoveWarning::NotValid
 				} else if moves.get_all_passed_through_points().contains(&next) {
 					MoveWarning::AlreadyDone

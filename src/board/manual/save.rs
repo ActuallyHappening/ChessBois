@@ -4,13 +4,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
 	board::{coloured_moves::ColouredMoves, SharedState},
-	solver::{pieces::ChessPiece, BoardOptions},
+	solver::{pieces::StandardPieces, BoardOptions},
 };
 
 #[derive(Serialize, Deserialize, Constructor)]
 pub struct SavedState {
 	pub moves: ColouredMoves,
-	pub piece: ChessPiece,
+	pub piece: StandardPieces,
 	pub board_options: BoardOptions,
 }
 

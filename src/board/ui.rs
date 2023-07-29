@@ -40,6 +40,11 @@ pub fn left_ui(mut contexts: EguiContexts, state: ResMut<SharedState>) {
 			state.visual_opts.ui(ui);
 			state.cam_zoom.ui(ui);
 		});
+
+		ui.collapsing("Non-standard pieces", |ui| {
+			ui.label("Set a piece that is not a standard knight");
+			state.piece.ui(ui).invalidates(state);
+		})
 	});
 }
 
