@@ -5,7 +5,7 @@ use crate::solver::{Move, Moves};
 use super::squares::visualization::VizColour;
 
 /// Wrapper around [Vec<(Move, VizColour)>] with some extra functionality
-#[derive(Clone, From, Into, Deref, DerefMut)]
+#[derive(Clone, Default, From, Into, Deref, DerefMut)]
 pub struct ColouredMoves(Vec<(Move, VizColour)>);
 
 impl From<ColouredMoves> for Moves {
@@ -14,8 +14,18 @@ impl From<ColouredMoves> for Moves {
 	}
 }
 
+impl From<&ColouredMoves> for Moves {
+	fn from(value: &ColouredMoves) -> Self {
+		value.0.iter().map(|(m, _)| *m).collect()
+	}
+}
+
 impl ColouredMoves {
 	pub fn into_moves(self) -> Moves {
+		self.into()
+	}
+
+	pub fn moves(&self) -> Moves {
 		self.into()
 	}
 }
@@ -29,5 +39,12 @@ impl Moves {
 impl FromIterator<(Move, VizColour)> for ColouredMoves {
 	fn from_iter<T: IntoIterator<Item = (Move, VizColour)>>(iter: T) -> Self {
 		Self(iter.into_iter().collect())
+	}
+}
+
+impl ColouredMoves {
+	pub fn undo(&mut self) -> &mut Self {
+		self.0.pop();
+		self
 	}
 }

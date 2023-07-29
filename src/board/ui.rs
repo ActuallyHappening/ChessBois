@@ -2,7 +2,7 @@ use crate::ProgramState;
 
 use super::*;
 
-use bevy_egui::*;
+use bevy_egui::{egui::*, *};
 
 pub struct UiPlugin;
 impl Plugin for UiPlugin {
@@ -89,6 +89,24 @@ pub fn right_ui_manual(
 				state.manual_freedom.ui(ui);
 
 				ui.label(state.manual_freedom.get_description());
+			});
+
+		egui::CollapsingHeader::new("Actions")
+			.default_open(true)
+			.show(ui, |ui| {
+				if ui.button("Undo [u]").clicked() {
+					if let Some(moves) = &mut state.moves {
+						moves.undo();
+					}
+				}
+
+				if ui
+					.button(RichText::new("Reset").color(Color32::RED))
+					.clicked()
+				{
+					state.start = None;
+					state.moves = None;
+				}
 			});
 	});
 }

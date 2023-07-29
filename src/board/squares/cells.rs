@@ -149,19 +149,10 @@ fn cell_clicked(
 	mut send_event: EventWriter<CellClicked>,
 
 	cells: Query<&ChessPoint, With<CellMarker>>,
-
-	mut commands: Commands,
 ) -> Bubble {
-	match cells.get(event.target) {
-		Ok(point) => {
-			info!("Cell clicked");
-			send_event.send(CellClicked(*point));
-		}
-		Err(_) => {
-			let err_msg = "Cell clicked but no ChessPoint found";
-			commands.insert_resource(Error::new(err_msg.to_owned()));
-			panic!("{}", err_msg);
-		}
-	}
+	let point = cells.get(event.target).unwrap();
+
+	send_event.send(CellClicked(*point));
+
 	Bubble::Burst
 }
