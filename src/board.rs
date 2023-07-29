@@ -65,8 +65,13 @@ pub struct SharedState {
 	pub cam_zoom: CameraZoom,
 
 	// ui / interactions
+	// auto
 	pub on_click: ToggleAction,
+
+	// manual
 	pub manual_freedom: ManualFreedom,
+	/// Colour of next move
+	pub viz_colour: VizColour,
 }
 
 pub use self::shared_state::StateInvalidated;
@@ -173,7 +178,7 @@ mod shared_state {
 use self::{
 	automatic::{AutomaticPlugin, ToggleAction},
 	cam_zoom::{CamZoomPlugin, CameraZoom},
-	squares::SquaresPlugin,
+	squares::{SquaresPlugin, visualization::VizColour},
 	coloured_moves::ColouredMoves,
 	hotkeys::HotkeysPlugin,
 	saftey_cap::SafteyCap,

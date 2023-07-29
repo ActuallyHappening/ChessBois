@@ -51,7 +51,7 @@ fn compute_colour(point: &ChessPoint, state: &SharedState, start: Option<ChessPo
 		CELL_DISABLED_COLOUR
 	} else if Some(*point) == start {
 		CELL_SELECTED_COLOUR
-	} else if state.moves.as_ref().is_some_and(|moves| {
+	} else if state.visual_opts.show_end_colour && state.moves.as_ref().is_some_and(|moves| {
 		moves
 			.moves()
 			.into_iter()

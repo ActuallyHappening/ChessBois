@@ -1,6 +1,7 @@
+use bevy::prelude::Color;
 use derive_more::{Deref, DerefMut, From, Into};
 
-use crate::solver::{Move, Moves};
+use crate::{solver::{Move, Moves}, ChessPoint};
 
 use super::squares::visualization::VizColour;
 
@@ -45,6 +46,16 @@ impl FromIterator<(Move, VizColour)> for ColouredMoves {
 impl ColouredMoves {
 	pub fn undo(&mut self) -> &mut Self {
 		self.0.pop();
+		self
+	}
+
+	pub fn manual_add_move(&mut self, point: ChessPoint, col: VizColour) -> &mut Self {
+		if self.iter().len() == 0 {
+			self.push((Move::new(point, point), col));
+		} else {
+			let last = *self.last().unwrap();
+			self.push((Move::new(last.0.to, point), col));
+		}
 		self
 	}
 }

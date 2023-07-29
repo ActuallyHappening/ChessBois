@@ -21,6 +21,10 @@ pub struct VisualOpts {
 	#[control(bool)]
 	pub show_visualisation: bool,
 
+	/// Whether to hightlight last move in blue
+	#[control(bool)]
+	pub show_end_colour: bool,
+
 	/// The width of the visualisation lines
 	#[control(slider(0.1..=0.5))]
 	viz_width: f32,
@@ -32,6 +36,7 @@ impl VisualOpts {
 		show_dots: true,
 		show_markers: true,
 		show_visualisation: true,
+		show_end_colour: true,
 		viz_width: 0.2,
 	};
 
