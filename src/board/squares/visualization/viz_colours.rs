@@ -5,7 +5,18 @@ use strum::{Display, EnumIter};
 use super::*;
 
 #[derive(
-	Resource, Copy, Clone, Default, Display, EnumIter, PartialEq, Eq, Debug, Serialize, Deserialize, ControlPanel
+	Resource,
+	Copy,
+	Clone,
+	Default,
+	Display,
+	EnumIter,
+	PartialEq,
+	Eq,
+	Debug,
+	Serialize,
+	Deserialize,
+	ControlPanel,
 )]
 pub enum VizColour {
 	#[default]
@@ -33,6 +44,22 @@ impl From<VizColour> for Color {
 			VizColour::Orange => Color::ORANGE,
 
 			VizColour::Invisible => Color::rgba(0., 0., 0., 0.),
+		}
+	}
+}
+
+impl From<Color> for VizColour {
+	fn from(colour: Color) -> Self {
+		match colour {
+			Color::GREEN => VizColour::Green,
+			Color::RED => VizColour::Red,
+			Color::BLUE => VizColour::Blue,
+			Color::ORANGE => VizColour::Orange,
+
+			_ => {
+				warn!("Unknown colour, assuming invisible");
+				VizColour::Invisible
+			}
 		}
 	}
 }

@@ -53,6 +53,16 @@ impl BoardOptions {
 	}
 }
 
+impl FromIterator<(ChessPoint, CellOption)> for BoardOptions {
+	fn from_iter<T: IntoIterator<Item = (ChessPoint, CellOption)>>(iter: T) -> Self {
+		let mut options = Vec::new();
+		for (p, state) in iter {
+			options[p.row as usize - 1][p.column as usize - 1] = state;
+		}
+		Self { options }
+	}
+}
+
 #[derive(EnumIs)]
 pub enum TargetRestriction {
 	/// All cells are endable.

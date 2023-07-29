@@ -44,19 +44,68 @@ impl SavedState {
 }
 
 mod v0_3_x {
+	use anyhow::Context;
+	use bevy::prelude::Color;
+	use derive_more::{Deref, DerefMut};
+	use serde::{Deserialize, Serialize};
 	use std::collections::HashMap;
 
-	use serde::{Deserialize, Serialize};
+	pub fn try_decode_from_json(json: &str) -> Result<super::SavedState, anyhow::Error> {
+		let data: State = serde_json::from_str(json).context("JSON decoding failed")?;
+		let moves = data
+			.moves
+			.into_iter()
+			.map(|(from, to, col)| (crate::solver::Move::new(from.into(), to.into()), col.into()))
+			.collect();
+		let board_options = data
+			.options
+			.into_iter()
+			.map(|(point, cell)| (point.into(), cell.into()))
+			.collect();
+		Ok(super::SavedState {
+			moves,
+			board_options,
+		})
+	}
+
+	pub fn to_json(state: &super::SavedState) -> anyhow::Result<String> {
+		let moves: Vec<(Point, Point)> = state
+			.moves
+			.iter()
+			.map(|(from, to)| (from.into(), to.into()))
+			.collect();
+		let options = state
+			.board_options
+			.iter()
+			.map(|(point, cell)| (point.into(), cell.into()))
+			.collect();
+		let state = State { moves, options };
+		Ok(serde_json::to_string(&state)?)
+	}
 
 	#[derive(Serialize, Deserialize)]
 	struct State {
-		moves: Vec<(Point, Point)>,
+		moves: Moves,
 		options: HashMap<Point, Cell>,
 	}
 
 	#[derive(Serialize, Deserialize, Hash, PartialEq, Eq)]
 	/// row column
 	struct Point(u16, u16);
+
+	#[derive(Serialize, Deserialize, Deref, DerefMut)]
+	struct Moves(Vec<(Point, Point, Color)>);
+
+	impl From<super::ColouredMoves> for Moves {
+		fn from(value: super::ColouredMoves) -> Self {
+			Self(
+				value
+					.into_iter()
+					.map(|(from, to, colour)| (from.into(), to.into(), colour))
+					.collect(),
+			)
+		}
+	}
 
 	impl From<Point> for crate::solver::ChessPoint {
 		fn from(value: Point) -> Self {
@@ -73,7 +122,8 @@ mod v0_3_x {
 		}
 	}
 
-	#[derive(Serialize_repr, Deserialize_repr)]
+	#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
+	#[repr(u8)]
 	enum Cell {
 		Disabled = 0,
 		Finishable = 1,
