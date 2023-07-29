@@ -2,13 +2,15 @@
 
 use bevy::prelude::*;
 
-use crate::{GroundClicked, solver::CellOption, errors::Error};
-use super::{*, cells::CellClicked};
+use super::{cells::CellClicked, *};
+use crate::{errors::Error, solver::CellOption, GroundClicked, ProgramState};
 
 pub struct SharedPlugin;
 impl Plugin for SharedPlugin {
 	fn build(&self, app: &mut App) {
-			app.add_systems((handle_plane_clicked, handle_cell_clicked));
+		app
+			.add_systems((handle_plane_clicked,))
+			.add_systems((handle_cell_clicked,).in_set(OnUpdate(ProgramState::Automatic)));
 	}
 }
 

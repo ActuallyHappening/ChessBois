@@ -40,9 +40,12 @@ pub fn left_ui(mut contexts: EguiContexts, state: ResMut<SharedState>) {
 	});
 }
 
-pub fn right_ui_automatic(mut contexts: EguiContexts, state: ResMut<SharedState>) {
+pub fn right_ui_automatic(mut contexts: EguiContexts, state: ResMut<SharedState>, mut to_manual: ResMut<NextState<ProgramState>>) {
 	egui::SidePanel::right("Right sidebar (automatic)").show(contexts.ctx_mut(), |ui| {
-		ui.heading("Automatic mode");
+		ui.heading("Mode options");
+		if ui.button("Switch to manual").clicked() {
+			to_manual.set(ProgramState::Manual);
+		}
 
 		let state = state.into_inner();
 
@@ -51,6 +54,23 @@ pub fn right_ui_automatic(mut contexts: EguiContexts, state: ResMut<SharedState>
 			.show(ui, |ui| {
 				ui.label("What happens when you click a cell?");
 				state.on_click.ui(ui);
+			});
+	});
+}
+
+pub fn right_ui_manual(mut contexts: EguiContexts, state: ResMut<SharedState>, mut to_manual: ResMut<NextState<ProgramState>>) {
+	egui::SidePanel::right("Right sidebar (manual)").show(contexts.ctx_mut(), |ui| {
+		ui.heading("Mode options");
+		if ui.button("Switch to automatic").clicked() {
+			to_manual.set(ProgramState::Automatic);
+		}
+
+		let _state = state.into_inner();
+
+		egui::CollapsingHeader::new("Manual options")
+			.default_open(true)
+			.show(ui, |ui| {
+				ui.label("How are manual moves verified?");
 			});
 	});
 }

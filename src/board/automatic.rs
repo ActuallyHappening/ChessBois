@@ -1,6 +1,6 @@
-use crate::{errors::Error, solver::CellOption, GroundClicked, ProgramState};
+use crate::ProgramState;
 
-use super::{cells::CellClicked, compute::compute_from_state, *, hotkeys::Hotkeyable};
+use super::{compute::compute_from_state, *, hotkeys::Hotkeyable};
 use bevy_egui_controls::ControlPanel;
 use strum::{EnumIs, EnumIter};
 
@@ -9,7 +9,6 @@ impl Plugin for AutomaticPlugin {
 	fn build(&self, app: &mut App) {
 		app.add_systems(
 			(
-				
 				compute_from_state,
 			)
 				.in_set(OnUpdate(ProgramState::Automatic)),

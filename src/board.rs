@@ -9,7 +9,7 @@ pub use cam_zoom::CAMERA_HEIGHT;
 pub use hotkeys::Hotkeyable;
 
 mod automatic;
-// mod manual;
+mod manual;
 mod cam_zoom;
 mod cells;
 mod coloured_moves;

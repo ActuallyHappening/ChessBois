@@ -1,5 +1,5 @@
 use super::*;
-use bevy::prelude::*;
+
 
 /// Marker for cells
 #[derive(Component)]
@@ -7,6 +7,13 @@ pub struct CellMarker;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, From, Into, Deref, DerefMut)]
 pub struct CellClicked(pub ChessPoint);
+
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, From, Into, Deref, DerefMut)]
+pub struct CellHovered(pub ChessPoint);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, From, Into, Deref, DerefMut)]
+pub struct CellUnhovered(pub ChessPoint);
 
 impl SharedState {
 	pub fn sys_render_cells(

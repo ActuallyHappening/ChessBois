@@ -1,5 +1,5 @@
 use super::*;
-use bevy::prelude::*;
+
 use strum::IntoEnumIterator;
 
 pub struct HotkeysPlugin;

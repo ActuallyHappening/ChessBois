@@ -1,7 +1,7 @@
-use std::sync::Mutex;
+
 
 use bevy::prelude::*;
-use bevy_egui::{egui::Color32, EguiPlugin};
+use bevy_egui::{EguiPlugin};
 use bevy_mod_picking::{
 	prelude::{
 		Click, IsPointerEvent, ListenedEvent, OnPointer, RaycastPickCamera, RaycastPickTarget,
