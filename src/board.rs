@@ -52,6 +52,7 @@ pub struct SharedState {
 	// visuals
 	pub moves: Option<ColouredMoves>,
 	pub visual_opts: cells::visualization::VisualOpts,
+	pub cam_zoom: f32,
 
 	// ui / interactions
 	pub on_click: ToggleAction,
