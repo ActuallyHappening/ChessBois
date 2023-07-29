@@ -47,7 +47,7 @@ pub struct AutomaticState;
 pub struct ManualState;
 pub struct BothStates;
 
-const CAMERA_HEIGHT: f32 = 75.;
+use board::CAMERA_HEIGHT;
 const LIGHT_HEIGHT: f32 = CAMERA_HEIGHT;
 
 /// Square width and height

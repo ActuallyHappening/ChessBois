@@ -33,6 +33,7 @@ pub fn left_ui(mut contexts: EguiContexts, state: ResMut<SharedState>) {
 
 		ui.collapsing("Visualisation options", |ui| {
 			state.visual_opts.ui(ui);
+			state.cam_zoom.ui(ui);
 		});
 	});
 }

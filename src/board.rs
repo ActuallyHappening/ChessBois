@@ -5,13 +5,15 @@ use crate::{
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 
+pub use cam_zoom::CAMERA_HEIGHT;
+
 mod automatic;
 // mod manual;
-
 mod cells;
 mod coloured_moves;
 mod compute;
 // mod hotkeys;
+mod cam_zoom;
 mod ui;
 
 pub struct BoardPlugin;
@@ -24,6 +26,7 @@ impl Plugin for BoardPlugin {
 			// .add_plugin(ManualState)
 			.add_plugin(SharedState::default())
 			.add_plugin(CellsPlugin)
+			.add_plugin(CamZoomPlugin)
 			.add_plugins(
 				DefaultPickingPlugins
 					.build()
@@ -52,7 +55,7 @@ pub struct SharedState {
 	// visuals
 	pub moves: Option<ColouredMoves>,
 	pub visual_opts: cells::visualization::VisualOpts,
-	pub cam_zoom: f32,
+	pub cam_zoom: CameraZoom,
 
 	// ui / interactions
 	pub on_click: ToggleAction,
@@ -133,7 +136,10 @@ mod shared_state {
 
 	impl StateInvalidated {
 		pub fn invalidates(self, state: &mut SharedState) {
-			if matches!(self, StateInvalidated::Invalidated | StateInvalidated::InvalidatedAndClearStart) {
+			if matches!(
+				self,
+				StateInvalidated::Invalidated | StateInvalidated::InvalidatedAndClearStart
+			) {
 				state.invalidate();
 			}
 			if let StateInvalidated::InvalidatedAndClearStart = self {
@@ -145,6 +151,7 @@ mod shared_state {
 
 use self::{
 	automatic::{AutomaticPlugin, ToggleAction},
+	cam_zoom::{CamZoomPlugin, CameraZoom},
 	cells::CellsPlugin,
 	coloured_moves::ColouredMoves,
 	ui::UiPlugin,
