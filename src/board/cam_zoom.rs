@@ -1,5 +1,7 @@
 use bevy_egui_controls::ControlPanel;
 
+use crate::MainCamera;
+
 use super::*;
 
 pub struct CamZoomPlugin;
@@ -12,11 +14,12 @@ impl Plugin for CamZoomPlugin {
 /// start height
 pub const CAMERA_HEIGHT: f32 = 75.;
 
-const MAX_HEIGHT: f32 = 100.;
+const MAX_HEIGHT: f32 = 150.;
 const MIN_HEIGHT: f32 = 50.;
 
 #[derive(PartialEq, Clone, ControlPanel)]
 pub struct CameraZoom {
+	/// Zoom of camera
 	#[control(slider(MIN_HEIGHT..=MAX_HEIGHT))]
 	height: f32,
 }
@@ -33,9 +36,6 @@ impl Default for CameraZoom {
 	}
 }
 
-pub fn zoom_camera(state: Res<SharedState>, mut query: Query<&mut Transform, With<Camera>>) {
-	let mut transform = query.single_mut();
-	let mut translation = transform.translation;
-	translation.y = state.cam_zoom.height;
-	transform.translation = translation;
+pub fn zoom_camera(state: Res<SharedState>, mut query: Query<&mut Transform, With<MainCamera>>) {
+	query.single_mut().translation.y = state.cam_zoom.height;
 }
