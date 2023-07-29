@@ -27,7 +27,7 @@ impl Plugin for BoardPlugin {
 			// .add_plugin(VisualizationPlugin)
 			.add_plugin(UiPlugin)
 			.add_plugin(AutomaticPlugin)
-			// .add_plugin(ManualState)
+			.add_plugin(ManualState)
 			.add_plugin(SharedPlugin)
 			.add_plugin(HotkeysPlugin)
 			.add_plugin(SharedState::default())
@@ -178,7 +178,7 @@ use self::{
 	hotkeys::HotkeysPlugin,
 	saftey_cap::SafteyCap,
 	shared::SharedPlugin,
-	ui::UiPlugin, manual::ManualFreedom,
+	ui::UiPlugin, manual::{ManualFreedom, ManualState},
 };
 
 /// Sets up default resources + sends initial [NewOptions] event

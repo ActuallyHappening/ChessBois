@@ -25,9 +25,11 @@ impl SharedState {
 		match to {
 			ProgramState::Manual => {
 				self.visual_opts.show_numbers = false;
+				self.visual_opts.show_markers = false;
 			}
 			ProgramState::Automatic => {
 				self.visual_opts.show_numbers = true;
+				self.visual_opts.show_markers = true;
 			}
 		}
 	}
