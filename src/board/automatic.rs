@@ -1,9 +1,8 @@
 use crate::{errors::Error, solver::CellOption, GroundClicked, ProgramState};
 
 use super::{cells::CellClicked, compute::compute_from_state, *};
-use bevy_egui::egui::Ui;
-
-use strum::{EnumIs, EnumIter, IntoEnumIterator};
+use bevy_egui_controls::ControlPanel;
+use strum::{EnumIs, EnumIter};
 
 pub struct AutomaticPlugin;
 impl Plugin for AutomaticPlugin {
@@ -21,7 +20,9 @@ impl Plugin for AutomaticPlugin {
 
 /// WHat happens when you click on a cell.
 /// Specific to **automatic** mode.
-#[derive(Resource, Clone, Copy, Default, PartialEq, Eq, EnumIs, strum::Display, EnumIter)]
+#[derive(
+	Resource, Clone, Copy, Default, PartialEq, Eq, EnumIs, strum::Display, EnumIter, ControlPanel,
+)]
 pub enum ToggleAction {
 	#[strum(serialize = "Enable / Disable [d]")]
 	#[default]
@@ -29,43 +30,6 @@ pub enum ToggleAction {
 
 	#[strum(serialize = "Target / Untarget [t]")]
 	TargetCell,
-}
-
-impl ToggleAction {
-	/// Inserts [ToggleAction] resource to toggle cell enabled
-	pub fn sys_toggle_enabled(mut commands: Commands) {
-		commands.insert_resource(ToggleAction::ToggleCellEnabled);
-	}
-	pub fn sys_toggle_targets(mut commands: Commands) {
-		commands.insert_resource(ToggleAction::TargetCell);
-	}
-
-	pub fn render(&mut self, ui: &mut Ui) {
-		use bevy_egui::egui::*;
-		ui.label("What happens when you click a cell?");
-		ui.horizontal_wrapped(|ui| {
-			for action in ToggleAction::iter() {
-				let mut text = RichText::new(action.to_string());
-				if action == *self {
-					text = text.color(Color32::GREEN);
-				}
-				if ui.button(text).clicked() {
-					*self = action;
-				}
-			}
-		});
-	}
-
-	pub fn change_toggle_action_hotkeys(
-		keys: Res<Input<KeyCode>>,
-		mut selected_action: ResMut<Self>,
-	) {
-		for key in ToggleAction::iter() {
-			if keys.just_pressed(KeyCode::from(key)) {
-				*selected_action = key;
-			}
-		}
-	}
 }
 
 impl From<ToggleAction> for KeyCode {
@@ -80,7 +44,8 @@ impl From<ToggleAction> for KeyCode {
 fn handle_plane_clicked(mut click: EventReader<GroundClicked>, state: ResMut<SharedState>) {
 	if click.iter().next().is_some() {
 		debug!("Plane clicked");
-		state.into_inner().remove_start();
+		let state = state.into_inner();
+		state.remove_start();
 	}
 }
 

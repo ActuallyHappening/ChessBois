@@ -16,6 +16,10 @@ pub struct VisualOpts {
 	#[control(bool)]
 	pub show_markers: bool,
 
+	/// Whether to show the visualisation lines at all
+	#[control(bool)]
+	pub show_visualisation: bool,
+
 	/// The width of the visualisation lines
 	#[control(slider(0.1..=0.5))]
 	viz_width: f32,
@@ -26,6 +30,7 @@ impl VisualOpts {
 		show_numbers: true,
 		show_dots: true,
 		show_markers: true,
+		show_visualisation: true,
 		viz_width: 0.2,
 	};
 

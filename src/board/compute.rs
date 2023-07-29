@@ -26,7 +26,7 @@ pub fn get_cached_mark(input: &ComputeInput) -> Option<CellMark> {
 impl SharedState {
 	/// Clears the displayed computation if part of State changed that affects computations
 	pub fn invalidate(&mut self) -> &mut Self {
-		warn!("Invalidating state");
+		// warn!("Invalidating state");
 		self.moves = None;
 		self
 	}

@@ -32,6 +32,7 @@ impl SharedState {
 		mut mma: ResSpawning,
 	) {
 		despawn_visualization(&mut commands, visualization);
+		if !state.visual_opts.show_visualisation { return }
 		if let Some(moves) = &state.moves {
 			spawn_visualization(
 				moves.clone(),
