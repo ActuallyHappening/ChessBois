@@ -41,8 +41,10 @@ pub struct SharedState {
 	// inputs
 	/// Set using [set_alg]
 	pub alg: Algorithm,
+
 	/// Set using [set_board_options]
 	pub board_options: BoardOptions,
+
 	/// Set using [set_start]
 	pub start: Option<ChessPoint>,
 	pub piece: ChessPiece,

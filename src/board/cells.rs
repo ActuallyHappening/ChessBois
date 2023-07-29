@@ -29,6 +29,16 @@ impl Plugin for CellsPlugin {
 	}
 }
 
+/// Immutable version of board_options, used for rendering
+pub struct AnnotatedBoardOptions {
+	
+}
+
+pub struct AnnotatedCellOptions {
+	tint: Color,
+	board_option: CellOption,
+}
+
 /// Marker for Markers lol
 #[derive(Component)]
 pub struct MarkerMarker;

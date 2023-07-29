@@ -3,7 +3,7 @@ use std::num::NonZeroUsize;
 use super::*;
 
 /// Necessary information to make custom board.
-/// Does NOT hold actual state, to solve use [Board]
+/// Derefs to `Vec<Vec<CellOption>>`, is mutable.
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct BoardOptions {
 	options: Vec<Vec<CellOption>>,
