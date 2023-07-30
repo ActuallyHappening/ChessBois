@@ -15,7 +15,8 @@ impl SharedState {
 				out.copied_text = json;
 			})
 		}
-		ui.label("Not recommended, use newer save to DB feature which hopefully works on web as well.");
+		// ui.label("Not recommended, use newer save to DB feature which hopefully works on web as well.");
+		ui.label("This copies a save which is NOT compatiable with older versions! I will hopefully implement saving to a database soon.");
 
 		if ui.button("Load from clipboard (all versions)").clicked() {
 			let json = crate::clipboard::get_from_clipboard();
@@ -38,8 +39,7 @@ impl SharedState {
 	}
 
 	pub fn save_ui(&mut self, ui: &mut Ui) {
-		
 		self.old_save_ui(ui);
-		self.new_save_ui(ui);
+		// self.new_save_ui(ui);
 	}
 }

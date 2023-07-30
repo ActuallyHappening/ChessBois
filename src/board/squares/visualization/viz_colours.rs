@@ -1,6 +1,6 @@
 use bevy_egui_controls::ControlPanel;
 use serde::{Deserialize, Serialize};
-use strum::{Display, EnumIter};
+use strum::{Display, EnumIter, IntoEnumIterator};
 
 use super::*;
 
@@ -50,17 +50,13 @@ impl From<VizColour> for Color {
 
 impl From<Color> for VizColour {
 	fn from(colour: Color) -> Self {
-		match colour {
-			Color::GREEN => VizColour::Green,
-			Color::RED => VizColour::Red,
-			Color::BLUE => VizColour::Blue,
-			Color::ORANGE => VizColour::Orange,
-
-			_ => {
-				warn!("Unknown colour, assuming invisible");
-				VizColour::Invisible
+		for variant in VizColour::iter() {
+			if colour == variant.into() {
+				return variant;
 			}
 		}
+		warn!("Cannot recognise colour, chosing invisible");
+		VizColour::Invisible
 	}
 }
 

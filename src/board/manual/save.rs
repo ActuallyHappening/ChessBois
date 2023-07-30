@@ -50,15 +50,15 @@ mod v0_3_x {
 	use serde::{Deserialize, Serialize};
 	use std::collections::HashMap;
 
-	#[derive(Serialize, Deserialize, Constructor)]
+	#[derive(Serialize, Deserialize)]
 	pub struct StableSavedState {
-		pub moves: self::StableColouredMoves,
-		pub board_options: self::StableBoardOptions,
+		moves: self::StableColouredMoves,
+		board_options: self::StableBoardOptions,
 	}
 
 	#[derive(Serialize, Deserialize, Hash, PartialEq, Eq)]
 	/// row column
-	struct Point(u16, u16);
+	pub struct Point(u16, u16);
 
 	#[derive(Serialize, Deserialize, Deref, DerefMut, From, Into)]
 	struct StableColouredMoves(Vec<(Point, Point, Color)>);
@@ -83,8 +83,7 @@ mod v0_3_x {
 				<Vec<_>>::from(value)
 					.into_iter()
 					.map(|(super::Move { from, to }, colour)| (from.into(), to.into(), colour.into()))
-					.collect::<Vec<(Point, Point, Color)>>()
-					.into(),
+					.collect::<Vec<(Point, Point, Color)>>(),
 			)
 		}
 	}
@@ -162,7 +161,7 @@ mod v0_3_x {
 
 	#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
 	#[repr(u8)]
-	enum StableCellOptions {
+	pub enum StableCellOptions {
 		Disabled = 0,
 		Finishable = 1,
 		NoFinishable = 2,
