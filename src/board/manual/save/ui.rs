@@ -4,13 +4,12 @@ use crate::board::SharedState;
 
 use super::UnstableSavedState;
 
-
 impl SharedState {
 	#[cfg(not(target_arch = "wasm32"))]
 	fn old_save_ui(&mut self, ui: &mut Ui) {
 		if self.moves.is_some() && ui.button("Save to clipboard (>= v0.3)").clicked() {
 			let state = UnstableSavedState::try_from(self.clone()).unwrap();
-			let json = state.to_json();
+			let json = state.into_json();
 			ui.output_mut(|out| {
 				out.copied_text = json;
 			})
@@ -28,19 +27,20 @@ impl SharedState {
 		ui.label("This can load older saves.");
 	}
 
+	#[cfg(not(target_arch = "wasm32"))]
 	fn new_save_ui(&mut self, ui: &mut Ui) {
 		if ui.button("Save to DB (>= v0.3").clicked() {
 			let state = UnstableSavedState::try_from(self.clone()).unwrap();
 			// TODO
 		}
 		ui.label("This saves the current state to the database under the specified title");
-
-		
 	}
 
 	pub fn save_ui(&mut self, ui: &mut Ui) {
-	#[cfg(not(target_arch = "wasm32"))]
-		self.old_save_ui(ui);
-		// self.new_save_ui(ui);
+		#[cfg(not(target_arch = "wasm32"))]
+		{
+			self.old_save_ui(ui);
+			self.new_save_ui(ui);
+		}
 	}
 }

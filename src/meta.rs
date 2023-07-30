@@ -1,0 +1,1 @@
+pub const VERSION_MINOR: &str = env!("CARGO_PKG_VERSION_MINOR");

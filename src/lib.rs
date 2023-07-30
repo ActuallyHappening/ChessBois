@@ -18,6 +18,7 @@ mod clipboard;
 mod errors;
 mod textmesh;
 mod utils;
+mod meta;
 // mod weburl;
 
 #[derive(Default)]
