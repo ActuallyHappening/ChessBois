@@ -1,39 +1,38 @@
 use anyhow::Context;
 use bevy_egui::egui::Ui;
-use derive_more::Constructor;
 use serde::{Deserialize, Serialize};
 
 use crate::{
 	board::{coloured_moves::ColouredMoves, SharedState, VizColour},
-	solver::{BoardOptions, Move},
+	solver::{BoardOptions, Move, ChessPoint, CellOption},
 };
 
-
+#[derive(Serialize, Deserialize)]
 pub struct UnstableSavedState {
 	moves: ColouredMoves,
 	board_options: BoardOptions,
 }
 
-// impl SharedState {
-// 	pub fn old_save_ui(&mut self, ui: &mut Ui) {
-// 		#[cfg(not(target_arch = "wasm32"))]
-// 		if self.moves.is_some() && ui.button("Save").clicked() {
-// 			let state = SavedState::try_from(self.clone()).unwrap();
-// 			let json = state.to_json();
-// 			ui.output_mut(|out| {
-// 				out.copied_text = json;
-// 			})
-// 		}
-// 		#[cfg(not(target_arch = "wasm32"))]
-// 		if ui.button("Load").clicked() {
-// 			let json = crate::clipboard::get_from_clipboard();
-// 			if let Ok(state) = SavedState::from_json(&json) {
-// 				self.moves = Some(state.moves);
-// 				self.board_options = state.board_options;
-// 			};
-// 		}
-// 	}
-// }
+impl SharedState {
+	pub fn old_save_ui(&mut self, ui: &mut Ui) {
+		#[cfg(not(target_arch = "wasm32"))]
+		if self.moves.is_some() && ui.button("Save").clicked() {
+			let state = UnstableSavedState::try_from(self.clone()).unwrap();
+			let json = state.to_json();
+			ui.output_mut(|out| {
+				out.copied_text = json;
+			})
+		}
+		#[cfg(not(target_arch = "wasm32"))]
+		if ui.button("Load").clicked() {
+			let json = crate::clipboard::get_from_clipboard();
+			if let Ok(state) = UnstableSavedState::from_json(&json) {
+				self.moves = Some(state.moves);
+				self.board_options = state.board_options;
+			};
+		}
+	}
+}
 
 #[path = "firebase/mod.rs"]
 mod firebase;
@@ -49,9 +48,12 @@ impl TryFrom<SharedState> for UnstableSavedState {
 }
 
 impl UnstableSavedState {
+	pub fn to_json(&self) -> String {
+		serde_json::to_string(self).unwrap()
+	}
 	pub fn from_json(json: &str) -> Result<Self, anyhow::Error> {
 		match serde_json::from_str::<v0_3_x::StableSavedState>(json) {
-			Ok(state) => Ok(state),
+			Ok(state) => Ok(state.into()),
 			Err(new_err) => {
 				let old_err = v0_2_x::try_depreciated_from_json(json);
 				if let Ok(state) = old_err {
@@ -99,7 +101,7 @@ mod v0_3_x {
 	impl From<super::ColouredMoves> for StableColouredMoves {
 		fn from(value: super::ColouredMoves) -> Self {
 			Self(
-				value
+				<Vec<_>>::from(value)
 					.into_iter()
 					.map(|(super::Move { from, to }, colour)| (from.into(), to.into(), colour.into()))
 					.collect::<Vec<(Point, Point, Color)>>().into(),
@@ -110,11 +112,48 @@ mod v0_3_x {
 	impl From<StableColouredMoves> for super::ColouredMoves {
 		fn from(value: StableColouredMoves) -> Self {
 			Self::from(
-				value
+				<Vec<_>>::from(value)
 					.into_iter()
 					.map(|(from, to, colour)| (super::Move { from: from.into(), to: to.into() }, colour.into()))
 					.collect::<Vec<(super::Move, super::VizColour)>>(),
 			)
+		}
+	}
+
+	impl From<super::BoardOptions> for StableBoardOptions {
+		fn from(value: super::BoardOptions) -> Self {
+			Self(
+				value
+					.into_iter()
+					.map(|(point, cell_option)| (point.into(), cell_option.into()))
+					.collect::<HashMap<Point, StableCellOptions>>(),
+			)
+		}
+	}
+
+	impl StableBoardOptions {
+		pub fn dimensions(&self) -> (u16, u16) {
+			let mut max_width = 0;
+			let mut max_height = 0;
+			for (Point(row, column), _) in self.iter() {
+				if *row > max_height {
+					max_height = *row;
+				}
+				if *column > max_width {
+					max_width = *column;
+				}
+			}
+			(max_width, max_height)
+		}
+	}
+	impl From<StableBoardOptions> for super::BoardOptions {
+		fn from(mut value: StableBoardOptions) -> super::BoardOptions {
+			let dimensions = value.dimensions();
+			let mut board_options = super::BoardOptions::new(dimensions.0, dimensions.1);
+			for (point, cell_option) in value.drain().into_iter() {
+				board_options.set_point(point, cell_option.into());
+			}
+			board_options
 		}
 	}
 

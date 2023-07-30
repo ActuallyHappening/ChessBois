@@ -53,13 +53,19 @@ impl BoardOptions {
 	}
 }
 
-impl FromIterator<(ChessPoint, CellOption)> for BoardOptions {
-	fn from_iter<T: IntoIterator<Item = (ChessPoint, CellOption)>>(iter: T) -> Self {
-		let mut options = Vec::new();
-		for (p, state) in iter {
-			options[p.row as usize - 1][p.column as usize - 1] = state;
+impl IntoIterator for BoardOptions {
+	type Item = (ChessPoint, CellOption);
+	type IntoIter = std::vec::IntoIter<Self::Item>;
+
+	fn into_iter(self) -> Self::IntoIter {
+		let mut points = Vec::new();
+		for row in 1..=self.height() {
+			for column in 1..=self.width() {
+				let p = ChessPoint::new(row, column);
+				points.push((p, self.get(&p).unwrap()));
+			}
 		}
-		Self { options }
+		points.into_iter()
 	}
 }
 
@@ -142,6 +148,11 @@ impl BoardOptions {
 	}
 	fn set_p(&mut self, point: &ChessPoint, state: CellOption) {
 		self.options[point.row as usize - 1][point.column as usize - 1] = state;
+	}
+	pub fn set_point(&mut self, point: impl Into<ChessPoint>, state: CellOption) {
+		let point = point.into();
+		self.validate_point_or_panic(&point);
+		self.set_p(&point, state);
 	}
 
 	pub fn targets_state(&self) -> TargetRestriction {
