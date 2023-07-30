@@ -30,7 +30,6 @@ impl TryFrom<SharedState> for UnstableSavedState {
 impl UnstableSavedState {
 	pub fn into_json(self) -> String {
 		let data = v0_3_x::StableSavedState::from(self);
-		tracing::info!("data {:#?}", data);
 		serde_json::to_string(&data).expect("Cannot serialise data")
 	}
 	pub fn from_json(json: &str) -> Result<Self, anyhow::Error> {

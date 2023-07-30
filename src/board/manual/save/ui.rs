@@ -1,3 +1,4 @@
+use bevy_egui::egui;
 use bevy_egui::egui::Ui;
 
 use crate::board::SharedState;
@@ -35,12 +36,12 @@ impl SharedState {
 		if ui.button("Save to DB (>= v0.3").clicked() {
 			let state = UnstableSavedState::try_from(self.clone()).unwrap();
 			// TODO
-			let pool = AsyncComputeTaskPool::get();
-			pool.scope(|s| {
-				s.spawn(async {
-					firebase::save_to_db(state).await;
-				})
-			});
+			// let pool = AsyncComputeTaskPool::get();
+			// pool.scope(|s| {
+				// s.spawn(async {
+					firebase::save_to_db(state);
+				// })
+			// });
 		}
 		ui.label("This saves the current state to the database under the specified title");
 	}
@@ -48,8 +49,12 @@ impl SharedState {
 	pub fn save_ui(&mut self, ui: &mut Ui) {
 		#[cfg(not(target_arch = "wasm32"))]
 		{
-			self.old_save_ui(ui);
-			self.new_save_ui(ui);
+			egui::CollapsingHeader::new("Old Save/Load").default_open(true).show(ui, |ui| {
+				self.old_save_ui(ui);
+			});
+			egui::CollapsingHeader::new("New Save to DB").default_open(true).show(ui, |ui| {
+				self.new_save_ui(ui);
+			});
 		}
 	}
 }
