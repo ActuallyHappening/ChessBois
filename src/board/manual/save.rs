@@ -1,10 +1,9 @@
 use anyhow::Context;
-use bevy_egui::egui::Ui;
 use serde::{Deserialize, Serialize};
 
 use crate::{
 	board::{coloured_moves::ColouredMoves, SharedState, VizColour},
-	solver::{BoardOptions, Move, ChessPoint, CellOption},
+	solver::{BoardOptions, Move},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -13,29 +12,9 @@ pub struct UnstableSavedState {
 	board_options: BoardOptions,
 }
 
-impl SharedState {
-	pub fn old_save_ui(&mut self, ui: &mut Ui) {
-		#[cfg(not(target_arch = "wasm32"))]
-		if self.moves.is_some() && ui.button("Save").clicked() {
-			let state = UnstableSavedState::try_from(self.clone()).unwrap();
-			let json = state.to_json();
-			ui.output_mut(|out| {
-				out.copied_text = json;
-			})
-		}
-		#[cfg(not(target_arch = "wasm32"))]
-		if ui.button("Load").clicked() {
-			let json = crate::clipboard::get_from_clipboard();
-			if let Ok(state) = UnstableSavedState::from_json(&json) {
-				self.moves = Some(state.moves);
-				self.board_options = state.board_options;
-			};
-		}
-	}
-}
-
 #[path = "firebase/mod.rs"]
 mod firebase;
+mod ui;
 
 impl TryFrom<SharedState> for UnstableSavedState {
 	type Error = ();
@@ -66,10 +45,10 @@ impl UnstableSavedState {
 }
 
 mod v0_3_x {
-	use std::collections::HashMap;
 	use bevy::prelude::Color;
-	use derive_more::{Deref, DerefMut, Constructor, From, Into};
+	use derive_more::{Constructor, Deref, DerefMut, From, Into};
 	use serde::{Deserialize, Serialize};
+	use std::collections::HashMap;
 
 	#[derive(Serialize, Deserialize, Constructor)]
 	pub struct StableSavedState {
@@ -104,7 +83,8 @@ mod v0_3_x {
 				<Vec<_>>::from(value)
 					.into_iter()
 					.map(|(super::Move { from, to }, colour)| (from.into(), to.into(), colour.into()))
-					.collect::<Vec<(Point, Point, Color)>>().into(),
+					.collect::<Vec<(Point, Point, Color)>>()
+					.into(),
 			)
 		}
 	}
@@ -114,7 +94,15 @@ mod v0_3_x {
 			Self::from(
 				<Vec<_>>::from(value)
 					.into_iter()
-					.map(|(from, to, colour)| (super::Move { from: from.into(), to: to.into() }, colour.into()))
+					.map(|(from, to, colour)| {
+						(
+							super::Move {
+								from: from.into(),
+								to: to.into(),
+							},
+							colour.into(),
+						)
+					})
 					.collect::<Vec<(super::Move, super::VizColour)>>(),
 			)
 		}
