@@ -7,7 +7,7 @@ use crate::{
 	solver::{BoardOptions, Move},
 };
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct UnstableSavedState {
 	moves: ColouredMoves,
 	board_options: BoardOptions,

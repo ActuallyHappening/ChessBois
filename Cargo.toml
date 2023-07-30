@@ -50,6 +50,7 @@ anyhow = "1.0.72"
 serde_repr = "0.1.16"
 serde_json_any_key = "2.0.0"
 firebase-rs = "2.0.8"
+uuid = "1.4.1"
 
 [dependencies.web-sys]
 version = "0.3.64"

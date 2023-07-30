@@ -3,6 +3,7 @@ use bevy_egui::egui::Ui;
 use crate::board::SharedState;
 
 use super::UnstableSavedState;
+use super::firebase;
 
 impl SharedState {
 	#[cfg(not(target_arch = "wasm32"))]
@@ -29,9 +30,17 @@ impl SharedState {
 
 	#[cfg(not(target_arch = "wasm32"))]
 	fn new_save_ui(&mut self, ui: &mut Ui) {
+    use bevy::tasks::AsyncComputeTaskPool;
+
 		if ui.button("Save to DB (>= v0.3").clicked() {
 			let state = UnstableSavedState::try_from(self.clone()).unwrap();
 			// TODO
+			let pool = AsyncComputeTaskPool::get();
+			pool.scope(|s| {
+				s.spawn(async {
+					firebase::save_to_db(state).await;
+				})
+			});
 		}
 		ui.label("This saves the current state to the database under the specified title");
 	}
