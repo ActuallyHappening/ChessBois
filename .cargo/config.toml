@@ -5,6 +5,8 @@ bwindows = "b --target=x86_64-pc-windows-gnu"
 r = "run -F dev"
 wo = "watch -q -c -w src/ -x 'r'"
 w = "watch -q -c -x 'r'"
+rr = "run --release --target x86_64-apple-darwin"
+
 # cargo +nightly -Z build-std bwindows
 
 # # [build]

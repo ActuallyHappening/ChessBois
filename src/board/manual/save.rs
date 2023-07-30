@@ -1,6 +1,7 @@
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
 
+
 use crate::{
 	board::{coloured_moves::ColouredMoves, SharedState, VizColour},
 	solver::{BoardOptions, Move},
@@ -28,7 +29,9 @@ impl TryFrom<SharedState> for UnstableSavedState {
 
 impl UnstableSavedState {
 	pub fn to_json(self) -> String {
-		serde_json::to_string(&v0_3_x::StableSavedState::from(self)).unwrap()
+		let data = v0_3_x::StableSavedState::from(self);
+		tracing::info!("data {:#?}", data);
+		serde_json::to_string(&data).expect("Cannot serialise data")
 	}
 	pub fn from_json(json: &str) -> Result<Self, anyhow::Error> {
 		match serde_json::from_str::<v0_3_x::StableSavedState>(json) {
@@ -46,25 +49,29 @@ impl UnstableSavedState {
 
 mod v0_3_x {
 	use bevy::prelude::Color;
-	use derive_more::{Constructor, Deref, DerefMut, From, Into};
+	use derive_more::{Deref, DerefMut, From, Into};
 	use serde::{Deserialize, Serialize};
 	use std::collections::HashMap;
+	use serde_json_any_key::any_key_map;
 
-	#[derive(Serialize, Deserialize)]
+	#[derive(Serialize, Deserialize, Debug)]
 	pub struct StableSavedState {
 		moves: self::StableColouredMoves,
 		board_options: self::StableBoardOptions,
 	}
 
-	#[derive(Serialize, Deserialize, Hash, PartialEq, Eq)]
+	#[derive(Serialize, Deserialize, Hash, PartialEq, Eq, Debug)]
 	/// row column
 	pub struct Point(u16, u16);
 
-	#[derive(Serialize, Deserialize, Deref, DerefMut, From, Into)]
-	struct StableColouredMoves(Vec<(Point, Point, Color)>);
+	#[derive(Serialize, Deserialize, PartialEq, Debug, From, Into)]
+	pub struct StableColor(f32, f32, f32, f32);
 
-	#[derive(Serialize, Deserialize, Deref, DerefMut, From, Into)]
-	pub struct StableBoardOptions(HashMap<Point, StableCellOptions>);
+	#[derive(Serialize, Deserialize, Deref, DerefMut, From, Into, Debug)]
+	struct StableColouredMoves(Vec<(Point, Point, StableColor)>);
+
+	#[derive(Serialize, Deserialize, Deref, DerefMut, From, Into, Debug)]
+	pub struct StableBoardOptions(#[serde(with = "any_key_map")] HashMap<Point, StableCellOptions>);
 
 	// from impls
 
@@ -92,7 +99,7 @@ mod v0_3_x {
 				<Vec<_>>::from(value)
 					.into_iter()
 					.map(|(super::Move { from, to }, colour)| (from.into(), to.into(), colour.into()))
-					.collect::<Vec<(Point, Point, Color)>>(),
+					.collect::<Vec<(Point, Point, _)>>(),
 			)
 		}
 	}
@@ -146,7 +153,7 @@ mod v0_3_x {
 		fn from(mut value: StableBoardOptions) -> super::BoardOptions {
 			let dimensions = value.dimensions();
 			let mut board_options = super::BoardOptions::new(dimensions.0, dimensions.1);
-			for (point, cell_option) in value.drain().into_iter() {
+			for (point, cell_option) in value.drain() {
 				board_options.set_point(point, cell_option.into());
 			}
 			board_options
@@ -168,7 +175,7 @@ mod v0_3_x {
 		}
 	}
 
-	#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
+	#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr, Debug)]
 	#[repr(u8)]
 	pub enum StableCellOptions {
 		Disabled = 0,
@@ -202,6 +209,18 @@ mod v0_3_x {
 					}
 				}
 			}
+		}
+	}
+
+	impl From<StableColor> for crate::board::VizColour {
+		fn from(value: StableColor) -> Self {
+			Self::from(Color::rgba(value.0, value.1, value.2, value.3))
+		}
+	}
+	impl From<super::VizColour> for StableColor {
+		fn from(value: super::VizColour) -> Self {
+			let [r, g, b, a] = Color::from(value).as_rgba_f32();
+			Self(r, g, b, a)
 		}
 	}
 }

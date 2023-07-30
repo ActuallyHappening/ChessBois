@@ -1914,7 +1914,7 @@ checksum = "89b2fd2a0dcf38d7971e2194b6b6eebab45ae01067456a7fd93d5547a61b70be"
 
 [[package]]
 name = "cap_solver"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "anyhow",
  "arboard",
@@ -1936,6 +1936,7 @@ dependencies = [
  "rand",
  "serde",
  "serde_json",
+ "serde_json_any_key",
  "serde_qs",
  "serde_repr",
  "strum",
@@ -4173,6 +4174,16 @@ dependencies = [
  "itoa",
  "ryu",
  "serde",
+]
+
+[[package]]
+name = "serde_json_any_key"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b2c409ca1209f6c4741028b9e1e56d973c868ffaef25ffbaf2471e486c2a74b3"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
