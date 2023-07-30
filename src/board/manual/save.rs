@@ -20,15 +20,15 @@ impl TryFrom<SharedState> for UnstableSavedState {
 	type Error = ();
 	fn try_from(value: SharedState) -> Result<Self, Self::Error> {
 		Ok(Self {
-			moves: value.moves.ok_or(())?.into(),
+			moves: value.moves.ok_or(())?,
 			board_options: value.board_options,
 		})
 	}
 }
 
 impl UnstableSavedState {
-	pub fn to_json(&self) -> String {
-		serde_json::to_string(self).unwrap()
+	pub fn to_json(self) -> String {
+		serde_json::to_string(&v0_3_x::StableSavedState::from(self)).unwrap()
 	}
 	pub fn from_json(json: &str) -> Result<Self, anyhow::Error> {
 		match serde_json::from_str::<v0_3_x::StableSavedState>(json) {
@@ -70,6 +70,15 @@ mod v0_3_x {
 
 	impl From<StableSavedState> for super::UnstableSavedState {
 		fn from(value: StableSavedState) -> Self {
+			Self {
+				moves: value.moves.into(),
+				board_options: value.board_options.into(),
+			}
+		}
+	}
+
+	impl From<super::UnstableSavedState> for StableSavedState {
+		fn from(value: super::UnstableSavedState) -> Self {
 			Self {
 				moves: value.moves.into(),
 				board_options: value.board_options.into(),
