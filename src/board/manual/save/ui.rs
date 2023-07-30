@@ -39,6 +39,7 @@ impl SharedState {
 	}
 
 	pub fn save_ui(&mut self, ui: &mut Ui) {
+	#[cfg(not(target_arch = "wasm32"))]
 		self.old_save_ui(ui);
 		// self.new_save_ui(ui);
 	}
