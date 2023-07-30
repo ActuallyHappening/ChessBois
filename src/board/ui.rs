@@ -132,7 +132,7 @@ pub fn right_ui_manual(
 		egui::CollapsingHeader::new("Save / Load")
 			.default_open(true)
 			.show(ui, |ui| {
-				state.saved_state_ui(ui);
+				state.old_save_ui(ui);
 			});
 	});
 }

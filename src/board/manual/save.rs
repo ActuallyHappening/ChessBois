@@ -4,33 +4,53 @@ use derive_more::Constructor;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-	board::{coloured_moves::ColouredMoves, SharedState},
-	solver::BoardOptions,
+	board::{coloured_moves::ColouredMoves, SharedState, VizColour},
+	solver::{BoardOptions, Move},
 };
 
-#[derive(Serialize, Deserialize, Constructor)]
-pub struct SavedState {
-	pub moves: ColouredMoves,
-	pub board_options: BoardOptions,
+
+pub struct UnstableSavedState {
+	moves: ColouredMoves,
+	board_options: BoardOptions,
 }
 
-impl TryFrom<SharedState> for SavedState {
+// impl SharedState {
+// 	pub fn old_save_ui(&mut self, ui: &mut Ui) {
+// 		#[cfg(not(target_arch = "wasm32"))]
+// 		if self.moves.is_some() && ui.button("Save").clicked() {
+// 			let state = SavedState::try_from(self.clone()).unwrap();
+// 			let json = state.to_json();
+// 			ui.output_mut(|out| {
+// 				out.copied_text = json;
+// 			})
+// 		}
+// 		#[cfg(not(target_arch = "wasm32"))]
+// 		if ui.button("Load").clicked() {
+// 			let json = crate::clipboard::get_from_clipboard();
+// 			if let Ok(state) = SavedState::from_json(&json) {
+// 				self.moves = Some(state.moves);
+// 				self.board_options = state.board_options;
+// 			};
+// 		}
+// 	}
+// }
+
+#[path = "firebase/mod.rs"]
+mod firebase;
+
+impl TryFrom<SharedState> for UnstableSavedState {
 	type Error = ();
 	fn try_from(value: SharedState) -> Result<Self, Self::Error> {
 		Ok(Self {
-			moves: value.moves.ok_or(())?,
+			moves: value.moves.ok_or(())?.into(),
 			board_options: value.board_options,
 		})
 	}
 }
 
-impl SavedState {
-	pub fn to_json(&self) -> String {
-		serde_json::to_string(&self).unwrap()
-	}
-
+impl UnstableSavedState {
 	pub fn from_json(json: &str) -> Result<Self, anyhow::Error> {
-		match serde_json::from_str::<Self>(json) {
+		match serde_json::from_str::<v0_3_x::StableSavedState>(json) {
 			Ok(state) => Ok(state),
 			Err(new_err) => {
 				let old_err = v0_2_x::try_depreciated_from_json(json);
@@ -44,65 +64,56 @@ impl SavedState {
 }
 
 mod v0_3_x {
-	use anyhow::Context;
-	use bevy::prelude::Color;
-	use derive_more::{Deref, DerefMut};
-	use serde::{Deserialize, Serialize};
 	use std::collections::HashMap;
+	use bevy::prelude::Color;
+	use derive_more::{Deref, DerefMut, Constructor, From, Into};
+	use serde::{Deserialize, Serialize};
 
-	pub fn try_decode_from_json(json: &str) -> Result<super::SavedState, anyhow::Error> {
-		let data: State = serde_json::from_str(json).context("JSON decoding failed")?;
-		let moves = data
-			.moves
-			.into_iter()
-			.map(|(from, to, col)| (crate::solver::Move::new(from.into(), to.into()), col.into()))
-			.collect();
-		let board_options = data
-			.options
-			.into_iter()
-			.map(|(point, cell)| (point.into(), cell.into()))
-			.collect();
-		Ok(super::SavedState {
-			moves,
-			board_options,
-		})
-	}
-
-	pub fn to_json(state: &super::SavedState) -> anyhow::Result<String> {
-		let moves: Vec<(Point, Point)> = state
-			.moves
-			.iter()
-			.map(|(from, to)| (from.into(), to.into()))
-			.collect();
-		let options = state
-			.board_options
-			.iter()
-			.map(|(point, cell)| (point.into(), cell.into()))
-			.collect();
-		let state = State { moves, options };
-		Ok(serde_json::to_string(&state)?)
-	}
-
-	#[derive(Serialize, Deserialize)]
-	struct State {
-		moves: Moves,
-		options: HashMap<Point, Cell>,
+	#[derive(Serialize, Deserialize, Constructor)]
+	pub struct StableSavedState {
+		pub moves: self::StableColouredMoves,
+		pub board_options: self::StableBoardOptions,
 	}
 
 	#[derive(Serialize, Deserialize, Hash, PartialEq, Eq)]
 	/// row column
 	struct Point(u16, u16);
 
-	#[derive(Serialize, Deserialize, Deref, DerefMut)]
-	struct Moves(Vec<(Point, Point, Color)>);
+	#[derive(Serialize, Deserialize, Deref, DerefMut, From, Into)]
+	struct StableColouredMoves(Vec<(Point, Point, Color)>);
 
-	impl From<super::ColouredMoves> for Moves {
+	#[derive(Serialize, Deserialize, Deref, DerefMut, From, Into)]
+	pub struct StableBoardOptions(HashMap<Point, StableCellOptions>);
+
+	// from impls
+
+	impl From<StableSavedState> for super::UnstableSavedState {
+		fn from(value: StableSavedState) -> Self {
+			Self {
+				moves: value.moves.into(),
+				board_options: value.board_options.into(),
+			}
+		}
+	}
+
+	impl From<super::ColouredMoves> for StableColouredMoves {
 		fn from(value: super::ColouredMoves) -> Self {
 			Self(
 				value
 					.into_iter()
-					.map(|(from, to, colour)| (from.into(), to.into(), colour))
-					.collect(),
+					.map(|(super::Move { from, to }, colour)| (from.into(), to.into(), colour.into()))
+					.collect::<Vec<(Point, Point, Color)>>().into(),
+			)
+		}
+	}
+
+	impl From<StableColouredMoves> for super::ColouredMoves {
+		fn from(value: StableColouredMoves) -> Self {
+			Self::from(
+				value
+					.into_iter()
+					.map(|(from, to, colour)| (super::Move { from: from.into(), to: to.into() }, colour.into()))
+					.collect::<Vec<(super::Move, super::VizColour)>>(),
 			)
 		}
 	}
@@ -124,27 +135,27 @@ mod v0_3_x {
 
 	#[derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr)]
 	#[repr(u8)]
-	enum Cell {
+	enum StableCellOptions {
 		Disabled = 0,
 		Finishable = 1,
 		NoFinishable = 2,
 	}
 
-	impl From<Cell> for crate::solver::CellOption {
-		fn from(value: Cell) -> Self {
+	impl From<StableCellOptions> for crate::solver::CellOption {
+		fn from(value: StableCellOptions) -> Self {
 			match value {
-				Cell::Disabled => Self::Unavailable,
-				Cell::Finishable => Self::Available {
+				StableCellOptions::Disabled => Self::Unavailable,
+				StableCellOptions::Finishable => Self::Available {
 					can_finish_on: true,
 				},
-				Cell::NoFinishable => Self::Available {
+				StableCellOptions::NoFinishable => Self::Available {
 					can_finish_on: false,
 				},
 			}
 		}
 	}
 
-	impl From<crate::solver::CellOption> for Cell {
+	impl From<crate::solver::CellOption> for StableCellOptions {
 		fn from(value: crate::solver::CellOption) -> Self {
 			match value {
 				crate::solver::CellOption::Unavailable => Self::Disabled,
@@ -168,10 +179,10 @@ mod v0_2_x {
 
 	use crate::solver::BoardOptions;
 
-	use super::SavedState;
+	use super::UnstableSavedState;
 
 	/// Old didn't record targets or board size, so heuristics are added to the board options
-	pub fn try_depreciated_from_json(json: &str) -> Result<SavedState, anyhow::Error> {
+	pub fn try_depreciated_from_json(json: &str) -> Result<UnstableSavedState, anyhow::Error> {
 		let mut data: State = serde_json::from_str(json).context("JSON decoding failed")?;
 		let mut reached_points = HashSet::new();
 		for Move { from, to } in data.moves.moves.iter() {
@@ -193,7 +204,7 @@ mod v0_2_x {
 			.map(|m| (m.into(), data.colours.pop().unwrap().into()))
 			.collect();
 
-		Ok(SavedState {
+		Ok(UnstableSavedState {
 			moves,
 			board_options,
 		})
@@ -264,27 +275,6 @@ mod v0_2_x {
 				Colour::Orange => Self::Orange,
 				Colour::Invisible => Self::Invisible,
 			}
-		}
-	}
-}
-
-impl SharedState {
-	pub fn saved_state_ui(&mut self, ui: &mut Ui) {
-		#[cfg(not(target_arch = "wasm32"))]
-		if self.moves.is_some() && ui.button("Save").clicked() {
-			let state = SavedState::try_from(self.clone()).unwrap();
-			let json = state.to_json();
-			ui.output_mut(|out| {
-				out.copied_text = json;
-			})
-		}
-		#[cfg(not(target_arch = "wasm32"))]
-		if ui.button("Load").clicked() {
-			let json = crate::clipboard::get_from_clipboard();
-			if let Ok(state) = SavedState::from_json(&json) {
-				self.moves = Some(state.moves);
-				self.board_options = state.board_options;
-			};
 		}
 	}
 }
