@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use derive_more::Deref;
 use firebase_rs::Firebase;
 use once_cell::sync::Lazy;
@@ -50,11 +48,15 @@ impl Payload {
 #[tokio::main(flavor = "current_thread")]
 pub async fn save_to_db(state: UnstableSavedState) -> Option<ID> {
 	let id = ID::new();
+
+	let metadata = state.metadata.clone();
 	let payload = Payload::new(id.clone(), state);
 
 	info!("saving to db at {:?}", id.clone());
+
 	DB.update(&payload).await.ok()?;
-	DB.at("metadata").update(&json!({id.0: state.}));
+	DB.at("metadata").update(&json!({ id.0.clone(): metadata })).await.ok()?;
+
 	info!("finished saving to db");
 	Some(id)
 }

@@ -1,7 +1,6 @@
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
 
-
 use crate::{
 	board::{coloured_moves::ColouredMoves, SharedState, VizColour},
 	solver::{BoardOptions, Move},
@@ -15,7 +14,8 @@ mod ui;
 /// Serialized
 pub type StableSavedState = v0_3_x::StableSavedState;
 
-/// Convertable into (Unstable)[SharedState], convertable from/into [StableSavedState]
+/// Convertable from/into (Unstable)[SharedState], convertable from/into [StableSavedState].
+/// Bridge from stability into unstability
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UnstableSavedState {
 	metadata: MetaData,
@@ -23,23 +23,34 @@ pub struct UnstableSavedState {
 	board_options: BoardOptions,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+/// This is stable
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MetaData {
 	pub id: Option<firebase::ID>,
 	pub title: String,
 	pub author: String,
 	pub dimensions: Dimensions,
 }
+impl MetaData {
+	fn depreciated(dimensions: Dimensions) -> MetaData {
+		MetaData {
+			id: None,
+			title: "OLD save, no title".into(),
+			author: "OLD save, unknown author".into(),
+			dimensions,
+		}
+	}
+}
 
 pub type Dimensions = (u16, u16);
 
 impl TryFrom<SharedState> for UnstableSavedState {
-	type Error = ();
-	fn try_from(value: SharedState) -> Result<Self, Self::Error> {
+	type Error = String;
+	fn try_from(state: SharedState) -> Result<Self, Self::Error> {
 		Ok(Self {
-			moves: value.moves.ok_or(())?,
-			board_options: value.board_options,
-			metadata: value.save_state.into(),
+			metadata: state.clone().try_into()?,
+			moves: state.moves.ok_or("No moves to save")?,
+			board_options: state.board_options,
 		})
 	}
 }
@@ -70,13 +81,14 @@ mod v0_3_x {
 	use bevy::prelude::Color;
 	use derive_more::{Deref, DerefMut, From, Into};
 	use serde::{Deserialize, Serialize};
-	use std::collections::HashMap;
 	use serde_json_any_key::any_key_map;
+	use std::collections::HashMap;
 
 	#[derive(Serialize, Deserialize, Debug)]
 	pub struct StableSavedState {
 		moves: self::StableColouredMoves,
 		board_options: self::StableBoardOptions,
+		metadata: super::MetaData,
 	}
 
 	#[derive(Serialize, Deserialize, Hash, PartialEq, Eq, Debug)]
@@ -95,19 +107,23 @@ mod v0_3_x {
 	// from impls
 
 	impl From<StableSavedState> for super::UnstableSavedState {
+		/// Un-stabalise the [StableSavedState]
 		fn from(value: StableSavedState) -> Self {
 			Self {
 				moves: value.moves.into(),
 				board_options: value.board_options.into(),
+				metadata: value.metadata,
 			}
 		}
 	}
 
 	impl From<super::UnstableSavedState> for StableSavedState {
+		/// Stabalise the [UnstableSavedState]
 		fn from(value: super::UnstableSavedState) -> Self {
 			Self {
 				moves: value.moves.into(),
 				board_options: value.board_options.into(),
+				metadata: value.metadata,
 			}
 		}
 	}
@@ -280,6 +296,7 @@ mod v0_2_x {
 		Ok(UnstableSavedState {
 			moves,
 			board_options,
+			metadata: super::MetaData::depreciated((max_width, max_height)),
 		})
 	}
 

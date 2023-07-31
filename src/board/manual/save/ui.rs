@@ -3,8 +3,8 @@ use bevy_egui::egui::Ui;
 
 use crate::board::SharedState;
 
-use super::UnstableSavedState;
 use super::firebase;
+use super::UnstableSavedState;
 
 #[derive(Default, Clone)]
 pub struct SaveState {
@@ -17,12 +17,12 @@ pub struct SaveState {
 impl TryFrom<SharedState> for super::MetaData {
 	type Error = String;
 	fn try_from(state: SharedState) -> Result<Self, Self::Error> {
-			Ok(super::MetaData {
-				id: None,
-				title: state.save_state.title.ok_or("No title specified")?,
-				author: state.save_state.author.ok_or("No author specified")?,
-				dimensions: state.board_options.dimensions(),
-			})
+		Ok(super::MetaData {
+			id: None,
+			title: state.save_state.title.ok_or("No title specified")?,
+			author: state.save_state.author.ok_or("No author specified")?,
+			dimensions: state.board_options.dimensions(),
+		})
 	}
 }
 
@@ -51,17 +51,9 @@ impl SharedState {
 
 	#[cfg(not(target_arch = "wasm32"))]
 	fn new_save_ui(&mut self, ui: &mut Ui) {
-    use bevy::tasks::AsyncComputeTaskPool;
-
 		if ui.button("Save to DB (>= v0.3").clicked() {
 			let state = UnstableSavedState::try_from(self.clone()).unwrap();
-			// TODO
-			// let pool = AsyncComputeTaskPool::get();
-			// pool.scope(|s| {
-				// s.spawn(async {
-					firebase::save_to_db(state);
-				// })
-			// });
+			firebase::save_to_db(state);
 		}
 		ui.label("This saves the current state to the database under the specified title");
 	}
@@ -69,12 +61,16 @@ impl SharedState {
 	pub fn save_ui(&mut self, ui: &mut Ui) {
 		#[cfg(not(target_arch = "wasm32"))]
 		{
-			egui::CollapsingHeader::new("Old Save/Load").default_open(true).show(ui, |ui| {
-				self.old_save_ui(ui);
-			});
-			egui::CollapsingHeader::new("New Save to DB").default_open(true).show(ui, |ui| {
-				self.new_save_ui(ui);
-			});
+			egui::CollapsingHeader::new("Old Save/Load")
+				.default_open(true)
+				.show(ui, |ui| {
+					self.old_save_ui(ui);
+				});
+			egui::CollapsingHeader::new("New Save to DB")
+				.default_open(true)
+				.show(ui, |ui| {
+					self.new_save_ui(ui);
+				});
 		}
 	}
 }
