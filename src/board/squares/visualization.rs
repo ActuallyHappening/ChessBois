@@ -53,7 +53,7 @@ impl SharedState {
 
 			*PREVIOUS_RENDER.lock().unwrap() = Some(OwnedVisState::clone_new(state));
 		} else {
-			info!("Skipping visualization re-render");
+			// info!("Skipping visualization re-render");
 		}
 	}
 }

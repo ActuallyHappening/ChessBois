@@ -3,8 +3,8 @@ use bevy_egui::egui::Ui;
 
 use crate::board::SharedState;
 
-use super::MetaData;
 use super::firebase;
+use super::MetaData;
 use super::UnstableSavedState;
 
 #[derive(Default, Clone)]
@@ -39,8 +39,8 @@ impl TryFrom<SharedState> for super::MetaData {
 	}
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl SharedState {
-	#[cfg(not(target_arch = "wasm32"))]
 	fn old_save_ui(&mut self, ui: &mut Ui) {
 		if self.moves.is_some() && ui.button("Save to clipboard (>= v0.3)").clicked() {
 			let state = UnstableSavedState::try_from(self.clone()).unwrap();
@@ -61,7 +61,6 @@ impl SharedState {
 		ui.label("This can load older saves.");
 	}
 
-	#[cfg(not(target_arch = "wasm32"))]
 	fn new_save_ui(&mut self, ui: &mut Ui) {
 		use bevy_egui::egui::Color32;
 
@@ -92,7 +91,6 @@ impl SharedState {
 		}
 	}
 
-	#[cfg(not(target_arch = "wasm32"))]
 	fn new_load_ui(&mut self, ui: &mut Ui) {
 		if ui.button("Load list of saves").clicked() {
 			match firebase::get_metadata_list() {
@@ -118,12 +116,15 @@ impl SharedState {
 				}
 			}
 			ui.label(format!("By: {}", metadata.author));
-			ui.label(format!("Dimensions: {}x{}", metadata.dimensions.0, metadata.dimensions.1));
+			ui.label(format!(
+				"Dimensions: {}x{}",
+				metadata.dimensions.0, metadata.dimensions.1
+			));
 			ui.label(format!("Description: {}", metadata.description));
 		}
 	}
-
-
+}
+impl SharedState {
 	pub fn save_ui(&mut self, ui: &mut Ui) {
 		#[cfg(not(target_arch = "wasm32"))]
 		{
@@ -139,10 +140,16 @@ impl SharedState {
 					self.new_save_ui(ui);
 				});
 
-			egui::CollapsingHeader::new("[New] Load from DB").default_open(false).show(ui, |ui| {
-				// TODO: impl first page load viewing
-				self.new_load_ui(ui);
-			});
+			egui::CollapsingHeader::new("[New] Load from DB")
+				.default_open(false)
+				.show(ui, |ui| {
+					// TODO: impl first page load viewing
+					self.new_load_ui(ui);
+				});
+		}
+		#[cfg(target_arch = "wasm32")]
+		{
+			ui.label("Saving / Loading is yet to be supported on web (WASM), but work is in progress!");
 		}
 	}
 }

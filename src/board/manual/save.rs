@@ -7,9 +7,10 @@ use crate::{
 };
 
 pub use ui::SaveState;
+mod ui;
+
 #[path = "firebase.rs"]
 mod firebase;
-mod ui;
 
 /// Serialized
 pub type StableSavedState = v0_3_x::StableSavedState;

@@ -1,5 +1,6 @@
 use bevy::utils::HashMap;
 use derive_more::Deref;
+#[cfg(not(target_arch = "wasm32"))]
 use firebase_rs::Firebase;
 use once_cell::sync::Lazy;
 use rand::Rng;
@@ -13,6 +14,8 @@ const BASE_URL: &str =
 	"https://chess-analysis-program-default-rtdb.asia-southeast1.firebasedatabase.app/";
 static VERSION_APPEND: Lazy<String> =
 	Lazy::new(|| format!("v0_{}_x/", crate::meta::VERSION_MINOR.to_string()));
+
+#[cfg(not(target_arch = "wasm32"))]
 static DB: Lazy<Firebase> = Lazy::new(|| {
 	Firebase::new(BASE_URL)
 		.expect("Cannot create DB path")
@@ -44,6 +47,7 @@ impl Payload {
 	}
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[tokio::main(flavor = "current_thread")]
 pub async fn save_to_db(state: UnstableSavedState) -> Option<ID> {
 	let id = ID::new();
@@ -60,6 +64,7 @@ pub async fn save_to_db(state: UnstableSavedState) -> Option<ID> {
 	Some(id)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[tokio::main(flavor = "current_thread")]
 pub async fn get_from_db(id: ID) -> Option<UnstableSavedState> {
 	info!("getting from db at {:?}", id.clone());
@@ -80,6 +85,7 @@ pub async fn get_from_db(id: ID) -> Option<UnstableSavedState> {
 	Some(data)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[tokio::main(flavor = "current_thread")]
 pub async fn get_metadata_list() -> Option<Vec<MetaData>> {
 	info!("getting all metadata");

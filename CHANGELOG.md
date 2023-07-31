@@ -1,9 +1,9 @@
 
-# TODO:
-- Check state before re-rendering
+## v0.3.2 TODO:
+- Save to DB impl for non-web
 
 ## v0.3.1:
-- Save to DB impl for non-web
+- Check state before re-rendering
 
 ## v0.3.0:
 - DB
