@@ -6,7 +6,7 @@ use crate::{
 	utils::{EntityCommandsExt, TransformExt},
 	ChessPoint, CELL_SIZE, VISUALIZATION_HEIGHT,
 };
-use std::f32::consts::TAU;
+use std::{f32::consts::TAU, sync::Mutex};
 
 pub use viz_colours::*;
 pub use viz_opts::VisualOpts;
@@ -23,6 +23,7 @@ pub struct VisComponent {
 	number: usize,
 }
 
+static PREVIOUS_RENDER: Mutex<Option<OwnedVisState>> = Mutex::new(None);
 impl SharedState {
 	pub fn sys_render_viz(
 		state: Res<SharedState>,
@@ -31,18 +32,50 @@ impl SharedState {
 		mut commands: Commands,
 		mut mma: ResSpawning,
 	) {
-		despawn_visualization(&mut commands, visualization);
+		let state = state.into_inner();
+
 		if !state.visual_opts.show_visualisation {
 			return;
 		}
-		if let Some(moves) = &state.moves {
-			spawn_visualization(
-				moves.clone(),
-				state.board_options.clone(),
-				&state.visual_opts,
-				&mut commands,
-				&mut mma,
-			);
+
+		if *PREVIOUS_RENDER.lock().unwrap() != Some(OwnedVisState::clone_new(state)) {
+			despawn_visualization(&mut commands, visualization);
+
+			if let Some(moves) = &state.moves {
+				spawn_visualization(
+					moves.clone(),
+					state.board_options.clone(),
+					&state.visual_opts,
+					&mut commands,
+					&mut mma,
+				);
+			}
+
+			*PREVIOUS_RENDER.lock().unwrap() = Some(OwnedVisState::clone_new(state));
+		} else {
+			info!("Skipping visualization re-render");
+		}
+	}
+}
+
+use vis_state::*;
+mod vis_state {
+	use super::*;
+
+	#[derive(PartialEq, Clone)]
+	pub struct OwnedVisState {
+		pub moves: Option<ColouredMoves>,
+		pub board_options: BoardOptions,
+		pub visual_opts: VisualOpts,
+	}
+
+	impl OwnedVisState {
+		pub fn clone_new(state: &SharedState) -> Self {
+			Self {
+				moves: state.moves.clone(),
+				board_options: state.board_options.clone(),
+				visual_opts: state.visual_opts.clone(),
+			}
 		}
 	}
 }

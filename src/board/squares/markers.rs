@@ -43,7 +43,7 @@ impl SharedState {
 
 			*PREVIOUS_RENDER.lock().unwrap() = Some(owned_state);
 		} else {
-			info!("Skipping marker re-render");
+			// info!("Skipping marker re-render");
 		}
 	}
 }
