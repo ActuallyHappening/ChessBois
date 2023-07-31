@@ -9,3 +9,5 @@ bevy_egui_controls
 
 *.icloud
 .git-old
+
+cap_solver.app
