@@ -70,6 +70,7 @@ pub struct SharedState {
 
 	// manual
 	pub manual_freedom: ManualFreedom,
+	pub save_state: SaveState,
 	/// Colour of next move
 	pub viz_colour: VizColour,
 }
@@ -183,7 +184,7 @@ use self::{
 	hotkeys::HotkeysPlugin,
 	saftey_cap::SafteyCap,
 	shared::SharedPlugin,
-	ui::UiPlugin, manual::{ManualFreedom, ManualState},
+	ui::UiPlugin, manual::{ManualFreedom, ManualState, SaveState},
 };
 
 /// Sets up default resources + sends initial [NewOptions] event

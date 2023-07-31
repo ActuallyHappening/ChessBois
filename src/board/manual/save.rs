@@ -7,15 +7,31 @@ use crate::{
 	solver::{BoardOptions, Move},
 };
 
+pub use ui::SaveState;
+#[path = "firebase.rs"]
+mod firebase;
+mod ui;
+
+/// Serialized
+pub type StableSavedState = v0_3_x::StableSavedState;
+
+/// Convertable into (Unstable)[SharedState], convertable from/into [StableSavedState]
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UnstableSavedState {
+	metadata: MetaData,
 	moves: ColouredMoves,
 	board_options: BoardOptions,
 }
 
-#[path = "firebase.rs"]
-mod firebase;
-mod ui;
+#[derive(Serialize, Deserialize, Debug)]
+pub struct MetaData {
+	pub id: Option<firebase::ID>,
+	pub title: String,
+	pub author: String,
+	pub dimensions: Dimensions,
+}
+
+pub type Dimensions = (u16, u16);
 
 impl TryFrom<SharedState> for UnstableSavedState {
 	type Error = ();
@@ -23,15 +39,19 @@ impl TryFrom<SharedState> for UnstableSavedState {
 		Ok(Self {
 			moves: value.moves.ok_or(())?,
 			board_options: value.board_options,
+			metadata: value.save_state.into(),
 		})
 	}
 }
 
 impl UnstableSavedState {
+	/// Serialize into the Stable state
 	pub fn into_json(self) -> String {
 		let data = v0_3_x::StableSavedState::from(self);
 		serde_json::to_string(&data).expect("Cannot serialise data")
 	}
+
+	/// Hnadles depreciated format
 	pub fn from_json(json: &str) -> Result<Self, anyhow::Error> {
 		match serde_json::from_str::<v0_3_x::StableSavedState>(json) {
 			Ok(state) => Ok(state.into()),

@@ -202,6 +202,10 @@ impl BoardOptions {
 			self.targets_state().into_available_cell_option();
 	}
 
+	pub fn dimensions(&self) -> (u16, u16) {
+		(self.width(), self.height())
+	}
+
 	/// Target/Untargets a specific point.
 	/// If this is the first target, sets can_finish to false for all other cells
 	pub fn toggle_target(&mut self, p: impl Into<ChessPoint>) {

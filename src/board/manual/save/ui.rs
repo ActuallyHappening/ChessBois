@@ -6,6 +6,26 @@ use crate::board::SharedState;
 use super::UnstableSavedState;
 use super::firebase;
 
+#[derive(Default, Clone)]
+pub struct SaveState {
+	pub title: Option<String>,
+	pub author: Option<String>,
+
+	pub error_str: Option<String>,
+}
+
+impl TryFrom<SharedState> for super::MetaData {
+	type Error = String;
+	fn try_from(state: SharedState) -> Result<Self, Self::Error> {
+			Ok(super::MetaData {
+				id: None,
+				title: state.save_state.title.ok_or("No title specified")?,
+				author: state.save_state.author.ok_or("No author specified")?,
+				dimensions: state.board_options.dimensions(),
+			})
+	}
+}
+
 impl SharedState {
 	#[cfg(not(target_arch = "wasm32"))]
 	fn old_save_ui(&mut self, ui: &mut Ui) {
