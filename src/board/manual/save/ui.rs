@@ -8,8 +8,8 @@ use super::UnstableSavedState;
 
 #[derive(Default, Clone)]
 pub struct SaveState {
-	pub title: Option<String>,
-	pub author: Option<String>,
+	pub title: String,
+	pub author: String,
 
 	pub error_str: Option<String>,
 }
@@ -17,10 +17,16 @@ pub struct SaveState {
 impl TryFrom<SharedState> for super::MetaData {
 	type Error = String;
 	fn try_from(state: SharedState) -> Result<Self, Self::Error> {
+		if state.save_state.title.is_empty() {
+			return Err("No title specified".to_string());
+		}
+		if state.save_state.author.is_empty() {
+			return Err("No author specified".to_string());
+		}
 		Ok(super::MetaData {
 			id: None,
-			title: state.save_state.title.ok_or("No title specified")?,
-			author: state.save_state.author.ok_or("No author specified")?,
+			title: state.save_state.title,
+			author: state.save_state.author,
 			dimensions: state.board_options.dimensions(),
 		})
 	}
@@ -65,6 +71,13 @@ impl SharedState {
 		}
 		ui.label("This saves the current state to the database under the specified title");
 
+		// Add metadata
+		ui.label("Title:");
+		ui.text_edit_singleline(&mut self.save_state.title);
+
+		ui.label("Author:");
+		ui.text_edit_singleline(&mut self.save_state.author);
+
 		if let Some(err) = &self.save_state.error_str {
 			ui.colored_label(Color32::RED, err);
 		}
@@ -78,11 +91,16 @@ impl SharedState {
 				.show(ui, |ui| {
 					self.old_save_ui(ui);
 				});
-			egui::CollapsingHeader::new("New Save to DB")
+
+			egui::CollapsingHeader::new("[New] Save to DB")
 				.default_open(true)
 				.show(ui, |ui| {
 					self.new_save_ui(ui);
 				});
+
+			egui::CollapsingHeader::new("[New] Load from DB").default_open(false).show(ui, |ui| {
+				// TODO: impl first page load viewing
+			});
 		}
 	}
 }

@@ -31,16 +31,6 @@ pub struct MetaData {
 	pub author: String,
 	pub dimensions: Dimensions,
 }
-impl MetaData {
-	fn depreciated(dimensions: Dimensions) -> MetaData {
-		MetaData {
-			id: None,
-			title: "OLD save, no title".into(),
-			author: "OLD save, unknown author".into(),
-			dimensions,
-		}
-	}
-}
 
 pub type Dimensions = (u16, u16);
 
@@ -298,6 +288,17 @@ mod v0_2_x {
 			board_options,
 			metadata: super::MetaData::depreciated((max_width, max_height)),
 		})
+	}
+
+	impl super::MetaData {
+		fn depreciated(dimensions: super::Dimensions) -> super::MetaData {
+			super::MetaData {
+				id: None,
+				title: "OLD save, no title".into(),
+				author: "OLD save, unknown author".into(),
+				dimensions,
+			}
+		}
 	}
 
 	#[test]
