@@ -49,8 +49,7 @@ impl SharedState {
 				out.copied_text = json;
 			})
 		}
-		// ui.label("Not recommended, use newer save to DB feature which hopefully works on web as well.");
-		ui.label("This copies a save which is NOT compatiable with older versions! I will hopefully implement saving to a database soon.");
+		ui.label("This copies a save which is NOT compatiable with older versions! I recommend saving useing the newer database feature.");
 
 		if ui.button("Load from clipboard (all versions)").clicked() {
 			let json = crate::clipboard::get_from_clipboard();
