@@ -1,4 +1,14 @@
 
+# TODO:
+- Check state before re-rendering
+
+## v0.3.1:
+- Save to DB impl for non-web
+
+## v0.3.0:
+- DB
+- Central [SharedState] struct
+
 ## v0.2.2:
 - Allows tighter camera zooms
 - Fixes Z-fighting for dots
