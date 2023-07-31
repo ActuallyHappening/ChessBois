@@ -7,8 +7,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::info;
 
-use crate::board::manual::save::StableSavedState;
-
 use super::{UnstableSavedState, MetaData};
 
 const BASE_URL: &str =
@@ -67,11 +65,19 @@ pub async fn get_from_db(id: ID) -> Option<UnstableSavedState> {
 	info!("getting from db at {:?}", id.clone());
 
 	let db = DB.at(&id.0);
-	let data: StableSavedState = db.get().await.ok()?;
+	let data: String = db.get().await.ok()?;
+	info!("got data from db: {}", data);
+	let data = match UnstableSavedState::from_json(&data) {
+		Ok(data) => data,
+		Err(e) => {
+			info!("error parsing data: {}", e);
+			return None;
+		}
+	};
 
 	info!("finished getting from db");
 
-	Some(data.into())
+	Some(data)
 }
 
 #[tokio::main(flavor = "current_thread")]

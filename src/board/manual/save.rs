@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
 	board::{coloured_moves::ColouredMoves, SharedState, VizColour},
-	solver::{BoardOptions, Move},
+	solver::{BoardOptions, Move}, ChessPoint,
 };
 
 pub use ui::SaveState;
@@ -66,6 +66,29 @@ impl UnstableSavedState {
 			}
 		}
 	}
+}
+
+#[test]
+fn check_serialize_deserialize_works() {
+	let mut moves = ColouredMoves::default();
+	moves.manual_add_move(ChessPoint::new(2, 3), VizColour::Blue);
+
+	let board_options = BoardOptions::new(2, 3);
+
+	let data = UnstableSavedState {
+		metadata: MetaData {
+			id: None,
+			title: "test".into(),
+			author: "test".into(),
+			description: "test".into(),
+			dimensions: (2, 3),
+		},
+		moves,
+		board_options,
+	};
+
+	let json = data.into_json();
+	let data = UnstableSavedState::from_json(&json).unwrap();
 }
 
 mod v0_3_x {

@@ -85,6 +85,9 @@ impl SharedState {
 		ui.label("Author:");
 		ui.text_edit_singleline(&mut self.save_state.author);
 
+		ui.label("Description:");
+		ui.text_edit_multiline(&mut self.save_state.description);
+
 		if let Some(err) = &self.save_state.error_str {
 			ui.colored_label(Color32::RED, err);
 		}
@@ -116,7 +119,7 @@ impl SharedState {
 				}
 			}
 			ui.label(format!("By: {}", metadata.author));
-			ui.label(format!("Dimensions widthxheight: {}x{}", metadata.dimensions.0, metadata.dimensions.1));
+			ui.label(format!("Dimensions: {}x{}", metadata.dimensions.0, metadata.dimensions.1));
 			ui.label(format!("Description: {}", metadata.description));
 		}
 	}
@@ -132,7 +135,7 @@ impl SharedState {
 				});
 
 			egui::CollapsingHeader::new("[New] Save to DB")
-				.default_open(true)
+				.default_open(false)
 				.show(ui, |ui| {
 					self.new_save_ui(ui);
 				});
