@@ -84,8 +84,8 @@ mod shared_state {
 		fn build(&self, app: &mut App) {
 			app.add_systems((
 				SharedState::sys_render_cells,
-				SharedState::sys_render_viz,
-				SharedState::sys_render_markers,
+				// SharedState::sys_render_viz,
+				// SharedState::sys_render_markers,
 			));
 		}
 	}

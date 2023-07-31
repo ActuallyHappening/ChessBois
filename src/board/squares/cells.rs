@@ -19,15 +19,25 @@ use cells_state::*;
 mod cells_state {
 	use super::*;
 
-	#[derive(PartialEq)]
-	pub struct CellsState<'shared> {
+	/// Used in implementation blocks
+	#[derive(PartialEq, Clone)]
+	pub struct BorrowedCellsState<'shared> {
 		pub board_options: &'shared BoardOptions,
 		pub visual_opts: &'shared VisualOpts,
 		pub moves: &'shared Option<ColouredMoves>,
 		pub start: &'shared Option<ChessPoint>,
 	}
 
-	impl<'shared> CellsState<'shared> {
+	/// Used to store for later comparisons
+	#[derive(PartialEq, Clone)]
+	pub struct OwnedCellsState {
+		pub board_options: BoardOptions,
+		pub visual_opts: VisualOpts,
+		pub moves: Option<ColouredMoves>,
+		pub start: Option<ChessPoint>,
+	}
+
+	impl<'shared> BorrowedCellsState<'shared> {
 		pub fn new(state: &'shared SharedState) -> Self {
 			Self {
 				board_options: &state.board_options,
@@ -38,7 +48,18 @@ mod cells_state {
 		}
 	}
 
-	impl std::ops::Deref for CellsState<'_> {
+	impl OwnedCellsState {
+		pub fn new(state: SharedState) -> Self {
+			Self {
+				board_options: state.board_options,
+				visual_opts: state.visual_opts,
+				moves: state.moves,
+				start: state.start,
+			}
+		}
+	}
+
+	impl std::ops::Deref for BorrowedCellsState<'_> {
 		type Target = BoardOptions;
 
 		fn deref(&self) -> &Self::Target {
@@ -47,7 +68,7 @@ mod cells_state {
 	}
 }
 
-static PREVIOUS_RENDER: Mutex<Option<CellsState>> = Mutex::new(None);
+static PREVIOUS_RENDER: Mutex<Option<OwnedCellsState>> = Mutex::new(None);
 impl SharedState {
 	pub fn sys_render_cells(
 		state: Res<SharedState>,
@@ -57,16 +78,20 @@ impl SharedState {
 		mut mma: ResSpawning,
 	) {
 		let state = state.into_inner();
-		if *PREVIOUS_RENDER.lock().unwrap() != Some(CellsState::new(state)) {
+		let current_state = OwnedCellsState::new(state.clone());
+
+		if *PREVIOUS_RENDER.lock().unwrap() != Some(current_state.clone()) {
 			despawn_cells(&mut commands, cells);
-			spawn_cells(&CellsState::new(state), &mut commands, &mut mma);
+			spawn_cells(&BorrowedCellsState::new(state), &mut commands, &mut mma);
+
+			PREVIOUS_RENDER.lock().unwrap().replace(current_state);
 		} else {
 			info!("Skipping re-rendering cells");
 		}
 	}
 }
 
-fn spawn_cells(state: &CellsState, commands: &mut Commands, mma: &mut ResSpawning) {
+fn spawn_cells(state: &BorrowedCellsState, commands: &mut Commands, mma: &mut ResSpawning) {
 	let start = state.start.as_ref();
 	let options = &state.board_options;
 
@@ -86,7 +111,7 @@ fn despawn_cells(
 }
 
 /// Takes as much information as it can get and returns the colour the cell should be.
-fn compute_colour(point: &ChessPoint, state: &CellsState, start: Option<&ChessPoint>) -> Color {
+fn compute_colour(point: &ChessPoint, state: &BorrowedCellsState, start: Option<&ChessPoint>) -> Color {
 	if state.get_unavailable_points().contains(point) {
 		CELL_DISABLED_COLOUR
 	} else if Some(point) == start {
