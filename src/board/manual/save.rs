@@ -13,7 +13,7 @@ pub struct UnstableSavedState {
 	board_options: BoardOptions,
 }
 
-#[path = "firebase/mod.rs"]
+#[path = "firebase.rs"]
 mod firebase;
 mod ui;
 
