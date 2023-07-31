@@ -86,7 +86,7 @@ impl SharedState {
 
 			PREVIOUS_RENDER.lock().unwrap().replace(current_state);
 		} else {
-			info!("Skipping re-rendering cells");
+			// info!("Skipping re-rendering cells");
 		}
 	}
 }

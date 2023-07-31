@@ -24,7 +24,7 @@ pub enum Computation {
 }
 
 #[derive(Hash, PartialEq, Eq, Clone)]
-pub struct ComputeInput {
+pub struct OwnedComputeInput {
 	pub alg: Algorithm,
 	pub safety_cap: u128,
 	pub start: ChessPoint,
@@ -141,7 +141,7 @@ This algorithm tries to find a hamiltonian cycle using a copy-pasted algorithm f
 }
 
 impl Algorithm {
-	pub fn tour_computation(&self, input: ComputeInput) -> Computation {
+	pub fn tour_computation(&self, input: OwnedComputeInput) -> Computation {
 		match self {
 			// Algorithm::WarnsdorfUnreliable => warnsdorf_tour_repeatless(piece, options, start),
 			Algorithm::WarnsdorfBacktrack => brute_recursive_tour_repeatless(
@@ -170,7 +170,7 @@ impl Algorithm {
 	}
 
 	/// Actually compute, with caching
-	pub fn tour_computation_cached(input: ComputeInput) -> Computation {
+	pub fn tour_computation_cached(input: OwnedComputeInput) -> Computation {
 		if !input
 			.board_options
 			.get_available_points()
@@ -485,7 +485,7 @@ mod cache {
 		LruCache::new(NonZeroUsize::new(10_000).unwrap())
 	}
 
-	type Key = ComputeInput;
+	type Key = OwnedComputeInput;
 	type Solution = Computation;
 
 	pub fn try_get_cached_solution(options: &Key) -> Option<Solution> {

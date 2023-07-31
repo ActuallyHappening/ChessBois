@@ -1,5 +1,5 @@
 use super::{squares::CellMark, *};
-use crate::solver::algs::{self, Computation, ComputeInput};
+use crate::solver::algs::{self, Computation, OwnedComputeInput};
 
 /// Syncs [SharedState] resource with computations
 pub fn compute_from_state(state: ResMut<SharedState>) {
@@ -19,7 +19,7 @@ pub fn compute_from_state(state: ResMut<SharedState>) {
 	}
 }
 
-pub fn get_cached_mark(input: &ComputeInput) -> Option<CellMark> {
+pub fn get_cached_mark(input: &OwnedComputeInput) -> Option<CellMark> {
 	algs::try_get_cached_solution(input).map(|c| c.into())
 }
 
@@ -50,7 +50,7 @@ impl SharedState {
 // static COMPUTATIONS_TO_HANDLE: Lazy<Mutex<HashMap<ComputeInput, Computation>>> =
 // 	Lazy::new(|| Mutex::new(HashMap::new()));
 
-fn start_executing_task(_state: ComputeInput, task: impl FnOnce() -> Computation + Send + 'static) {
+fn start_executing_task(_state: OwnedComputeInput, task: impl FnOnce() -> Computation + Send + 'static) {
 	#[cfg(not(target_arch = "wasm32"))]
 	{
 		use std::thread;

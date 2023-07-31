@@ -78,14 +78,14 @@ pub struct SharedState {
 pub use self::shared_state::StateInvalidated;
 mod shared_state {
 	use super::{squares::visualization, *};
-	use crate::solver::algs::ComputeInput;
+	use crate::solver::algs::OwnedComputeInput;
 
 	impl Plugin for SharedState {
 		fn build(&self, app: &mut App) {
 			app.add_systems((
 				SharedState::sys_render_cells,
-				// SharedState::sys_render_viz,
-				// SharedState::sys_render_markers,
+				SharedState::sys_render_viz,
+				SharedState::sys_render_markers,
 			));
 		}
 	}
@@ -111,7 +111,7 @@ mod shared_state {
 		}
 	}
 
-	impl TryFrom<SharedState> for ComputeInput {
+	impl TryFrom<SharedState> for OwnedComputeInput {
 		type Error = ();
 
 		fn try_from(value: SharedState) -> Result<Self, Self::Error> {
@@ -120,8 +120,8 @@ mod shared_state {
 	}
 
 	impl SharedState {
-		pub fn get_compute_state(self) -> Option<ComputeInput> {
-			Some(ComputeInput {
+		pub fn get_compute_state(self) -> Option<OwnedComputeInput> {
+			Some(OwnedComputeInput {
 				alg: self.alg,
 				start: self.start?,
 				board_options: self.board_options,
@@ -132,8 +132,8 @@ mod shared_state {
 
 		/// Gets the [ComputeInput] from [SharedState] guarenteed given a start point.
 		/// Used to 'imagine' starting on a square
-		pub fn into_compute_state_with_start(self, start: ChessPoint) -> ComputeInput {
-			ComputeInput {
+		pub fn into_compute_state_with_start(self, start: ChessPoint) -> OwnedComputeInput {
+			OwnedComputeInput {
 				alg: self.alg,
 				start,
 				board_options: self.board_options,
