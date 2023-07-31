@@ -1,8 +1,7 @@
 
+TODO: Fix bugs
 ## v0.3.2 TODO:
 - Save to DB impl for non-web
-
-## v0.3.1:
 - Check state before re-rendering
 
 ## v0.3.0:
