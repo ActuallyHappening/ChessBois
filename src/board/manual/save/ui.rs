@@ -3,6 +3,7 @@ use bevy_egui::egui::Ui;
 
 use crate::board::SharedState;
 
+use super::MetaData;
 use super::firebase;
 use super::UnstableSavedState;
 
@@ -12,6 +13,7 @@ pub struct SaveState {
 	pub author: String,
 
 	pub error_str: Option<String>,
+	pub loaded_metadatas: Vec<MetaData>,
 }
 
 impl TryFrom<SharedState> for super::MetaData {
@@ -83,6 +85,35 @@ impl SharedState {
 		}
 	}
 
+	#[cfg(not(target_arch = "wasm32"))]
+	fn new_load_ui(&mut self, ui: &mut Ui) {
+		if ui.button("Load list of saves").clicked() {
+			match firebase::get_metadata_list() {
+				Some(list) => {
+					self.save_state.loaded_metadatas = list;
+				}
+				None => {
+					self.save_state.error_str = Some("Failed to get list of saves".to_string());
+				}
+			}
+		}
+
+		for metadata in &self.save_state.loaded_metadatas {
+			if ui.button(metadata.title.clone()).clicked() {
+				match firebase::get_from_db(metadata.id.clone().unwrap()) {
+					Some(state) => {
+						self.moves = Some(state.moves);
+						self.board_options = state.board_options;
+					}
+					None => {
+						self.save_state.error_str = Some("Failed to load save".to_string());
+					}
+				}
+			}
+		}
+	}
+
+
 	pub fn save_ui(&mut self, ui: &mut Ui) {
 		#[cfg(not(target_arch = "wasm32"))]
 		{
@@ -100,6 +131,7 @@ impl SharedState {
 
 			egui::CollapsingHeader::new("[New] Load from DB").default_open(false).show(ui, |ui| {
 				// TODO: impl first page load viewing
+				self.new_load_ui(ui);
 			});
 		}
 	}

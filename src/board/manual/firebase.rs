@@ -1,3 +1,4 @@
+use bevy::utils::HashMap;
 use derive_more::Deref;
 use firebase_rs::Firebase;
 use once_cell::sync::Lazy;
@@ -8,7 +9,7 @@ use tracing::info;
 
 use crate::board::manual::save::StableSavedState;
 
-use super::UnstableSavedState;
+use super::{UnstableSavedState, MetaData};
 
 const BASE_URL: &str =
 	"https://chess-analysis-program-default-rtdb.asia-southeast1.firebasedatabase.app/";
@@ -71,4 +72,22 @@ pub async fn get_from_db(id: ID) -> Option<UnstableSavedState> {
 	info!("finished getting from db");
 
 	Some(data.into())
+}
+
+#[tokio::main(flavor = "current_thread")]
+pub async fn get_metadata_list() -> Option<Vec<MetaData>> {
+	info!("getting all metadata");
+
+	let db = DB.at("metadata");
+	let data: HashMap<String, MetaData> = db.get().await.ok()?;
+
+	let mut metadatas = Vec::new();
+	for (id, mut metadata) in data {
+		metadata.id = Some(ID(id));
+		metadatas.push(metadata);
+	}
+
+	info!("finished getting all metadata");
+
+	Some(metadatas)
 }
