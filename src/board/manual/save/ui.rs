@@ -11,6 +11,7 @@ use super::UnstableSavedState;
 pub struct SaveState {
 	pub title: String,
 	pub author: String,
+	pub description: String,
 
 	pub error_str: Option<String>,
 	pub loaded_metadatas: Vec<MetaData>,
@@ -25,10 +26,14 @@ impl TryFrom<SharedState> for super::MetaData {
 		if state.save_state.author.is_empty() {
 			return Err("No author specified".to_string());
 		}
+		if state.save_state.description.is_empty() {
+			return Err("No description provided".to_string());
+		}
 		Ok(super::MetaData {
 			id: None,
 			title: state.save_state.title,
 			author: state.save_state.author,
+			description: state.save_state.description,
 			dimensions: state.board_options.dimensions(),
 		})
 	}
@@ -110,6 +115,9 @@ impl SharedState {
 					}
 				}
 			}
+			ui.label(format!("By: {}", metadata.author));
+			ui.label(format!("Dimensions widthxheight: {}x{}", metadata.dimensions.0, metadata.dimensions.1));
+			ui.label(format!("Description: {}", metadata.description));
 		}
 	}
 

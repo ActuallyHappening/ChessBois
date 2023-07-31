@@ -29,6 +29,7 @@ pub struct MetaData {
 	pub id: Option<firebase::ID>,
 	pub title: String,
 	pub author: String,
+	pub description: String,
 	pub dimensions: Dimensions,
 }
 
@@ -296,6 +297,7 @@ mod v0_2_x {
 				id: None,
 				title: "OLD save, no title".into(),
 				author: "OLD save, unknown author".into(),
+				description: "OLD save, no description".into(),
 				dimensions,
 			}
 		}
