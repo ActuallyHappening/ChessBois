@@ -3,7 +3,7 @@ use bevy_egui_controls::ControlPanel;
 use super::*;
 
 /// Used in cells module
-#[derive(Clone, ControlPanel)]
+#[derive(Clone, ControlPanel, PartialEq)]
 pub struct VisualOpts {
 	/// Whether to show the red numbers
 	#[control(bool)]

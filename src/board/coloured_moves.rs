@@ -6,7 +6,7 @@ use crate::{solver::{Move, Moves}, ChessPoint};
 use super::squares::visualization::VizColour;
 
 /// Wrapper around [Vec<(Move, VizColour)>] with some extra functionality
-#[derive(Clone, Default, From, Into, Deref, DerefMut, Serialize, Deserialize, Debug)]
+#[derive(Clone, Default, From, Into, Deref, DerefMut, Serialize, Deserialize, Debug, PartialEq)]
 pub struct ColouredMoves(Vec<(Move, VizColour)>);
 
 impl From<ColouredMoves> for Moves {

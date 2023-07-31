@@ -1,4 +1,6 @@
-use super::*;
+use std::sync::Mutex;
+
+use super::{visualization::VisualOpts, *};
 
 /// Marker for cells
 #[derive(Component)]
@@ -13,6 +15,39 @@ pub struct CellHovered(pub ChessPoint);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, From, Into, Deref, DerefMut)]
 pub struct CellUnhovered(pub ChessPoint);
 
+use cells_state::*;
+mod cells_state {
+	use super::*;
+
+	#[derive(PartialEq)]
+	pub struct CellsState<'shared> {
+		pub board_options: &'shared BoardOptions,
+		pub visual_opts: &'shared VisualOpts,
+		pub moves: &'shared Option<ColouredMoves>,
+		pub start: &'shared Option<ChessPoint>,
+	}
+
+	impl<'shared> CellsState<'shared> {
+		pub fn new(state: &'shared SharedState) -> Self {
+			Self {
+				board_options: &state.board_options,
+				visual_opts: &state.visual_opts,
+				moves: &state.moves,
+				start: &state.start,
+			}
+		}
+	}
+
+	impl std::ops::Deref for CellsState<'_> {
+		type Target = BoardOptions;
+
+		fn deref(&self) -> &Self::Target {
+			self.board_options
+		}
+	}
+}
+
+static PREVIOUS_RENDER: Mutex<Option<CellsState>> = Mutex::new(None);
 impl SharedState {
 	pub fn sys_render_cells(
 		state: Res<SharedState>,
@@ -21,13 +56,18 @@ impl SharedState {
 		cells: Query<Entity, (With<CellMarker>, With<ChessPoint>)>,
 		mut mma: ResSpawning,
 	) {
-		despawn_cells(&mut commands, cells);
-		spawn_cells(state.into_inner(), &mut commands, &mut mma);
+		let state = state.into_inner();
+		if *PREVIOUS_RENDER.lock().unwrap() != Some(CellsState::new(state)) {
+			despawn_cells(&mut commands, cells);
+			spawn_cells(&CellsState::new(state), &mut commands, &mut mma);
+		} else {
+			info!("Skipping re-rendering cells");
+		}
 	}
 }
 
-fn spawn_cells(state: &SharedState, commands: &mut Commands, mma: &mut ResSpawning) {
-	let start = state.start;
+fn spawn_cells(state: &CellsState, commands: &mut Commands, mma: &mut ResSpawning) {
+	let start = state.start.as_ref();
 	let options = &state.board_options;
 
 	for point in options.get_all_points() {
@@ -46,18 +86,19 @@ fn despawn_cells(
 }
 
 /// Takes as much information as it can get and returns the colour the cell should be.
-fn compute_colour(point: &ChessPoint, state: &SharedState, start: Option<ChessPoint>) -> Color {
+fn compute_colour(point: &ChessPoint, state: &CellsState, start: Option<&ChessPoint>) -> Color {
 	if state.get_unavailable_points().contains(point) {
 		CELL_DISABLED_COLOUR
-	} else if Some(*point) == start {
+	} else if Some(point) == start {
 		CELL_SELECTED_COLOUR
-	} else if state.visual_opts.show_end_colour && state.moves.as_ref().is_some_and(|moves| {
-		moves
-			.moves()
-			.into_iter()
-			.last()
-			.is_some_and(|last| last.to == *point)
-	}) {
+	} else if state.visual_opts.show_end_colour
+		&& state.moves.as_ref().is_some_and(|moves| {
+			moves
+				.moves()
+				.into_iter()
+				.last()
+				.is_some_and(|last| last.to == *point)
+		}) {
 		CELL_END_COLOUR_FACTOR
 	} else {
 		point.get_standard_colour()
