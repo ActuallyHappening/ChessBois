@@ -1,4 +1,4 @@
-use bevy::utils::HashMap;
+use bevy::{utils::HashMap, reflect::{Reflect, FromReflect}};
 use derive_more::Deref;
 #[cfg(not(target_arch = "wasm32"))]
 use firebase_rs::Firebase;
@@ -22,7 +22,7 @@ static DB: Lazy<Firebase> = Lazy::new(|| {
 		.at(&VERSION_APPEND)
 });
 
-#[derive(Debug, Hash, Clone, PartialEq, Eq, Deref, Serialize, Deserialize)]
+#[derive(Debug, Hash, Clone, PartialEq, Eq, Deref, Serialize, Deserialize, Reflect, FromReflect)]
 pub struct ID(String);
 
 impl ID {

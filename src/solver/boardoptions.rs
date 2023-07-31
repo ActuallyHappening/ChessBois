@@ -4,10 +4,11 @@ use crate::board::StateInvalidated;
 
 use super::*;
 use bevy_egui::*;
+use bevy::prelude::{Reflect, FromReflect};
 
 /// Necessary information to make custom board.
 /// Derefs to `Vec<Vec<CellOption>>`, is mutable.
-#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Reflect, FromReflect)]
 pub struct BoardOptions {
 	options: Vec<Vec<CellOption>>,
 }

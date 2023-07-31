@@ -1,3 +1,4 @@
+use bevy::reflect::{Reflect, FromReflect};
 use bevy_egui::egui::{self, RichText, Ui};
 use bevy_egui_controls::ControlPanel;
 use serde::{Deserialize, Serialize};
@@ -29,7 +30,7 @@ impl ChessPiece {
 }
 
 /// Collection of standard sets of moves
-#[derive(Default, Clone, Copy, PartialEq, Serialize, Deserialize, Debug, EnumIs, EnumIter, strum::Display)]
+#[derive(Default, Clone, Copy, PartialEq, Serialize, Deserialize, Debug, EnumIs, EnumIter, strum::Display, Reflect, FromReflect)]
 pub enum StandardPieces {
 	/// Same as [Pieces::ABKnight(1, 2)]
 	#[strum(serialize = "Standard Knight")]

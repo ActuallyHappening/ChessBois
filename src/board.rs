@@ -44,7 +44,7 @@ impl Plugin for BoardPlugin {
 }
 
 /// Re-rendered every frame
-#[derive(Resource, Default, Clone,)]
+#[derive(Resource, Default, Clone, Reflect)]
 #[non_exhaustive]
 pub struct SharedState {
 	// inputs

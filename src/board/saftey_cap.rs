@@ -1,7 +1,8 @@
+use bevy::reflect::{Reflect, FromReflect};
 use bevy_egui::egui::{self, Ui};
 use derive_more::Into;
 
-#[derive(PartialEq, Eq, Clone, Into)]
+#[derive(PartialEq, Eq, Clone, Into, Reflect, FromReflect)]
 pub struct SafteyCap {
 	/// Maximum amount of states considered before giving up
 	cap: u128,

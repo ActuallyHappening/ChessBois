@@ -94,6 +94,8 @@ mod parital_computation {
 	Ord,
 	Display,
 	ControlPanel,
+	Reflect,
+	FromReflect,
 )]
 pub enum Algorithm {
 	#[strum(serialize = "Brute Force [f]")]

@@ -1,3 +1,4 @@
+use bevy::reflect::{Reflect, FromReflect};
 use derive_more::{Deref, DerefMut, From, Into};
 use serde::{Serialize, Deserialize};
 
@@ -6,7 +7,7 @@ use crate::{solver::{Move, Moves}, ChessPoint};
 use super::squares::visualization::VizColour;
 
 /// Wrapper around [Vec<(Move, VizColour)>] with some extra functionality
-#[derive(Clone, Default, From, Into, Deref, DerefMut, Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Clone, Default, From, Into, Deref, DerefMut, Serialize, Deserialize, Debug, PartialEq, Reflect, FromReflect)]
 pub struct ColouredMoves(Vec<(Move, VizColour)>);
 
 impl From<ColouredMoves> for Moves {

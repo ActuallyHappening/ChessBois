@@ -23,7 +23,7 @@ impl Plugin for AutomaticPlugin {
 /// WHat happens when you click on a cell.
 /// Specific to **automatic** mode.
 #[derive(
-	Resource, Clone, Copy, Default, PartialEq, Eq, EnumIs, strum::Display, EnumIter, Debug, ControlPanel,
+	Resource, Clone, Copy, Default, PartialEq, Eq, EnumIs, strum::Display, EnumIter, Debug, ControlPanel, Reflect, FromReflect
 )]
 pub enum ToggleAction {
 	#[strum(serialize = "Enable / Disable [d]")]

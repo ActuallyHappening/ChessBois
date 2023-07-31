@@ -1,4 +1,5 @@
 use anyhow::Context;
+use bevy::reflect::{Reflect, FromReflect};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -25,7 +26,7 @@ pub struct UnstableSavedState {
 }
 
 /// This is stable
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Reflect, FromReflect)]
 pub struct MetaData {
 	pub id: Option<firebase::ID>,
 	pub title: String,

@@ -1,3 +1,4 @@
+use bevy::reflect::Reflect;
 use bevy_egui::egui;
 use bevy_egui::egui::Ui;
 use tracing::warn;
@@ -8,7 +9,7 @@ use super::firebase;
 use super::MetaData;
 use super::UnstableSavedState;
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Reflect)]
 pub struct SaveState {
 	pub title: String,
 	pub author: String,

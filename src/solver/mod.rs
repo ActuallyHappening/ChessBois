@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::prelude::{Reflect, FromReflect};
 use serde::{Deserialize, Serialize};
 use std::{
 	fmt::{self, Display},
@@ -16,7 +17,6 @@ mod moves;
 #[derive(
 	Copy,
 	Component,
-	Reflect,
 	Hash,
 	Clone,
 	Debug,
@@ -26,6 +26,8 @@ mod moves;
 	Ord,
 	Serialize,
 	Deserialize,
+	Reflect,
+	FromReflect,
 )]
 pub struct ChessPoint {
 	// Between 1 and COLUMN_SIZE.
@@ -99,7 +101,7 @@ impl std::ops::Add for ChessPoint {
 
 
 #[derive(
-	Debug, Copy, Hash, Clone, PartialEq, Eq, PartialOrd, Ord, EnumIs, Serialize, Deserialize,
+	Debug, Copy, Hash, Clone, PartialEq, Eq, PartialOrd, Ord, EnumIs, Serialize, Deserialize, Reflect, FromReflect
 )]
 /// Solver: Available or Unavailable
 pub enum CellOption {
