@@ -85,55 +85,57 @@ pub fn right_ui_manual(
 			to_manual.set(ProgramState::Automatic);
 		}
 
-		let state = state.into_inner();
+		egui::ScrollArea::vertical().show(ui, |ui| {
+			let state = state.into_inner();
 
-		egui::CollapsingHeader::new("Move freedom")
-			.default_open(true)
-			.show(ui, |ui| {
-				ui.label("How are manual moves verified?");
-				state.manual_freedom.ui(ui);
+			egui::CollapsingHeader::new("Move freedom")
+				.default_open(true)
+				.show(ui, |ui| {
+					ui.label("How are manual moves verified?");
+					state.manual_freedom.ui(ui);
 
-				ui.label(state.manual_freedom.get_description());
-			});
+					ui.label(state.manual_freedom.get_description());
+				});
 
-		egui::CollapsingHeader::new("Actions")
-			.default_open(true)
-			.show(ui, |ui| {
-				if ui.button("Undo [u]").clicked() {
-					if let Some(moves) = &mut state.moves {
-						moves.undo();
+			egui::CollapsingHeader::new("Actions")
+				.default_open(true)
+				.show(ui, |ui| {
+					if ui.button("Undo [u]").clicked() {
+						if let Some(moves) = &mut state.moves {
+							moves.undo();
+						}
 					}
-				}
 
-				if ui
-					.button(RichText::new("Reset").color(Color32::RED))
-					.clicked()
-				{
-					state.start = None;
-					state.moves = None;
-				}
-			});
+					if ui
+						.button(RichText::new("Reset").color(Color32::RED))
+						.clicked()
+					{
+						state.start = None;
+						state.moves = None;
+					}
+				});
 
-		egui::CollapsingHeader::new("Colours")
-			.default_open(true)
-			.show(ui, |ui| {
-				state.viz_colour.ui(ui);
-			});
+			egui::CollapsingHeader::new("Colours")
+				.default_open(true)
+				.show(ui, |ui| {
+					state.viz_colour.ui(ui);
+				});
 
-		egui::CollapsingHeader::new("Move warnings")
-			.default_open(true)
-			.show(ui, |ui| {
-				if let Some(next) = state.start {
-					let (_, warning) = state.manual_freedom.check_move(state, next);
-					warning.ui(ui);
-				}
-			});
+			egui::CollapsingHeader::new("Move warnings")
+				.default_open(true)
+				.show(ui, |ui| {
+					if let Some(next) = state.start {
+						let (_, warning) = state.manual_freedom.check_move(state, next);
+						warning.ui(ui);
+					}
+				});
 
-		egui::CollapsingHeader::new("Save / Load")
-			.default_open(true)
-			.show(ui, |ui| {
-				state.save_ui(ui);
-			});
+			egui::CollapsingHeader::new("Save / Load")
+				.default_open(true)
+				.show(ui, |ui| {
+					state.save_ui(ui);
+				});
+		});
 	});
 }
 
