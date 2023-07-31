@@ -51,18 +51,30 @@ impl SharedState {
 
 	#[cfg(not(target_arch = "wasm32"))]
 	fn new_save_ui(&mut self, ui: &mut Ui) {
+		use bevy_egui::egui::Color32;
+
 		if ui.button("Save to DB (>= v0.3").clicked() {
-			let state = UnstableSavedState::try_from(self.clone()).unwrap();
-			firebase::save_to_db(state);
+			match UnstableSavedState::try_from(self.clone()) {
+				Ok(state) => {
+					firebase::save_to_db(state);
+				}
+				Err(err) => {
+					self.save_state.error_str = Some(err);
+				}
+			}
 		}
 		ui.label("This saves the current state to the database under the specified title");
+
+		if let Some(err) = &self.save_state.error_str {
+			ui.colored_label(Color32::RED, err);
+		}
 	}
 
 	pub fn save_ui(&mut self, ui: &mut Ui) {
 		#[cfg(not(target_arch = "wasm32"))]
 		{
 			egui::CollapsingHeader::new("Old Save/Load")
-				.default_open(true)
+				.default_open(false)
 				.show(ui, |ui| {
 					self.old_save_ui(ui);
 				});
