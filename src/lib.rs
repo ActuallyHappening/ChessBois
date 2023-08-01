@@ -19,7 +19,7 @@ mod errors;
 mod textmesh;
 mod utils;
 mod meta;
-mod weburl;
+pub mod weburl;
 
 #[derive(Default)]
 pub struct ChessSolverPlugin;

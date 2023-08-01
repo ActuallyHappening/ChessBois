@@ -73,3 +73,6 @@ features = ["macros", "rt", "sync"]
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies.tokio]
 version = "1.29.1"
 features = ["macros", "rt", "sync", "rt-multi-thread"]
+
+[target.wasm32-unknown-unknown.dependencies]
+reqwest = "0.11.18"

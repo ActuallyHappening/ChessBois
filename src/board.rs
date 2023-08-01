@@ -194,14 +194,15 @@ use self::{
 };
 
 /// Sets up default resources + sends initial [NewOptions] event
-#[tokio::main]
-async fn setup(mut commands: Commands) {
+fn setup(mut commands: Commands, data: Option<Res<crate::weburl::InitialLoadedID>>) {
 	let state = SharedState::default();
 
-	// if let Some(state) = crate::weburl::try_load_state_from_url() {
-	// 	info!("Loaded state from URL!");
-	// 	default_options.options = state.options;
-	// }
+	if let Some(data) = data {
+		let data: String = data.into_inner().clone().into();
+		info!("App main running with data: {:?}", data);
+	} else {
+		info!("App running without data");
+	}
 
 	commands.insert_resource(state);
 }

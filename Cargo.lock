@@ -1941,6 +1941,7 @@ dependencies = [
  "meshtext",
  "once_cell",
  "rand",
+ "reqwest",
  "serde",
  "serde_json",
  "serde_json_any_key",

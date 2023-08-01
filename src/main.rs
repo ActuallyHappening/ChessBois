@@ -7,24 +7,28 @@ fn main() {
 
 	#[cfg(all(target_arch = "wasm32", feature = "web-start"))]
 	{
-		let id = weburl::get_url_id();
-		info!("Loaded id from URL: {:?}", id);
+		if let Some(id) = weburl::get_url_id() {
+			info!("Loaded id from URL: {:?}", id);
 
-		let url = format!(
+			let url =
+				format!(
 			"https://chess-analysis-program-default-rtdb.asia-southeast1.firebasedatabase.app/{}.json", id);
 
-		wasm_bindgen_futures::spawn_local(async {
-			let data = reqwest::get(URL).await.unwrap().text().await.unwrap();
-
-			main2(data)
-		});
+			wasm_bindgen_futures::spawn_local(async {
+				if let Ok(data) = reqwest::get(url).await {
+					if let Ok(data) = data.text().await {
+						main2(Some(data));
+						return;
+					}
+				}
+			});
+		}
+		main2(None);
 	}
 }
 
 fn main2(data: Option<String>) {
 	let mut app = App::new();
-
-	info!("App main running with data: {:?}", data);
 
 	app
 		.add_plugins(
@@ -44,6 +48,10 @@ fn main2(data: Option<String>) {
 
 	#[cfg(feature = "dev")]
 	app.add_plugin(bevy_editor_pls::prelude::EditorPlugin::default());
+
+	if let Some(data) = data {
+		app.insert_resource(weburl::InitialLoadedID::new(data));
+	}
 
 	app.run();
 }
