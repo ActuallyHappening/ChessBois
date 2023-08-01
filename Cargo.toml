@@ -49,6 +49,7 @@ serde_json_any_key = "2.0.0"
 uuid = "1.4.1"
 futures = "0.3.28"
 serde_qs = "0.12.0"
+reqwest = { version = "0.11.18", features = ["json"] }
 
 [dependencies.web-sys]
 version = "0.3.64"
@@ -65,6 +66,7 @@ console_error_panic_hook = "0.1.7"
 arboard = "3.2.0"
 firebase-rs = "2.0.8"
 
+# tokio
 [target.'cfg(target_arch = "wasm32")'.dependencies.tokio]
 version = "1.29.1"
 features = ["macros", "rt", "sync"]
@@ -73,6 +75,3 @@ features = ["macros", "rt", "sync"]
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies.tokio]
 version = "1.29.1"
 features = ["macros", "rt", "sync", "rt-multi-thread"]
-
-[target.wasm32-unknown-unknown.dependencies]
-reqwest = "0.11.18"

@@ -4,7 +4,7 @@ use derive_more::{Constructor, Into};
 const URL: &str = "https://caleb-msrc-q11.netlify.app/";
 
 #[derive(Resource, Clone, Constructor, Into)]
-pub struct InitialLoadedID(String);
+pub struct InitialLoadedID(serde_json::Value);
 
 #[cfg(feature = "web-start")]
 pub fn get_url_id() -> Option<String> {

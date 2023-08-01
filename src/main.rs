@@ -5,7 +5,7 @@ fn main() {
 	#[cfg(not(target_arch = "wasm32"))]
 	main2(None);
 
-	#[cfg(all(target_arch = "wasm32", feature = "web-start"))]
+	#[cfg(any(target_arch = "wasm32", feature = "web-start"))]
 	{
 		if let Some(id) = weburl::get_url_id() {
 			info!("Loaded id from URL: {:?}", id);
@@ -16,7 +16,7 @@ fn main() {
 
 			wasm_bindgen_futures::spawn_local(async {
 				if let Ok(data) = reqwest::get(url).await {
-					if let Ok(data) = data.text().await {
+					if let Ok(data) = data.json().await {
 						main2(Some(data));
 						return;
 					}
@@ -29,7 +29,7 @@ fn main() {
 	}
 }
 
-fn main2(data: Option<String>) {
+fn main2(data: Option<serde_json::Value>) {
 	let mut app = App::new();
 
 	app

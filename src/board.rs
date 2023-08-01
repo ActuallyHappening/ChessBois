@@ -1,16 +1,14 @@
 use crate::{
-	solver::{
-		algs::Algorithm,
-		pieces::{ChessPiece, StandardPieces},
-		BoardOptions, Moves,
-	},
-	ChessPoint,
+	board::manual::{StableSavedState, UnstableSavedState},
+	solver::{algs::Algorithm, pieces::StandardPieces, BoardOptions, Moves},
+	ChessPoint, ProgramState,
 };
 use bevy::prelude::*;
 use bevy_mod_picking::prelude::*;
 
 pub use cam_zoom::CAMERA_HEIGHT;
 pub use hotkeys::Hotkeyable;
+use serde_json::Value;
 
 mod automatic;
 mod cam_zoom;
@@ -194,12 +192,35 @@ use self::{
 };
 
 /// Sets up default resources + sends initial [NewOptions] event
-fn setup(mut commands: Commands, data: Option<Res<crate::weburl::InitialLoadedID>>) {
-	let state = SharedState::default();
+fn setup(
+	mut commands: Commands,
+	data: Option<Res<crate::weburl::InitialLoadedID>>,
+	mut to_manual: ResMut<NextState<ProgramState>>,
+) {
+	let mut state = SharedState::default();
 
 	if let Some(data) = data {
-		let data: String = data.into_inner().clone().into();
-		info!("App main running with data: {:?}", data);
+		let data: serde_json::Value = data.into_inner().clone().into();
+		match data {
+			Value::String(data) => {
+				info!("App main running with data json: {:?}", data);
+				match UnstableSavedState::from_json(&data) {
+					Ok(data) => {
+						to_manual.set(ProgramState::Manual);
+						info!("Loaded data: {:?}", data);
+						data.apply_to_state(&mut state);
+
+						info!("State now contains {} moves", state.moves.clone().unwrap().len());
+					}
+					Err(err) => {
+						error!("Failed to load data: {:?}", err);
+					}
+				}
+			}
+			_ => {
+				error!("No data with that ID found");
+			}
+		}
 	} else {
 		info!("App running without data");
 	}
