@@ -38,8 +38,10 @@ impl SharedState {
 		let state = state.into_inner();
 		let owned_state = OwnedMarkersState::new(state.clone());
 		if *PREVIOUS_RENDER.lock().unwrap() != Some(owned_state.clone()) {
-			despawn_markers(&mut commands, markers);
-			spawn_markers(&BorrowedMarkersState::new(state), &mut commands, &mut mma);
+			if state.visual_opts.show_markers {
+				despawn_markers(&mut commands, markers);
+				spawn_markers(&BorrowedMarkersState::new(state), &mut commands, &mut mma);
+			}
 
 			*PREVIOUS_RENDER.lock().unwrap() = Some(owned_state);
 		} else {
@@ -48,12 +50,11 @@ impl SharedState {
 	}
 }
 
-
 use markers_state::*;
 mod markers_state {
 	use crate::{board::squares::visualization::VisualOpts, solver::algs::OwnedComputeInput};
 
-use super::*;
+	use super::*;
 
 	pub struct BorrowedMarkersState<'shared> {
 		pub board_options: &'shared BoardOptions,
@@ -119,7 +120,7 @@ use super::*;
 				piece: &self.piece,
 				safety_cap: &self.safety_cap,
 			}
-		} 
+		}
 	}
 
 	impl std::ops::Deref for BorrowedMarkersState<'_> {
@@ -160,10 +161,6 @@ fn spawn_mark(
 	commands: &mut Commands,
 	(meshes, materials, ass): &mut ResSpawning,
 ) {
-	if !state.visual_opts.show_markers {
-		return;
-	}
-
 	if let Some(mark) = compute::get_cached_mark(&state.clone_into_compute_with_start(at)) {
 		let quad = shape::Quad::new(Vec2::new(CELL_SIZE, CELL_SIZE) * 0.7);
 		let mesh = meshes.add(Mesh::from(quad));
