@@ -4,7 +4,6 @@ use cap_solver::*;
 fn main() {
 	let mut app = App::new();
 	app
-		.register_type::<ChessPoint>()
 		.add_plugins(
 			DefaultPlugins
 				.set(WindowPlugin {

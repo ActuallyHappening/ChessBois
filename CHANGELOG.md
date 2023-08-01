@@ -1,6 +1,8 @@
 
-TODO: Fix bugs
-## v0.3.2 TODO:
+## v0.3.3:
+- Adding web loading from db
+
+## v0.3.2:
 - Save to DB impl for non-web
 - Check state before re-rendering
 - Fixes a crash with starting on invalid points

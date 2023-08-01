@@ -2,7 +2,7 @@ set -exu
 
 # fail, please confirm cargo config
 
-cargo build --release --target x86_64-apple-darwin
+cargo build --release --target x86_64-apple-darwin --no-default-features
 
 # Set ENV_BINARY to bevy_solver
 ENV_BINARY=$(cargo get --name)

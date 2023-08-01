@@ -36,6 +36,10 @@ impl ID {
 		let id = String::from_utf8(id).unwrap();
 		Self(id)
 	}
+
+	pub fn inner(&self) -> &str {
+		&self.0
+	}
 }
 
 #[derive(Serialize, Deserialize, Debug)]

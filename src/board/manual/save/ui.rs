@@ -1,7 +1,6 @@
 use bevy::reflect::Reflect;
 use bevy_egui::egui;
 use bevy_egui::egui::Ui;
-use tracing::warn;
 
 use crate::board::SharedState;
 
@@ -123,6 +122,10 @@ impl SharedState {
 				metadata.dimensions.0, metadata.dimensions.1
 			));
 			ui.label(format!("Description: {}", metadata.description));
+			ui.hyperlink_to(
+				"Click to open in browser",
+				crate::weburl::create_url_with_id(metadata.id.clone().unwrap().inner().into()),
+			);
 		}
 	}
 }

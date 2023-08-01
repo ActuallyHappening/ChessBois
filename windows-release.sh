@@ -3,7 +3,7 @@ set -exu
 TARGET_NAME=x86_64-pc-windows-gnu
 ENV_BINARY=$(cargo get --name)
 
-cargo bwindows --release
+cargo bwindows --release --no-default-features
 
 mkdir -p $ENV_BINARY.zipfolder
 cp target/$TARGET_NAME/release/$ENV_BINARY.exe $ENV_BINARY.zipfolder/

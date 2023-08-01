@@ -1,6 +1,6 @@
 [package]
 name = "cap_solver"
-version = "0.3.2"
+version = "0.3.3"
 edition = "2021"
 
 [workspace]
@@ -10,9 +10,9 @@ members = ["bevy_egui_controls"]
 path = "./bevy_egui_controls"
 
 [features]
+default = ["web-start", "dev"]
 dev = ["bevy/dynamic_linking", "dep:bevy_editor_pls"]
-# default = ["bevy/dynamic_linking", "editor"]
-# editor = ["dep:bevy_editor_pls"]
+web-start = []
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]
