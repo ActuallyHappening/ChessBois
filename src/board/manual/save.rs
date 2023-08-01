@@ -1,7 +1,7 @@
 use anyhow::Context;
 use bevy::reflect::{Reflect, FromReflect};
 use serde::{Deserialize, Serialize};
-use tracing::warn;
+use tracing::{warn, info};
 
 use crate::{
 	board::{coloured_moves::ColouredMoves, SharedState, VizColour},
@@ -69,7 +69,7 @@ impl SharedState {
 			board_options: self.board_options.clone(),
 			moves: self.moves.clone().unwrap(),
 			metadata: self.try_into().unwrap_or_else(|err| {
-				warn!("De-Serializing dangerously gave error: {:?}", err);
+				info!("De-Serializing dangerously gave error: {:?}", err);
 				let mut metadata = MetaData::dangerous_default();
 				metadata.dimensions = dimensions;
 				metadata
