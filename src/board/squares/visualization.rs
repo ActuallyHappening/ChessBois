@@ -34,21 +34,19 @@ impl SharedState {
 	) {
 		let state = state.into_inner();
 
-		if !state.visual_opts.show_visualisation {
-			return;
-		}
-
 		if *PREVIOUS_RENDER.lock().unwrap() != Some(OwnedVisState::clone_new(state)) {
-			despawn_visualization(&mut commands, visualization);
+			if state.visual_opts.show_visualisation {
+				despawn_visualization(&mut commands, visualization);
 
-			if let Some(moves) = &state.moves {
-				spawn_visualization(
-					moves.clone(),
-					state.board_options.clone(),
-					&state.visual_opts,
-					&mut commands,
-					&mut mma,
-				);
+				if let Some(moves) = &state.moves {
+					spawn_visualization(
+						moves.clone(),
+						state.board_options.clone(),
+						&state.visual_opts,
+						&mut commands,
+						&mut mma,
+					);
+				}
 			}
 
 			*PREVIOUS_RENDER.lock().unwrap() = Some(OwnedVisState::clone_new(state));
