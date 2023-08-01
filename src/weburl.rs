@@ -1,4 +1,9 @@
+use bevy::prelude::{*, Reflect};
+
 const URL: &str = "https://caleb-msrc-q11.netlify.app/";
+
+#[derive(Resource)]
+pub struct InitialLoadedID(String);
 
 #[cfg(feature = "web-start")]
 pub fn get_url_id() -> Option<String> {

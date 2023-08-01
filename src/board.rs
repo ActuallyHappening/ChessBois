@@ -194,7 +194,8 @@ use self::{
 };
 
 /// Sets up default resources + sends initial [NewOptions] event
-fn setup(mut commands: Commands) {
+#[tokio::main]
+async fn setup(mut commands: Commands) {
 	let state = SharedState::default();
 
 	// if let Some(state) = crate::weburl::try_load_state_from_url() {
