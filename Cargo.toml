@@ -10,9 +10,8 @@ members = ["bevy_egui_controls"]
 path = "./bevy_egui_controls"
 
 [features]
-default = ["web-start", "dev",]
+default = ["dev",]
 dev = ["bevy/dynamic_linking", "dep:bevy_editor_pls"]
-web-start = []
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]

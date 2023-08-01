@@ -5,7 +5,7 @@ fn main() {
 	#[cfg(not(target_arch = "wasm32"))]
 	main2(None);
 
-	#[cfg(any(target_arch = "wasm32", feature = "web-start"))]
+	#[cfg(target_arch = "wasm32")]
 	{
 		if let Some(id) = weburl::get_url_id() {
 			info!("Loaded id from URL: {:?}", id);

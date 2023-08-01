@@ -6,7 +6,7 @@ const URL: &str = "https://caleb-msrc-q11.netlify.app/";
 #[derive(Resource, Clone, Constructor, Into)]
 pub struct InitialLoadedID(serde_json::Value);
 
-#[cfg(feature = "web-start")]
+#[cfg(target_arch = "wasm32")]
 pub fn get_url_id() -> Option<String> {
 	let window = web_sys::window().expect("To be able to get window");
 	let location = window.location();
@@ -15,6 +15,7 @@ pub fn get_url_id() -> Option<String> {
 	extract_url(full_href)
 }
 
+#[allow(dead_code)]
 fn extract_url(full_href: String) -> Option<String> {
 	// id=jhlfjsdh&junk=hjklhlkj
 	let query_params = full_href.split('?').nth(1)?;
