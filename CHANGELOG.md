@@ -3,6 +3,7 @@ TODO: Fix bugs
 ## v0.3.2 TODO:
 - Save to DB impl for non-web
 - Check state before re-rendering
+- Fixes a crash with starting on invalid points
 
 ## v0.3.0:
 - DB
