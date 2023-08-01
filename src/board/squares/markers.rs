@@ -38,8 +38,8 @@ impl SharedState {
 		let state = state.into_inner();
 		let owned_state = OwnedMarkersState::new(state.clone());
 		if *PREVIOUS_RENDER.lock().unwrap() != Some(owned_state.clone()) {
+			despawn_markers(&mut commands, markers);
 			if state.visual_opts.show_markers {
-				despawn_markers(&mut commands, markers);
 				spawn_markers(&BorrowedMarkersState::new(state), &mut commands, &mut mma);
 			}
 

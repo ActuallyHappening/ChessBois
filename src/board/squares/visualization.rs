@@ -35,9 +35,9 @@ impl SharedState {
 		let state = state.into_inner();
 
 		if *PREVIOUS_RENDER.lock().unwrap() != Some(OwnedVisState::clone_new(state)) {
-			if state.visual_opts.show_visualisation {
-				despawn_visualization(&mut commands, visualization);
+			despawn_visualization(&mut commands, visualization);
 
+			if state.visual_opts.show_visualisation {
 				if let Some(moves) = &state.moves {
 					spawn_visualization(
 						moves.clone(),
