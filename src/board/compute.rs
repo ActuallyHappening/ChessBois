@@ -50,7 +50,7 @@ impl SharedState {
 // static COMPUTATIONS_TO_HANDLE: Lazy<Mutex<HashMap<ComputeInput, Computation>>> =
 // 	Lazy::new(|| Mutex::new(HashMap::new()));
 
-fn start_executing_task(_state: OwnedComputeInput, task: impl FnOnce() -> Computation + Send + 'static) {
+fn start_executing_task(_state: OwnedComputeInput, task: impl FnOnce() -> Option<Computation> + Send + 'static) {
 	#[cfg(not(target_arch = "wasm32"))]
 	{
 		use std::thread;

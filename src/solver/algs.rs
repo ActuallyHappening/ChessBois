@@ -172,14 +172,14 @@ impl Algorithm {
 	}
 
 	/// Actually compute, with caching
-	pub fn tour_computation_cached(input: OwnedComputeInput) -> Computation {
+	pub fn tour_computation_cached(input: OwnedComputeInput) -> Option<Computation> {
 		if !input
 			.board_options
 			.get_available_points()
 			.contains(&input.start)
 		{
-			// TODO: determine if this should be bubbled into an Option return type
-			panic!("Trying to solve a board starting on a square that is not available!");
+			error!("Trying to solve a board starting on a square that is not available!");
+			return None;
 		}
 		if let Some(cached_comp) = try_get_cached_solution(&input) {
 			debug!("Solution cache hit!");
@@ -202,12 +202,12 @@ impl Algorithm {
 				}
 			}
 
-			cached_comp
+			Some(cached_comp)
 		} else {
 			debug!("Cache miss");
 			let comp = input.alg.tour_computation(input.clone());
 			add_solution_to_cache(input, comp.clone());
-			comp
+			Some(comp)
 		}
 	}
 }
