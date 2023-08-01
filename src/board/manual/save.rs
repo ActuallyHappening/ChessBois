@@ -99,10 +99,11 @@ impl UnstableSavedState {
 		}
 	}
 
-	pub fn apply_to_state(&self, state: &mut SharedState) {
-		state.board_options = self.board_options.clone();
-		state.moves = Some(self.moves.clone());
-		// TODO: Maybe show metadata to user here?
+	pub fn apply_to_state(self, state: &mut SharedState) {
+		state.board_options = self.board_options;
+		state.moves = Some(self.moves);
+		state.web_vis = Some(self.metadata);
+		state.is_web_vis_first_render = true;
 	}
 }
 

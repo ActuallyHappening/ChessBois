@@ -8,15 +8,18 @@ use crate::{GroundClicked, ProgramState};
 pub struct SharedPlugin;
 impl Plugin for SharedPlugin {
 	fn build(&self, app: &mut App) {
-		app.add_systems((handle_plane_clicked,)).add_system(
-			ProgramState::Automatic
-				.sys_switch_to()
-				.in_schedule(OnEnter(ProgramState::Automatic)),
-		).add_system(
-			ProgramState::Manual
-				.sys_switch_to()
-				.in_schedule(OnEnter(ProgramState::Manual)),
-		);
+		app
+			.add_systems((handle_plane_clicked,))
+			.add_system(
+				ProgramState::Automatic
+					.sys_switch_to()
+					.in_schedule(OnEnter(ProgramState::Automatic)),
+			)
+			.add_system(
+				ProgramState::Manual
+					.sys_switch_to()
+					.in_schedule(OnEnter(ProgramState::Manual)),
+			);
 	}
 }
 
@@ -30,7 +33,12 @@ impl SharedState {
 			ProgramState::Automatic => {
 				self.visual_opts.show_numbers = true;
 				self.visual_opts.show_markers = true;
-				// self.invalidate();
+				if !self.is_web_vis_first_render {
+					// don't remove the loaded data!
+					self.invalidate();
+				} else {
+					self.is_web_vis_first_render = false;
+				}
 			}
 		}
 	}

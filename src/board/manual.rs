@@ -3,7 +3,7 @@ use crate::ProgramState;
 use super::{*, squares::{CellHovered, CellClicked}};
 
 pub use freedom::ManualFreedom;
-pub use save::{UnstableSavedState, SaveState, StableSavedState};
+pub use save::{UnstableSavedState, SaveState, MetaData};
 mod freedom;
 mod check_move;
 mod save;

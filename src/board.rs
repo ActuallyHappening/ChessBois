@@ -1,5 +1,5 @@
 use crate::{
-	board::manual::{StableSavedState, UnstableSavedState},
+	board::manual::UnstableSavedState,
 	solver::{algs::Algorithm, pieces::StandardPieces, BoardOptions, Moves},
 	ChessPoint, ProgramState,
 };
@@ -76,6 +76,10 @@ pub struct SharedState {
 	pub save_state: SaveState,
 	/// Colour of next move
 	pub viz_colour: VizColour,
+
+	// web vis
+	pub is_web_vis_first_render: bool,
+	pub web_vis: Option<manual::MetaData>,
 }
 
 pub use self::shared_state::StateInvalidated;
