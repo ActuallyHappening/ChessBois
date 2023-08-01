@@ -32,7 +32,7 @@ impl ID {
 			.map(|()| rng.sample(rand::distributions::Alphanumeric))
 			.take(13)
 			.collect();
-		let id = String::from_utf8(id).unwrap();
+		let id = format!("cap_db_id_{}", String::from_utf8(id).unwrap());
 		Self(id)
 	}
 
