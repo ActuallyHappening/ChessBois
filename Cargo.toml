@@ -10,9 +10,9 @@ members = ["bevy_egui_controls"]
 path = "./bevy_egui_controls"
 
 [features]
-default = ["web-start", "dev", ]
+default = ["web-start", "dev",]
 dev = ["bevy/dynamic_linking", "dep:bevy_editor_pls"]
-web-start = ["dep:bevy_editor_pls"]
+web-start = []
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]
@@ -70,7 +70,6 @@ firebase-rs = "2.0.8"
 [target.'cfg(target_arch = "wasm32")'.dependencies.tokio]
 version = "1.29.1"
 features = ["macros", "rt", "sync"]
-
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies.tokio]
 version = "1.29.1"

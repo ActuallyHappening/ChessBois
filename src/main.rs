@@ -48,7 +48,7 @@ fn main2(data: Option<serde_json::Value>) {
 		)
 		.add_plugin(ChessSolverPlugin);
 
-	// #[cfg(feature = "dev")]
+	#[cfg(feature = "dev")]
 	app.add_plugin(bevy_editor_pls::prelude::EditorPlugin::default());
 
 	if let Some(data) = data {
