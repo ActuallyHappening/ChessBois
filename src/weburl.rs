@@ -16,7 +16,10 @@ pub fn get_url_id() -> Option<String> {
 }
 
 fn extract_url(full_href: String) -> Option<String> {
+	// id=jhlfjsdh&junk=hjklhlkj
 	let query_params = full_href.split('?').nth(1)?;
+
+	// id=hjklh
 	let id_param = query_params
 		.split('&')
 		.next()?
@@ -26,7 +29,7 @@ fn extract_url(full_href: String) -> Option<String> {
 	if id_param.first()? != &"id" {
 		return None;
 	}
-	let id = id_param.get(2)?;
+	let id = id_param.get(1)?;
 
 	Some(id.to_string())
 }

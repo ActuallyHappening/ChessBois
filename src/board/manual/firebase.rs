@@ -12,14 +12,13 @@ use super::{UnstableSavedState, MetaData};
 
 const BASE_URL: &str =
 	"https://chess-analysis-program-default-rtdb.asia-southeast1.firebasedatabase.app/";
-static VERSION_APPEND: Lazy<String> =
-	Lazy::new(|| format!("v0_{}_x/", crate::meta::VERSION_MINOR.to_string()));
+
 
 #[cfg(not(target_arch = "wasm32"))]
 static DB: Lazy<Firebase> = Lazy::new(|| {
 	Firebase::new(BASE_URL)
 		.expect("Cannot create DB path")
-		.at(&VERSION_APPEND)
+		.at(&crate::meta::VERSION_APPEND)
 });
 
 #[derive(Debug, Hash, Clone, PartialEq, Eq, Deref, Serialize, Deserialize, Reflect, FromReflect)]

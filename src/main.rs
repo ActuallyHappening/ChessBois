@@ -12,7 +12,7 @@ fn main() {
 
 			let url =
 				format!(
-			"https://chess-analysis-program-default-rtdb.asia-southeast1.firebasedatabase.app/{}.json", id);
+			"https://chess-analysis-program-default-rtdb.asia-southeast1.firebasedatabase.app/{}/{}.json", *meta::VERSION_APPEND, id);
 
 			wasm_bindgen_futures::spawn_local(async {
 				if let Ok(data) = reqwest::get(url).await {
@@ -21,9 +21,11 @@ fn main() {
 						return;
 					}
 				}
+				main2(None);
 			});
+		} else {
+			main2(None);
 		}
-		main2(None);
 	}
 }
 
