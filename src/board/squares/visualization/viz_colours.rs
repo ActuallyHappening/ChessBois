@@ -18,6 +18,7 @@ use super::*;
 	Deserialize,
 	ControlPanel,
 	Reflect,
+	FromReflect,
 )]
 pub enum VizColour {
 	#[default]

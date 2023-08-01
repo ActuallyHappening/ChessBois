@@ -45,17 +45,11 @@ impl TryFrom<SharedState> for super::MetaData {
 impl SharedState {
 	fn old_save_ui(&mut self, ui: &mut Ui) {
 		if self.moves.is_some() && ui.button("Save to clipboard (>= v0.3)").clicked() {
-			match UnstableSavedState::try_from(self.clone()) {
-				Ok(state) => {
-					let json = state.into_json();
-					ui.output_mut(|out| {
-						out.copied_text = json;
-					})
-				}
-				Err(err) => {
-					warn!("Couldn't serialize state {:?}", err);
-				}
-			}
+			let state = self.clone().dangerous_into();
+			let json = state.into_json();
+			ui.output_mut(|out| {
+				out.copied_text = json;
+			})
 		}
 		ui.label("This copies a save which is NOT compatiable with older versions! I recommend saving useing the newer database feature.");
 

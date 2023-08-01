@@ -3,7 +3,7 @@ use super::*;
 
 
 /// Represents move from one point to another
-#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Hash, Serialize, Deserialize, FromReflect, Reflect)]
 pub struct Move {
 	pub from: ChessPoint,
 	pub to: ChessPoint,

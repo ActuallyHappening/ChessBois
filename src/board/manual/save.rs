@@ -1,6 +1,7 @@
 use anyhow::Context;
 use bevy::reflect::{Reflect, FromReflect};
 use serde::{Deserialize, Serialize};
+use tracing::warn;
 
 use crate::{
 	board::{coloured_moves::ColouredMoves, SharedState, VizColour},
@@ -35,6 +36,19 @@ pub struct MetaData {
 	pub dimensions: Dimensions,
 }
 
+impl MetaData {
+	/// Remember to update `MetaData.dimensions`
+	fn dangerous_default() -> Self {
+			MetaData {
+				id: None,
+				title: "".into(),
+				author: "".into(),
+				description: "".into(),
+				dimensions: (8, 8),
+			}
+	}
+}
+
 pub type Dimensions = (u16, u16);
 
 impl TryFrom<SharedState> for UnstableSavedState {
@@ -45,6 +59,22 @@ impl TryFrom<SharedState> for UnstableSavedState {
 			moves: state.moves.ok_or("No moves to save")?,
 			board_options: state.board_options,
 		})
+	}
+}
+
+impl SharedState {
+	pub fn dangerous_into(self) -> UnstableSavedState {
+		let dimensions = self.board_options.dimensions();
+		UnstableSavedState {
+			board_options: self.board_options.clone(),
+			moves: self.moves.clone().unwrap(),
+			metadata: self.try_into().unwrap_or_else(|err| {
+				warn!("De-Serializing dangerously gave error: {:?}", err);
+				let mut metadata = MetaData::dangerous_default();
+				metadata.dimensions = dimensions;
+				metadata
+			}),
+		}
 	}
 }
 

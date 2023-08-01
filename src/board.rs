@@ -1,5 +1,9 @@
 use crate::{
-	solver::{algs::Algorithm, pieces::{ChessPiece, StandardPieces}, BoardOptions, Moves},
+	solver::{
+		algs::Algorithm,
+		pieces::{ChessPiece, StandardPieces},
+		BoardOptions, Moves,
+	},
 	ChessPoint,
 };
 use bevy::prelude::*;
@@ -7,17 +11,16 @@ use bevy_mod_picking::prelude::*;
 
 pub use cam_zoom::CAMERA_HEIGHT;
 pub use hotkeys::Hotkeyable;
-use serde::{Serialize, Deserialize};
 
 mod automatic;
-mod manual;
 mod cam_zoom;
-mod squares;
 mod coloured_moves;
 mod compute;
 mod hotkeys;
+mod manual;
 mod saftey_cap;
 mod shared;
+mod squares;
 mod ui;
 
 pub struct BoardPlugin;
@@ -39,12 +42,14 @@ impl Plugin for BoardPlugin {
 					.disable::<DefaultHighlightingPlugin>()
 					.disable::<DebugPickingPlugin>(),
 			)
+			.register_type::<SharedState>()
 			.add_startup_system(setup);
 	}
 }
 
 /// Re-rendered every frame
 #[derive(Resource, Default, Clone, Reflect)]
+#[reflect(Resource)]
 #[non_exhaustive]
 pub struct SharedState {
 	// inputs
@@ -179,12 +184,13 @@ mod shared_state {
 use self::{
 	automatic::{AutomaticPlugin, ToggleAction},
 	cam_zoom::{CamZoomPlugin, CameraZoom},
-	squares::{SquaresPlugin, visualization::VizColour},
 	coloured_moves::ColouredMoves,
 	hotkeys::HotkeysPlugin,
+	manual::{ManualFreedom, ManualState, SaveState},
 	saftey_cap::SafteyCap,
 	shared::SharedPlugin,
-	ui::UiPlugin, manual::{ManualFreedom, ManualState, SaveState},
+	squares::{visualization::VizColour, SquaresPlugin},
+	ui::UiPlugin,
 };
 
 /// Sets up default resources + sends initial [NewOptions] event
