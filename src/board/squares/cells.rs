@@ -15,6 +15,9 @@ pub struct CellHovered(pub ChessPoint);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, From, Into, Deref, DerefMut)]
 pub struct CellUnhovered(pub ChessPoint);
 
+mod cell_colouring;
+pub use cell_colouring::*;
+
 use cells_state::*;
 mod cells_state {
 	use super::*;

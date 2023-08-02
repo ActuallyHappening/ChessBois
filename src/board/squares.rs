@@ -13,7 +13,7 @@ pub use markers::CellMark;
 
 use coords::*;
 
-pub use cells::{CellClicked, CellHovered, CellUnhovered};
+pub use cells::{CellClicked, CellHovered, CellUnhovered, CellColouring};
 
 mod cells;
 mod coords;
