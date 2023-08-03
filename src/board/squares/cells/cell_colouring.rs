@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use bevy::{prelude::*, reflect::FromReflect};
-use bevy_egui::egui::{color_picker::color_picker_color32, Color32, Ui, epaint::Hsva, Rgba};
+use bevy_egui::egui::{Ui, epaint::Hsva, Rgba};
 use strum::EnumIs;
 
 use crate::ChessPoint;
@@ -20,11 +20,11 @@ pub enum CellColouring {
 	},
 }
 
-const CELL_SELECTED_COLOUR: Color = Color::PURPLE;
-const CELL_DISABLED_COLOUR: Color = Color::RED;
-const CELL_END_COLOUR_FACTOR: Color = Color::BLUE;
+const SELECTED_COLOUR: Color = Color::PURPLE;
+const DISABLED_COLOUR: Color = Color::RED;
+const END_COLOUR_FACTOR: Color = Color::BLUE;
 
-const CELL_INVALID: Color = Color::BLACK;
+const INVALID: Color = Color::BLACK;
 const DEFAULT_ALL_COLOUR: Color = Color::WHITE;
 
 impl CellColouring {
@@ -34,9 +34,9 @@ impl CellColouring {
 		match self {
 			CellColouring::StandardChessBoard => {
 				if state.get_unavailable_points().contains(point) {
-					CELL_DISABLED_COLOUR
+					DISABLED_COLOUR
 				} else if Some(point) == start {
-					CELL_SELECTED_COLOUR
+					SELECTED_COLOUR
 				} else if state.visual_opts.show_end_colour
 					&& state.moves.as_ref().is_some_and(|moves| {
 						moves
@@ -45,7 +45,7 @@ impl CellColouring {
 							.last()
 							.is_some_and(|last| last.to == *point)
 					}) {
-					CELL_END_COLOUR_FACTOR
+					END_COLOUR_FACTOR
 				} else {
 					point.get_standard_colour()
 				}
@@ -55,7 +55,7 @@ impl CellColouring {
 				if let Some(colour) = colours.get(point) {
 					*colour
 				} else {
-					CELL_INVALID
+					INVALID
 				}
 			}
 		}
@@ -84,6 +84,10 @@ impl CellColouring {
 			ui.color_edit_button_hsva(&mut col);
 			let rgb = col.to_rgb();
 			*colour = Color::rgba(rgb[0], rgb[1], rgb[2], 1.0);
+		}
+
+		if self.is_compute_colour() {
+			ui.selectable_label(true, "Compute colour (see select-algorithm)").clicked();
 		}
 	}
 }

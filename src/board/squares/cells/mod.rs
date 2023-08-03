@@ -39,6 +39,7 @@ mod cells_state {
 		pub visual_opts: VisualOpts,
 		pub moves: Option<ColouredMoves>,
 		pub start: Option<ChessPoint>,
+		pub cell_colouring: CellColouring,
 	}
 
 	impl<'shared> BorrowedCellsState<'shared> {
@@ -60,6 +61,7 @@ mod cells_state {
 				visual_opts: state.visual_opts,
 				moves: state.moves,
 				start: state.start,
+				cell_colouring: state.cell_colouring,
 			}
 		}
 	}
