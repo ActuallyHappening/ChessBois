@@ -1,20 +1,31 @@
+use std::collections::HashMap;
+
 use bevy::{prelude::*, reflect::FromReflect};
+use bevy_egui::egui::{color_picker::color_picker_color32, Color32, Ui, epaint::Hsva, Rgba};
+use strum::EnumIs;
 
 use crate::ChessPoint;
 
 use super::cells_state::BorrowedCellsState;
 
-#[derive(Clone, Default, Reflect, FromReflect, PartialEq)]
+#[derive(Clone, Default, Reflect, FromReflect, PartialEq, EnumIs)]
 pub enum CellColouring {
 	#[default]
+	/// Black and white
 	StandardChessBoard,
 
 	AllOneColour(Color),
+	ComputeColour {
+		map: HashMap<ChessPoint, Color>,
+	},
 }
 
 const CELL_SELECTED_COLOUR: Color = Color::PURPLE;
 const CELL_DISABLED_COLOUR: Color = Color::RED;
 const CELL_END_COLOUR_FACTOR: Color = Color::BLUE;
+
+const CELL_INVALID: Color = Color::BLACK;
+const DEFAULT_ALL_COLOUR: Color = Color::WHITE;
 
 impl CellColouring {
 	/// Takes as much information as it can get and returns the colour the cell should be.
@@ -40,6 +51,39 @@ impl CellColouring {
 				}
 			}
 			CellColouring::AllOneColour(colour) => *colour,
+			CellColouring::ComputeColour { map: colours } => {
+				if let Some(colour) = colours.get(point) {
+					*colour
+				} else {
+					CELL_INVALID
+				}
+			}
+		}
+	}
+}
+
+impl CellColouring {
+	pub fn ui(&mut self, ui: &mut Ui) {
+		ui.selectable_value(
+			self,
+			CellColouring::StandardChessBoard,
+			"Standard chess colouring (black & white)",
+		);
+		if ui
+			.selectable_label(self.is_all_one_colour(), "Board all one colour")
+			.clicked()
+			&& !self.is_all_one_colour()
+		{
+			*self = CellColouring::AllOneColour(DEFAULT_ALL_COLOUR);
+		}
+
+		if let CellColouring::AllOneColour(colour) = self {
+			let col = colour.as_rgba_f32();
+			let col: Rgba = Rgba::from_rgba_unmultiplied(col[0], col[1], col[2], col[3]);
+			let mut col: Hsva = col.into();
+			ui.color_edit_button_hsva(&mut col);
+			let rgb = col.to_rgb();
+			*colour = Color::rgba(rgb[0], rgb[1], rgb[2], 1.0);
 		}
 	}
 }

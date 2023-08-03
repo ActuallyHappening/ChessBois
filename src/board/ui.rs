@@ -29,6 +29,10 @@ pub fn left_ui(mut contexts: EguiContexts, state: ResMut<SharedState>) {
 
 				state.safety_cap.ui(ui);
 			});
+		
+		ui.collapsing("Cell Colouring", |ui| {
+			state.cell_colouring.ui(ui);
+		});
 
 		egui::CollapsingHeader::new("Change board")
 			.default_open(true)

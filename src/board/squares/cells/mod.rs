@@ -97,11 +97,10 @@ impl SharedState {
 }
 
 fn spawn_cells(state: &BorrowedCellsState, commands: &mut Commands, mma: &mut ResSpawning) {
-	let start = state.start.as_ref();
 	let options = &state.board_options;
 
 	for point in options.get_all_points() {
-		let colour = compute_colour(&point, state, start);
+		let colour = state.cell_colouring.compute_colour(&point, state);
 		spawn_cell(point, options, colour, commands, mma);
 	}
 }
