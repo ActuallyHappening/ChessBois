@@ -6,11 +6,15 @@ use std::{
 use bevy::{prelude::*, reflect::FromReflect};
 use bevy_egui::egui::{epaint::Hsva, Rgba, Ui};
 use once_cell::sync::Lazy;
+use petgraph::{prelude::UnGraph, Graph, visit::Bfs};
 use strum::EnumIs;
 
 use crate::{
 	board::SharedState,
-	solver::{pieces::{ChessPiece, StandardPieces}, BoardOptions},
+	solver::{
+		pieces::{ChessPiece, StandardPieces},
+		BoardOptions,
+	},
 	ChessPoint,
 };
 
@@ -112,71 +116,40 @@ fn set(key: ComputeInput, val: Val) {
 	cache.insert(key, val);
 }
 
-const COLS: [Color; 4] = [Color::RED, Color::GREEN, Color::BLUE, Color::YELLOW];
-
-/// Finds all pieces that can reach the start point in one move
-fn search_one(start: &ChessPoint, board_options: &BoardOptions, piece: &ChessPiece) -> HashSet<ChessPoint> {
-	board_options.get_valid_adjacent_points(*start, piece).into_iter().collect()
-}
-
-/// Recursively finds all pieces that can reach the start point in any number of moves
-fn search(start: &ChessPoint, board_options: &BoardOptions, piece: &ChessPiece, available_set: HashSet<ChessPoint>) -> HashSet<ChessPoint> {
-	let mut new_set = HashSet::new();
-	for point in &available_set {
-		let new_points = search_one(&point, board_options, piece);
-		for new_point in new_points {
-			new_set.insert(new_point);
-		}
-	}
-	let new_set = new_set.difference(&available_set).cloned().collect::<HashSet<_>>();
-	if new_set.is_empty() {
-		available_set
-	} else {
-		search(start, board_options, piece, available_set.union(&new_set).cloned().collect())
-	}
-}
-
-#[test]
-fn test_search() {
-	let board_options = BoardOptions::new(8, 8);
-	let start = ChessPoint::new(0, 0);
-	let piece: ChessPiece = StandardPieces::StandardKnight.into();
-	let available_set = search_one(&start, &board_options, &piece);
-	let reachable = search(&start, &board_options, &piece, available_set);
-
-	assert_eq!(reachable.len(), 64);
-	eprintln!("reachable: {:?}", reachable);
-}
+static COLS: Lazy<Vec<Color>> =
+	Lazy::new(|| vec![Color::RED, Color::GREEN, Color::BLUE, Color::YELLOW].into_iter().map(|c| c * 0.5).collect());
 
 /// Uses BFS to colour all cells connected by any number of knights moves the same colour
 fn compute_colourings(input: &ComputeInput) -> Val {
-	let all_points = input.board_options.get_available_points();
-	let mut all_points: HashSet<ChessPoint> = all_points.iter().cloned().collect();
-	assert!(all_points.contains(&input.start), "start point is valid");
+	let piece = &input.piece;
+	let start = input.start;
+	let mut graph = UnGraph::<ChessPoint, ()>::new_undirected();
 
-	let mut groups: Vec<HashSet<ChessPoint>> = Vec::new();
+	let start = graph.add_node(start);
 
-	loop {
-		if all_points.is_empty() { break; }
-		let start = *all_points.iter().next().unwrap();
-		let reachable = search(&start, &input.board_options, &input.piece, search_one(&start, &input.board_options, &input.piece));
-		all_points = all_points.difference(&reachable).cloned().collect();
-		groups.push(reachable);
+	for point in input.board_options.get_valid_adjacent_points(graph[start], piece) {
+		graph.add_node(point);
+		graph.add_edge(start, start, ());
 	}
 
-	// todo: generalise
-
-	// convert from groups into colours
-	let mut final_map = HashMap::new();
-	for (i, group) in groups.into_iter().enumerate() {
-		let colour = COLS[i % COLS.len()];
-		for point in group {
-			final_map.insert(point, colour);
-		}
+	let mut bfs = Bfs::new(&graph, start);
+	while let Some(next_point) = bfs.next(&graph) {
+		eprintln!("Point: {:?}; from graph: {:?}", next_point, graph[next_point]);
 	}
-	final_map
+
+	todo!()
 }
 
+#[test]
+fn test_compute() {
+	let input = ComputeInput {
+		board_options: Default::default(),
+		piece: StandardPieces::StandardKnight.into(),
+		start: ChessPoint::new(0, 0),
+	};
+	let val = compute_colourings(&input);
+	assert_eq!(val.len(), 64);
+}
 
 fn compute(input: &BorrowedCellsState<'_>) -> Option<Val> {
 	if let Ok(key) = ComputeInput::try_from(input) {

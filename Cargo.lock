@@ -1940,6 +1940,7 @@ dependencies = [
  "lru",
  "meshtext",
  "once_cell",
+ "petgraph",
  "rand",
  "reqwest",
  "serde",
