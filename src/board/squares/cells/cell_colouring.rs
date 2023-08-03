@@ -51,7 +51,7 @@ impl CellColouring {
 				}
 			}
 			CellColouring::AllOneColour(colour) => *colour,
-			CellColouring::ComputeColour => compute(&state)
+			CellColouring::ComputeColour => compute(state)
 				.map(|map| map.get(point).cloned().unwrap_or(INVALID))
 				.unwrap_or(INVALID),
 		}
@@ -70,6 +70,7 @@ impl CellColouring {
 		{
 			*self = CellColouring::AllOneColour(DEFAULT_ALL_COLOUR);
 		}
+		ui.selectable_value(self, CellColouring::ComputeColour, "Compute colours");
 
 		if let CellColouring::AllOneColour(colour) = self {
 			let col = colour.as_rgba_f32();
@@ -78,11 +79,6 @@ impl CellColouring {
 			ui.color_edit_button_hsva(&mut col);
 			let rgb = col.to_rgb();
 			*colour = Color::rgba(rgb[0], rgb[1], rgb[2], 1.0);
-		}
-
-		if self.is_compute_colour() {
-			ui.selectable_label(true, "Compute colour (see select-algorithm)")
-				.clicked();
 		}
 	}
 }
@@ -101,7 +97,7 @@ static CACHE: Lazy<Mutex<HashMap<ComputeInput, HashMap<ChessPoint, Color>>>> =
 	Lazy::new(|| Mutex::new(HashMap::new()));
 
 fn get(key: &ComputeInput) -> Option<Val> {
-	let mut cache = CACHE.lock().unwrap();
+	let cache = CACHE.lock().unwrap();
 	cache.get(key).cloned()
 }
 fn set(key: ComputeInput, val: Val) {
@@ -118,15 +114,38 @@ const COLS: [Color; 4] = [
 /// Uses BFS to colour all cells connected by any number of knights moves the same colour
 fn compute_colourings(input: &ComputeInput) -> Val {
 	let all_points = input.board_options.get_available_points();
-	let all_points: HashSet<ChessPoint> = all_points.iter().cloned().collect();
+	let mut all_points: HashSet<ChessPoint> = all_points.iter().cloned().collect();
+	assert!(all_points.contains(&input.start), "start point is valid");
 
-	let first_point = input.start;
+	let mut groups: Vec<HashSet<(usize, ChessPoint)>> = Vec::new();
+
 	let mut group1: HashSet<(usize, ChessPoint)> = HashSet::new();
+	let first_point = input.start;
 	group1.insert((0, first_point));
+	all_points.remove(&first_point);
 
-	
+	let adjacent_points = input.board_options.get_valid_adjacent_points(first_point, &input.piece);
+	info!("adjacent_points: {:?}", adjacent_points);
+	for new_point in adjacent_points {
+		group1.insert((1, new_point));
+		all_points.remove(&new_point);
+	}
 
-	todo!()
+	groups.push(group1);
+
+	// todo: generalise
+
+	// convert from groups into colours
+	let mut final_map = HashMap::new();
+	for (i, group) in groups.into_iter().enumerate() {
+		let colour = COLS[i % COLS.len()];
+		let points = group.into_iter().map(|(_, point)| point);
+		for point in points {
+			final_map.insert(point, colour);
+		}
+	}
+
+	final_map
 }
 fn compute(input: &BorrowedCellsState<'_>) -> Option<Val> {
 	if let Ok(key) = ComputeInput::try_from(input) {

@@ -32,14 +32,29 @@ impl ChessPiece {
 		self
 			.relative_moves()
 			.iter()
-			.filter_map(|(dx, dy)| {
-				Some(ChessPoint::new(
-					(start.column as i16 + dx).try_into().ok()?,
-					(start.row as i16 + dy).try_into().ok()?,
-				))
+			.filter_map(|d| {
+				start.displace(d)
 			})
 			.collect()
 	}
+}
+
+#[test]
+fn test_get_unchecked_relative_points() {
+	let piece: ChessPiece = StandardPieces::StandardKnight.into();
+	let start = ChessPoint::new(0, 0);
+	let points = piece.get_unchecked_relative_points(start);
+
+	assert!(points.contains(&ChessPoint::new(1, 2)));
+	assert!(points.contains(&ChessPoint::new(2, 1)));
+
+	let start = ChessPoint::new(8, 1);
+	let points = piece.get_unchecked_relative_points(start);
+
+	eprintln!("Relative moves: {:?}", piece.relative_moves());
+
+	assert!(points.contains(&ChessPoint::new(7, 3)), "{:?}", points);
+	assert!(points.contains(&ChessPoint::new(6, 2)));
 }
 
 /// Collection of standard sets of moves

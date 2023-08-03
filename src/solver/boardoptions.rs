@@ -365,7 +365,7 @@ impl BoardOptions {
 		points
 	}
 
-	pub fn get_valid_adjacent_points(&self, start: ChessPoint, piece: ChessPiece) -> Vec<ChessPoint> {
+	pub fn get_valid_adjacent_points(&self, start: ChessPoint, piece: &ChessPiece) -> Vec<ChessPoint> {
 		piece.get_unchecked_relative_points(start).into_iter().filter(|p| self.validate_point(p)).collect()
 	}
 
