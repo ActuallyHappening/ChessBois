@@ -1,10 +1,11 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Mutex};
 
 use bevy::{prelude::*, reflect::FromReflect};
-use bevy_egui::egui::{Ui, epaint::Hsva, Rgba};
+use bevy_egui::egui::{epaint::Hsva, Rgba, Ui};
+use once_cell::sync::Lazy;
 use strum::EnumIs;
 
-use crate::ChessPoint;
+use crate::{board::SharedState, solver::BoardOptions, ChessPoint};
 
 use super::cells_state::BorrowedCellsState;
 
@@ -15,9 +16,8 @@ pub enum CellColouring {
 	StandardChessBoard,
 
 	AllOneColour(Color),
-	ComputeColour {
-		map: HashMap<ChessPoint, Color>,
-	},
+	/// Depends on [ComputeInput], so board_options and start
+	ComputeColour,
 }
 
 const SELECTED_COLOUR: Color = Color::PURPLE;
@@ -51,18 +51,12 @@ impl CellColouring {
 				}
 			}
 			CellColouring::AllOneColour(colour) => *colour,
-			CellColouring::ComputeColour { map: colours } => {
-				if let Some(colour) = colours.get(point) {
-					*colour
-				} else {
-					INVALID
-				}
-			}
+			CellColouring::ComputeColour => compute(&state)
+				.map(|map| map.get(point).cloned().unwrap_or(INVALID))
+				.unwrap_or(INVALID),
 		}
 	}
-}
 
-impl CellColouring {
 	pub fn ui(&mut self, ui: &mut Ui) {
 		ui.selectable_value(
 			self,
@@ -87,7 +81,67 @@ impl CellColouring {
 		}
 
 		if self.is_compute_colour() {
-			ui.selectable_label(true, "Compute colour (see select-algorithm)").clicked();
+			ui.selectable_label(true, "Compute colour (see select-algorithm)")
+				.clicked();
 		}
+	}
+}
+
+#[derive(Hash, Clone, PartialEq, Eq)]
+struct ComputeInput {
+	board_options: BoardOptions,
+	start: ChessPoint,
+}
+
+type Key = ComputeInput;
+type Val = HashMap<ChessPoint, Color>;
+
+static CACHE: Lazy<Mutex<HashMap<ComputeInput, HashMap<ChessPoint, Color>>>> =
+	Lazy::new(|| Mutex::new(HashMap::new()));
+
+fn get(key: &ComputeInput) -> Option<Val> {
+	let mut cache = CACHE.lock().unwrap();
+	cache.get(key).cloned()
+}
+fn set(key: ComputeInput, val: Val) {
+	let mut cache = CACHE.lock().unwrap();
+	cache.insert(key, val);
+}
+
+const COLS: [Color; 4] = [
+	Color::RED,
+	Color::GREEN,
+	Color::BLUE,
+	Color::YELLOW,
+];
+fn compute_colourings(input: &ComputeInput) -> Val {
+	todo!()
+}
+fn compute(input: &BorrowedCellsState<'_>) -> Option<Val> {
+	if let Ok(key) = ComputeInput::try_from(input) {
+		let val = get(&key).unwrap_or_else(|| {
+			let val = compute_colourings(&key);
+			set(key, val.clone());
+			val
+		});
+		Some(val)
+	} else {
+		None
+	}
+}
+
+impl TryFrom<&BorrowedCellsState<'_>> for ComputeInput {
+	type Error = &'static str;
+
+	fn try_from(state: &BorrowedCellsState) -> Result<Self, Self::Error> {
+		let start = *state
+			.start
+			.as_ref()
+			.ok_or("No start point selected")?;
+		let board_options = state.board_options.clone();
+		Ok(Self {
+			board_options,
+			start,
+		})
 	}
 }
