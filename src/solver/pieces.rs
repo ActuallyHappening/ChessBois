@@ -1,4 +1,4 @@
-use bevy::reflect::{Reflect, FromReflect};
+use bevy::reflect::{FromReflect, Reflect};
 use bevy_egui::egui::{self, RichText, Ui};
 use bevy_egui_controls::ControlPanel;
 use serde::{Deserialize, Serialize};
@@ -27,10 +27,36 @@ impl ChessPiece {
 		let dy = to.row as i16 - from.row as i16;
 		self.relative_moves().contains(&(dx, dy))
 	}
+
+	pub fn get_unchecked_relative_points(&self, start: ChessPoint) -> Vec<ChessPoint> {
+		self
+			.relative_moves()
+			.iter()
+			.filter_map(|(dx, dy)| {
+				Some(ChessPoint::new(
+					(start.column as i16 + dx).try_into().ok()?,
+					(start.row as i16 + dy).try_into().ok()?,
+				))
+			})
+			.collect()
+	}
 }
 
 /// Collection of standard sets of moves
-#[derive(Default, Clone, Copy, PartialEq, Serialize, Deserialize, Debug, EnumIs, EnumIter, strum::Display, Reflect, FromReflect)]
+#[derive(
+	Default,
+	Clone,
+	Copy,
+	PartialEq,
+	Serialize,
+	Deserialize,
+	Debug,
+	EnumIs,
+	EnumIter,
+	strum::Display,
+	Reflect,
+	FromReflect,
+)]
 pub enum StandardPieces {
 	/// Same as [Pieces::ABKnight(1, 2)]
 	#[strum(serialize = "Standard Knight")]
@@ -118,27 +144,27 @@ impl StandardPieces {
 		}
 
 		if let StandardPieces::ABKnight(a, b) = self {
-			ui.add(egui::Slider::from_get_set(
-				(Self::MIN_AB as f64)..=(Self::MAX_AB as f64),
-				|val| {
+			ui.add(
+				egui::Slider::from_get_set((Self::MIN_AB as f64)..=(Self::MAX_AB as f64), |val| {
 					if let Some(val) = val {
 						*a = val as i8;
 						invalidate = StateInvalidated::Invalidated;
 					}
 					*a as f64
-				},
-			).text("A"));
+				})
+				.text("A"),
+			);
 
-			ui.add(egui::Slider::from_get_set(
-				(Self::MIN_AB as f64)..=(Self::MAX_AB as f64),
-				|val| {
+			ui.add(
+				egui::Slider::from_get_set((Self::MIN_AB as f64)..=(Self::MAX_AB as f64), |val| {
 					if let Some(val) = val {
 						*b = val as i8;
 						invalidate = StateInvalidated::Invalidated;
 					}
 					*b as f64
-				},
-			).text("B"));
+				})
+				.text("B"),
+			);
 
 			ui.label("An 'AB Knight' refers to a piece that must move A squares in one direction, and B squares in any perpendicular direction.
 This makes the Standard knight equivalent to an AB Knight with A=1 and B=2, or A=2 and B=1.

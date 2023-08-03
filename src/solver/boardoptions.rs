@@ -2,13 +2,15 @@ use std::num::NonZeroUsize;
 
 use crate::board::StateInvalidated;
 
-use super::*;
+use super::{pieces::ChessPiece, *};
+use bevy::prelude::{FromReflect, Reflect};
 use bevy_egui::*;
-use bevy::prelude::{Reflect, FromReflect};
 
 /// Necessary information to make custom board.
 /// Derefs to `Vec<Vec<CellOption>>`, is mutable.
-#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Reflect, FromReflect)]
+#[derive(
+	Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Reflect, FromReflect,
+)]
 pub struct BoardOptions {
 	options: Vec<Vec<CellOption>>,
 }
@@ -35,7 +37,8 @@ impl BoardOptions {
 
 				self.width() as f64
 			})
-			.step_by(1.0).text("Width")
+			.step_by(1.0)
+			.text("Width"),
 		);
 
 		ui.add(
@@ -47,7 +50,8 @@ impl BoardOptions {
 
 				self.height() as f64
 			})
-			.step_by(1.0).text("Height")
+			.step_by(1.0)
+			.text("Height"),
 		);
 
 		state
@@ -359,6 +363,10 @@ impl BoardOptions {
 			}
 		}
 		points
+	}
+
+	pub fn get_valid_adjacent_points(&self, start: ChessPoint, piece: ChessPiece) -> Vec<ChessPoint> {
+		piece.get_unchecked_relative_points(start).into_iter().filter(|p| self.validate_point(p)).collect()
 	}
 
 	pub fn get_description(&self) -> String {

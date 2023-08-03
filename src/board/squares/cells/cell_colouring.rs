@@ -1,11 +1,11 @@
-use std::{collections::HashMap, sync::Mutex};
+use std::{collections::{HashMap, HashSet}, sync::Mutex};
 
 use bevy::{prelude::*, reflect::FromReflect};
 use bevy_egui::egui::{epaint::Hsva, Rgba, Ui};
 use once_cell::sync::Lazy;
 use strum::EnumIs;
 
-use crate::{board::SharedState, solver::BoardOptions, ChessPoint};
+use crate::{board::SharedState, solver::{BoardOptions, pieces::ChessPiece}, ChessPoint};
 
 use super::cells_state::BorrowedCellsState;
 
@@ -90,6 +90,7 @@ impl CellColouring {
 #[derive(Hash, Clone, PartialEq, Eq)]
 struct ComputeInput {
 	board_options: BoardOptions,
+	piece: ChessPiece,
 	start: ChessPoint,
 }
 
@@ -114,7 +115,17 @@ const COLS: [Color; 4] = [
 	Color::BLUE,
 	Color::YELLOW,
 ];
+/// Uses BFS to colour all cells connected by any number of knights moves the same colour
 fn compute_colourings(input: &ComputeInput) -> Val {
+	let all_points = input.board_options.get_available_points();
+	let all_points: HashSet<ChessPoint> = all_points.iter().cloned().collect();
+
+	let first_point = input.start;
+	let mut group1: HashSet<(usize, ChessPoint)> = HashSet::new();
+	group1.insert((0, first_point));
+
+	
+
 	todo!()
 }
 fn compute(input: &BorrowedCellsState<'_>) -> Option<Val> {
@@ -142,6 +153,7 @@ impl TryFrom<&BorrowedCellsState<'_>> for ComputeInput {
 		Ok(Self {
 			board_options,
 			start,
+			piece: (*state.piece).into(),
 		})
 	}
 }

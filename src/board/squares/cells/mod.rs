@@ -20,7 +20,9 @@ pub use cell_colouring::*;
 
 use cells_state::*;
 mod cells_state {
-	use super::*;
+	use crate::solver::pieces::ChessPiece;
+
+use super::*;
 
 	/// Used in implementation blocks
 	#[derive(PartialEq, Clone)]
@@ -30,6 +32,7 @@ mod cells_state {
 		pub moves: &'shared Option<ColouredMoves>,
 		pub start: &'shared Option<ChessPoint>,
 		pub cell_colouring: &'shared CellColouring,
+		pub piece: &'shared StandardPieces,
 	}
 
 	/// Used to store for later comparisons
@@ -50,6 +53,7 @@ mod cells_state {
 				moves: &state.moves,
 				start: &state.start,
 				cell_colouring: &state.cell_colouring,
+				piece: &state.piece,
 			}
 		}
 	}
