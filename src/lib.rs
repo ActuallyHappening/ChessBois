@@ -53,9 +53,6 @@ const CELL_SIZE: f32 = 5.;
 const CELL_HEIGHT: f32 = 1.;
 /// Depth of cell
 const CELL_DEPTH: f32 = 2.;
-const CELL_SELECTED_COLOUR: Color = Color::PURPLE;
-const CELL_DISABLED_COLOUR: Color = Color::RED;
-const CELL_END_COLOUR_FACTOR: Color = Color::BLUE;
 
 const VISUALIZATION_HEIGHT: f32 = 3.;
 

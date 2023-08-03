@@ -2,11 +2,10 @@ use bevy::prelude::*;
 use std::f32::consts::TAU;
 
 use super::*;
-use crate::errors::Error;
 use crate::solver::CellOption;
 use crate::utils::EntityCommandsExt;
 use crate::*;
-use crate::{ChessPoint, CELL_DISABLED_COLOUR};
+use crate::ChessPoint;
 use derive_more::{From, Into};
 
 pub use markers::CellMark;
