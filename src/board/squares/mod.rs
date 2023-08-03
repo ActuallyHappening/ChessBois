@@ -28,11 +28,3 @@ impl Plugin for SquaresPlugin {
 			.add_event::<CellUnhovered>();
 	}
 }
-
-/// Immutable version of board_options, used for rendering
-pub struct AnnotatedBoardOptions {}
-
-pub struct AnnotatedCellOptions {
-	tint: Color,
-	board_option: CellOption,
-}

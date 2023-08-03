@@ -65,7 +65,7 @@ pub struct SharedState {
 	// visuals
 	pub moves: Option<ColouredMoves>,
 	pub visual_opts: squares::visualization::VisualOpts,
-	pub cell_highlighting: squares::CellColouring,
+	pub cell_colouring: squares::CellColouring,
 	pub cam_zoom: CameraZoom,
 
 	// ui / interactions

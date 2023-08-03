@@ -29,6 +29,7 @@ mod cells_state {
 		pub visual_opts: &'shared VisualOpts,
 		pub moves: &'shared Option<ColouredMoves>,
 		pub start: &'shared Option<ChessPoint>,
+		pub cell_colouring: &'shared CellColouring,
 	}
 
 	/// Used to store for later comparisons
@@ -47,6 +48,7 @@ mod cells_state {
 				visual_opts: &state.visual_opts,
 				moves: &state.moves,
 				start: &state.start,
+				cell_colouring: &state.cell_colouring,
 			}
 		}
 	}
