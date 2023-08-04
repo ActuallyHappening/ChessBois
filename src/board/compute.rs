@@ -6,8 +6,13 @@ pub fn compute_from_state(state: ResMut<SharedState>) {
 	if let Some(compute_state) = state.clone().get_compute_state() {
 		// try get from algs cache
 		if let Some(comp) = algs::try_get_cached_solution(&compute_state) {
-			if let Computation::Successful { solution, .. } = comp {
-				state.into_inner().set_moves(solution);
+			match comp {
+				Computation::Successful { solution, .. } => {
+					state.into_inner().set_moves(solution);
+				}
+				Computation::Failed { .. } | Computation::GivenUp { .. } => {
+					state.into_inner().moves = None;
+				}
 			}
 		} else {
 			// not cached
@@ -50,7 +55,10 @@ impl SharedState {
 // static COMPUTATIONS_TO_HANDLE: Lazy<Mutex<HashMap<ComputeInput, Computation>>> =
 // 	Lazy::new(|| Mutex::new(HashMap::new()));
 
-fn start_executing_task(_state: OwnedComputeInput, task: impl FnOnce() -> Option<Computation> + Send + 'static) {
+fn start_executing_task(
+	_state: OwnedComputeInput,
+	task: impl FnOnce() -> Option<Computation> + Send + 'static,
+) {
 	#[cfg(not(target_arch = "wasm32"))]
 	{
 		use std::thread;

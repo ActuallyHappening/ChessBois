@@ -51,6 +51,8 @@ fn highlight_hovered_cell(
 	if let Some(CellHovered(point)) = hovered.iter().next() {
 		if state.board_options.is_available(point) {
 			state.start = Some(*point);
+		} else {
+			state.start = None;
 		}
 	}
 }
