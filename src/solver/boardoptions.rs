@@ -143,6 +143,10 @@ impl BoardOptions {
 		Some(self.options[point.row as usize - 1][point.column as usize - 1])
 	}
 
+	pub fn is_available(&self, point: &ChessPoint) -> bool {
+		self.get(point).map_or(false, |state| state.is_available())
+	}
+
 	// pub fn set(&mut self, point: &ChessPoint, state: CellOption) {
 	// self.options[point.row as usize - 1][point.column as usize - 1] = state;
 	// }
@@ -366,7 +370,7 @@ impl BoardOptions {
 	}
 
 	pub fn get_valid_adjacent_points(&self, start: ChessPoint, piece: &ChessPiece) -> Vec<ChessPoint> {
-		piece.get_unchecked_relative_points(start).into_iter().filter(|p| self.validate_point(p)).collect()
+		piece.get_unchecked_relative_points(start).into_iter().filter(|p| self.validate_point(p) && self.is_available(p)).collect()
 	}
 
 	pub fn get_description(&self) -> String {

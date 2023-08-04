@@ -142,12 +142,13 @@ fn compute_colourings(input: &ComputeInput) -> Val {
 	}
 
 	for available_point in input.board_options.get_available_points() {
-		let available_point_index = available_points[&available_point];
+		let available_point_index = *available_points.get(&available_point).unwrap();
 		for point in input
 			.board_options
 			.get_valid_adjacent_points(available_point, piece)
 		{
-			let point_index = available_points[&point];
+			// info!("Checking from {} to adjacent {}, available_points contains {:?}", available_point, point, available_points.get(&point));
+			let point_index = *available_points.get(&point).unwrap();
 			graph.add_edge(
 				available_point_index,
 				point_index,
@@ -224,6 +225,9 @@ impl TryFrom<&BorrowedCellsState<'_>> for ComputeInput {
 	fn try_from(state: &BorrowedCellsState) -> Result<Self, Self::Error> {
 		let start = *state.start.as_ref().ok_or("No start point selected")?;
 		let board_options = state.board_options.clone();
+		if !board_options.get_available_points().contains(&start) {
+			return Err("Start point is not available");
+		}
 		Ok(Self {
 			board_options,
 			start,
