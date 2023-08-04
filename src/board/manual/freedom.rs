@@ -1,13 +1,9 @@
 use bevy::{prelude::Resource, reflect::{FromReflect, Reflect}};
-use bevy_egui::egui::Color32;
+
 use bevy_egui_controls::ControlPanel;
 use strum::{EnumIs, EnumIter};
 
-use crate::{
-	board::SharedState,
-	solver::Moves,
-	ChessPoint,
-};
+
 
 #[derive(
 	Resource,

@@ -1,8 +1,11 @@
+#![allow(dead_code)]
+
 pub use bevy::ecs::schedule::LogLevel;
 use bevy_egui::{egui::Ui, *};
 use derive_more::Constructor;
 
 use super::*;
+
 
 #[derive(Resource, Constructor, Debug, Clone, PartialEq, Eq)]
 pub struct Error {

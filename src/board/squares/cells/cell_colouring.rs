@@ -1,26 +1,21 @@
 use std::{
 	collections::{HashMap, HashSet},
-	fs::File,
-	io::Write,
 	sync::Mutex,
 };
 
-use crate::{board::coloured_moves::ColouredMoves, solver::Move};
+use crate::solver::Move;
 use bevy::{prelude::*, reflect::FromReflect};
 use bevy_egui::egui::{epaint::Hsva, Rgba, Ui};
 use once_cell::sync::Lazy;
 use petgraph::{
-	dot::{self, Dot},
 	prelude::UnGraph,
 	visit::Bfs,
-	Graph,
 };
 use strum::EnumIs;
 
 use crate::{
-	board::SharedState,
 	solver::{
-		pieces::{ChessPiece, StandardPieces},
+		pieces::ChessPiece,
 		BoardOptions,
 	},
 	ChessPoint,
@@ -45,6 +40,13 @@ const END_COLOUR_FACTOR: Color = Color::BLUE;
 
 const INVALID: Color = Color::BLACK;
 const DEFAULT_ALL_COLOUR: Color = Color::WHITE;
+
+static COLS: Lazy<Vec<Color>> = Lazy::new(|| {
+	vec![Color::GREEN, Color::BLUE, Color::RED, Color::ORANGE, Color::PINK, Color::YELLOW]
+		.into_iter()
+		.map(|c| c * 0.5)
+		.collect()
+});
 
 impl CellColouring {
 	/// Takes as much information as it can get and returns the colour the cell should be.
@@ -129,13 +131,6 @@ fn set(key: Key, val: Val) {
 	cache.insert(key, val);
 }
 
-static COLS: Lazy<Vec<Color>> = Lazy::new(|| {
-	vec![Color::GREEN, Color::BLUE, Color::YELLOW, Color::ORANGE]
-		.into_iter()
-		.map(|c| c * 0.5)
-		.collect()
-});
-
 /// Uses BFS to colour all cells connected by any number of knights moves the same colour
 fn compute_colourings(input: &ComputeInput) -> Val {
 	let piece = &input.piece;
@@ -202,6 +197,8 @@ fn compute_colourings(input: &ComputeInput) -> Val {
 
 #[test]
 fn test_compute() {
+	use crate::solver::pieces::StandardPieces;
+
 	let input = ComputeInput {
 		board_options: Default::default(),
 		piece: StandardPieces::StandardKnight.into(),

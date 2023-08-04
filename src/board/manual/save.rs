@@ -1,11 +1,11 @@
 use anyhow::Context;
 use bevy::reflect::{Reflect, FromReflect};
 use serde::{Deserialize, Serialize};
-use tracing::{warn, info};
+use tracing::info;
 
 use crate::{
 	board::{coloured_moves::ColouredMoves, SharedState, VizColour},
-	solver::{BoardOptions, Move}, ChessPoint,
+	solver::{BoardOptions, Move},
 };
 
 pub use ui::SaveState;
@@ -109,6 +109,7 @@ impl UnstableSavedState {
 
 #[test]
 fn check_serialize_deserialize_works() {
+	use crate::solver::ChessPoint;
 	let mut moves = ColouredMoves::default();
 	moves.manual_add_move(ChessPoint::new(2, 3), VizColour::Blue);
 
@@ -127,7 +128,7 @@ fn check_serialize_deserialize_works() {
 	};
 
 	let json = data.into_json();
-	let data = UnstableSavedState::from_json(&json).unwrap();
+	let _data = UnstableSavedState::from_json(&json).unwrap();
 }
 
 mod v0_3_x {
@@ -368,7 +369,7 @@ mod v0_2_x {
 	#[test]
 	fn data1() {
 		let data = r#"{"start":{"column":1,"row":1},"moves":{"moves":[{"from":{"column":1,"row":1},"to":{"column":2,"row":3}},{"from":{"column":2,"row":3},"to":{"column":1,"row":5}},{"from":{"column":1,"row":5},"to":{"column":3,"row":6}},{"from":{"column":3,"row":6},"to":{"column":5,"row":5}},{"from":{"column":5,"row":5},"to":{"column":4,"row":3}},{"from":{"column":4,"row":3},"to":{"column":5,"row":1}},{"from":{"column":5,"row":1},"to":{"column":3,"row":2}},{"from":{"column":3,"row":2},"to":{"column":4,"row":4}},{"from":{"column":4,"row":4},"to":{"column":5,"row":6}},{"from":{"column":5,"row":6},"to":{"column":3,"row":5}},{"from":{"column":3,"row":5},"to":{"column":1,"row":6}},{"from":{"column":1,"row":6},"to":{"column":2,"row":4}},{"from":{"column":2,"row":4},"to":{"column":1,"row":2}},{"from":{"column":1,"row":2},"to":{"column":3,"row":1}},{"from":{"column":3,"row":1},"to":{"column":5,"row":2}},{"from":{"column":5,"row":2},"to":{"column":3,"row":3}},{"from":{"column":3,"row":3},"to":{"column":5,"row":4}},{"from":{"column":5,"row":4},"to":{"column":4,"row":2}},{"from":{"column":4,"row":2},"to":{"column":2,"row":1}},{"from":{"column":2,"row":1},"to":{"column":1,"row":3}},{"from":{"column":1,"row":3},"to":{"column":2,"row":5}},{"from":{"column":2,"row":5},"to":{"column":4,"row":6}},{"from":{"column":4,"row":6},"to":{"column":3,"row":4}},{"from":{"column":3,"row":4},"to":{"column":5,"row":3}},{"from":{"column":5,"row":3},"to":{"column":4,"row":1}},{"from":{"column":4,"row":1},"to":{"column":2,"row":2}},{"from":{"column":2,"row":2},"to":{"column":1,"row":4}},{"from":{"column":1,"row":4},"to":{"column":2,"row":6}},{"from":{"column":2,"row":6},"to":{"column":4,"row":5}},{"from":{"column":4,"row":5},"to":{"column":4,"row":5}}]},"colours":["Green","Green","Green","Green","Green","Green","Green","Green","Green","Green","Green","Green","Green","Green","Green","Green","Green","Green","Green","Green","Green","Green","Green","Green","Green","Green","Green","Green","Green","Green"]}"#;
-		let state = try_depreciated_from_json(data).unwrap();
+		let _state = try_depreciated_from_json(data).unwrap();
 	}
 
 	#[derive(Serialize, Deserialize, PartialEq, Eq, Hash)]

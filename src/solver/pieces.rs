@@ -1,6 +1,6 @@
 use bevy::reflect::{FromReflect, Reflect};
 use bevy_egui::egui::{self, RichText, Ui};
-use bevy_egui_controls::ControlPanel;
+
 use serde::{Deserialize, Serialize};
 use strum::{EnumIs, EnumIter};
 
