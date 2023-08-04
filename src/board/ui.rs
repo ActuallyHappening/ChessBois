@@ -48,7 +48,15 @@ pub fn left_ui(mut contexts: EguiContexts, state: ResMut<SharedState>) {
 		ui.collapsing("Non-standard pieces", |ui| {
 			ui.label("Set a piece that is not a standard knight");
 			state.piece.ui(ui).invalidates(state);
-		})
+		});
+
+		ui.collapsing("About", |ui| {
+			ui.label("This project was created to advance the knowledge of humanity in the field of chess, \
+			To entertain its programmer, \
+			And to show that 100% Rust projects are possible and fun.");
+			ui.hyperlink_to("Link to source code: ", "https://github.com/ActuallyHappening/ChessBois");
+			ui.hyperlink_to("To download a desktop version: ", "https://github.com/ActuallyHappening/ChessBois/releases");
+		});
 	});
 }
 
