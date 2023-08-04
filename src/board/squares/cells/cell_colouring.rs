@@ -1,14 +1,20 @@
 use std::{
 	collections::{HashMap, HashSet},
-	sync::Mutex, fs::File, io::Write,
+	fs::File,
+	io::Write, sync::Mutex,
 };
 
+use crate::solver::Move;
 use bevy::{prelude::*, reflect::FromReflect};
 use bevy_egui::egui::{epaint::Hsva, Rgba, Ui};
 use once_cell::sync::Lazy;
-use petgraph::{prelude::UnGraph, Graph, visit::Bfs, dot::{self, Dot}};
+use petgraph::{
+	dot::{self, Dot},
+	prelude::UnGraph,
+	visit::Bfs,
+	Graph,
+};
 use strum::EnumIs;
-use crate::solver::Move;
 
 use crate::{
 	board::SharedState,
@@ -117,8 +123,12 @@ fn set(key: ComputeInput, val: Val) {
 	cache.insert(key, val);
 }
 
-static COLS: Lazy<Vec<Color>> =
-	Lazy::new(|| vec![Color::RED, Color::GREEN, Color::BLUE, Color::YELLOW].into_iter().map(|c| c * 0.5).collect());
+static COLS: Lazy<Vec<Color>> = Lazy::new(|| {
+	vec![Color::RED, Color::GREEN, Color::BLUE, Color::YELLOW]
+		.into_iter()
+		.map(|c| c * 0.5)
+		.collect()
+});
 
 /// Uses BFS to colour all cells connected by any number of knights moves the same colour
 fn compute_colourings(input: &ComputeInput) -> Val {
@@ -126,33 +136,62 @@ fn compute_colourings(input: &ComputeInput) -> Val {
 	let start = input.start;
 	let mut graph = UnGraph::<ChessPoint, Move>::new_undirected();
 
-	let start_index = graph.add_node(start);
-
 	let mut available_points = HashMap::new();
 	for point in input.board_options.get_available_points() {
 		available_points.insert(point, graph.add_node(point));
 	}
 
 	for available_point in input.board_options.get_available_points() {
-		let available_point_index= available_points[&available_point];
-		for point in input.board_options.get_valid_adjacent_points(available_point, piece) {
+		let available_point_index = available_points[&available_point];
+		for point in input
+			.board_options
+			.get_valid_adjacent_points(available_point, piece)
+		{
 			let point_index = available_points[&point];
-			graph.add_edge(available_point_index, point_index, Move::new(available_point, point));
+			graph.add_edge(
+				available_point_index,
+				point_index,
+				Move::new(available_point, point),
+			);
 		}
 	}
 
-	let mut bfs = Bfs::new(&graph, start_index);
-	while let Some(next_point) = bfs.next(&graph) {
-		eprintln!("Point: {:?}; from graph: {:?}", next_point, graph[next_point]);
+	let mut all_points = input
+		.board_options
+		.get_available_points()
+		.into_iter()
+		.collect::<HashSet<_>>();
+
+	let mut start_index = Some(*available_points
+		.get(&start)
+		.expect("Start value is in available points"));
+
+	let mut colours = HashMap::new();
+	let mut i = 0;
+	while !all_points.is_empty() {
+		let mut bfs = Bfs::new(&graph, start_index.unwrap_or_else(|| {
+			let point = all_points.iter().next().unwrap();
+			available_points[point]
+		}));
+		start_index = None;
+		let col = COLS[i];
+		while let Some(next_point) = bfs.next(&graph) {
+			let next_point = graph[next_point];
+			// eprintln!("Point: {}", next_point);
+			all_points.remove(&next_point);
+			colours.insert(next_point, col);
+		}
+
+		i = (i + 1) % COLS.len();
 	}
 
 	// write vis file to debug
-	let data = Dot::new(&graph);
-	let mut file = File::create("graph.dot").unwrap();
-	let data = format!("{}", data);
-	file.write_all(data.as_bytes()).unwrap();
+	// let data = Dot::new(&graph);
+	// let mut file = File::create("graph.dot").unwrap();
+	// let data = format!("{}", data);
+	// file.write_all(data.as_bytes()).unwrap();
 
-	todo!()
+	colours
 }
 
 #[test]
@@ -160,7 +199,7 @@ fn test_compute() {
 	let input = ComputeInput {
 		board_options: Default::default(),
 		piece: StandardPieces::StandardKnight.into(),
-		start: ChessPoint::new(0, 0),
+		start: ChessPoint::new(1, 1),
 	};
 	let val = compute_colourings(&input);
 	assert_eq!(val.len(), 64);
