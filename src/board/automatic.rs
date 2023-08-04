@@ -49,7 +49,9 @@ fn highlight_hovered_cell(
 	mut hovered: EventReader<CellHovered>,
 ) {
 	if let Some(CellHovered(point)) = hovered.iter().next() {
-		state.start = Some(*point);
+		if state.board_options.is_available(point) {
+			state.start = Some(*point);
+		}
 	}
 }
 
