@@ -20,9 +20,8 @@ pub use cell_colouring::*;
 
 use cells_state::*;
 mod cells_state {
-	use crate::solver::pieces::ChessPiece;
 
-use super::*;
+	use super::*;
 
 	/// Used in implementation blocks
 	#[derive(PartialEq, Clone)]

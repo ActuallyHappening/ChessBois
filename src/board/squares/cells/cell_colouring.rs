@@ -128,16 +128,16 @@ fn compute_colourings(input: &ComputeInput) -> Val {
 
 	let start_index = graph.add_node(start);
 
-	let available_points = HashMap::new();
+	let mut available_points = HashMap::new();
 	for point in input.board_options.get_available_points() {
 		available_points.insert(point, graph.add_node(point));
 	}
 
 	for available_point in input.board_options.get_available_points() {
+		let available_point_index= available_points[&available_point];
 		for point in input.board_options.get_valid_adjacent_points(available_point, piece) {
-			let point_index = available_points[point];
-
-			graph.add_edge(available_point, point_index, Move::new(available_point, point));
+			let point_index = available_points[&point];
+			graph.add_edge(available_point_index, point_index, Move::new(available_point, point));
 		}
 	}
 
