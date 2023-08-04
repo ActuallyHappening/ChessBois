@@ -1,4 +1,8 @@
 
+## v0.3.4:
+- Add computed colourings
+- Fixed typing triggering hotkeys
+
 ## v0.3.3:
 - Adding web loading from db
 

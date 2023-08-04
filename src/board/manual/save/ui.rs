@@ -1,6 +1,8 @@
 use bevy::reflect::Reflect;
 use bevy_egui::egui;
+use bevy_egui::egui::TextEdit;
 use bevy_egui::egui::Ui;
+use bevy_egui::egui::Widget;
 
 use crate::board::SharedState;
 
@@ -16,6 +18,7 @@ pub struct SaveState {
 
 	pub error_str: Option<String>,
 	pub loaded_metadatas: Vec<MetaData>,
+	pub is_typing: bool,
 }
 
 impl TryFrom<SharedState> for super::MetaData {
@@ -78,14 +81,22 @@ impl SharedState {
 		ui.label("This saves the current state to the database under the specified title");
 
 		// Add metadata
+		// also handle focussing shananigans
+		self.save_state.is_typing = false;
 		ui.label("Title:");
-		ui.text_edit_singleline(&mut self.save_state.title);
+		if TextEdit::singleline(&mut self.save_state.title).hint_text("My awesome creation").ui(ui).has_focus() {
+			self.save_state.is_typing = true;
+		}
 
 		ui.label("Author:");
-		ui.text_edit_singleline(&mut self.save_state.author);
+		if TextEdit::singleline(&mut self.save_state.author).hint_text("John Smith").ui(ui).has_focus() {
+			self.save_state.is_typing = true;
+		}
 
 		ui.label("Description:");
-		ui.text_edit_multiline(&mut self.save_state.description);
+		if TextEdit::multiline(&mut self.save_state.description).hint_text("A chess board showing a cool property of knights moves.\nIt is also awesome.").ui(ui).has_focus() {
+			self.save_state.is_typing = true;
+		}
 
 		if let Some(err) = &self.save_state.error_str {
 			ui.colored_label(Color32::RED, err);

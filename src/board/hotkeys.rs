@@ -21,6 +21,11 @@ pub trait Hotkeyable: Into<KeyCode> + Clone + IntoEnumIterator {
 
 pub fn hotkeys(state: ResMut<SharedState>, keys: Res<Input<KeyCode>>) {
 	let state = state.into_inner();
+
+	if state.save_state.is_typing {
+		return;
+	}
+
 	state.on_click.activate_hotkeys(&keys);
 	state.alg.activate_hotkeys(&keys);
 	state.viz_colour.activate_hotkeys(&keys);
