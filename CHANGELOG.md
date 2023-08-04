@@ -1,4 +1,7 @@
 
+## v0.3.5:
+- Bug fixes
+
 ## v0.3.4:
 - Add computed colourings
 - Fixed typing triggering hotkeys
