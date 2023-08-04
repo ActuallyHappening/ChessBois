@@ -57,7 +57,7 @@ impl SharedState {
 
 		if ui.button("Load from clipboard (all versions)").clicked() {
 			let json = crate::clipboard::get_from_clipboard();
-			if let Ok(state) = UnstableSavedState::from_json(&json) {
+			if let Ok(state) = UnstableSavedState::from_json(json.trim()) {
 				self.moves = Some(state.moves);
 				self.board_options = state.board_options;
 			};
