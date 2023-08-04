@@ -1,13 +1,14 @@
 use std::{
 	collections::{HashMap, HashSet},
-	sync::Mutex,
+	sync::Mutex, fs::File, io::Write,
 };
 
 use bevy::{prelude::*, reflect::FromReflect};
 use bevy_egui::egui::{epaint::Hsva, Rgba, Ui};
 use once_cell::sync::Lazy;
-use petgraph::{prelude::UnGraph, Graph, visit::Bfs};
+use petgraph::{prelude::UnGraph, Graph, visit::Bfs, dot::{self, Dot}};
 use strum::EnumIs;
+use crate::solver::Move;
 
 use crate::{
 	board::SharedState,
@@ -123,19 +124,33 @@ static COLS: Lazy<Vec<Color>> =
 fn compute_colourings(input: &ComputeInput) -> Val {
 	let piece = &input.piece;
 	let start = input.start;
-	let mut graph = UnGraph::<ChessPoint, ()>::new_undirected();
+	let mut graph = UnGraph::<ChessPoint, Move>::new_undirected();
 
-	let start = graph.add_node(start);
+	let start_index = graph.add_node(start);
 
-	for point in input.board_options.get_valid_adjacent_points(graph[start], piece) {
-		graph.add_node(point);
-		graph.add_edge(start, start, ());
+	let available_points = HashMap::new();
+	for point in input.board_options.get_available_points() {
+		available_points.insert(point, graph.add_node(point));
 	}
 
-	let mut bfs = Bfs::new(&graph, start);
+	for available_point in input.board_options.get_available_points() {
+		for point in input.board_options.get_valid_adjacent_points(available_point, piece) {
+			let point_index = available_points[point];
+
+			graph.add_edge(available_point, point_index, Move::new(available_point, point));
+		}
+	}
+
+	let mut bfs = Bfs::new(&graph, start_index);
 	while let Some(next_point) = bfs.next(&graph) {
 		eprintln!("Point: {:?}; from graph: {:?}", next_point, graph[next_point]);
 	}
+
+	// write vis file to debug
+	let data = Dot::new(&graph);
+	let mut file = File::create("graph.dot").unwrap();
+	let data = format!("{}", data);
+	file.write_all(data.as_bytes()).unwrap();
 
 	todo!()
 }

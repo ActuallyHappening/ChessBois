@@ -42,6 +42,12 @@ impl Display for Moves {
 	}
 }
 
+impl Display for Move {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write!(f, "{} -> {}", self.from, self.to)
+	}
+}
+
 impl From<Vec<Move>> for Moves {
 	fn from(moves: Vec<Move>) -> Self {
 		Self { moves }
