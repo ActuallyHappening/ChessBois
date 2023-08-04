@@ -1,10 +1,11 @@
 use std::{
 	collections::{HashMap, HashSet},
 	fs::File,
-	io::Write, sync::Mutex,
+	io::Write,
+	sync::Mutex,
 };
 
-use crate::solver::Move;
+use crate::{board::coloured_moves::ColouredMoves, solver::Move};
 use bevy::{prelude::*, reflect::FromReflect};
 use bevy_egui::egui::{epaint::Hsva, Rgba, Ui};
 use once_cell::sync::Lazy;
@@ -69,9 +70,15 @@ impl CellColouring {
 				}
 			}
 			CellColouring::AllOneColour(colour) => *colour,
-			CellColouring::ComputeColour => compute(state)
-				.map(|map| map.get(point).cloned().unwrap_or(INVALID))
-				.unwrap_or(INVALID),
+			CellColouring::ComputeColour => {
+				if state.get_unavailable_points().contains(point) {
+					DISABLED_COLOUR
+				} else {
+					compute(state)
+						.map(|map| map.get(point).cloned().unwrap_or(INVALID))
+						.unwrap_or(INVALID)
+				}
+			}
 		}
 	}
 
@@ -111,20 +118,19 @@ struct ComputeInput {
 type Key = ComputeInput;
 type Val = HashMap<ChessPoint, Color>;
 
-static CACHE: Lazy<Mutex<HashMap<ComputeInput, HashMap<ChessPoint, Color>>>> =
-	Lazy::new(|| Mutex::new(HashMap::new()));
+static CACHE: Lazy<Mutex<HashMap<Key, Val>>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
-fn get(key: &ComputeInput) -> Option<Val> {
+fn get(key: &Key) -> Option<Val> {
 	let cache = CACHE.lock().unwrap();
 	cache.get(key).cloned()
 }
-fn set(key: ComputeInput, val: Val) {
+fn set(key: Key, val: Val) {
 	let mut cache = CACHE.lock().unwrap();
 	cache.insert(key, val);
 }
 
 static COLS: Lazy<Vec<Color>> = Lazy::new(|| {
-	vec![Color::RED, Color::GREEN, Color::BLUE, Color::YELLOW]
+	vec![Color::GREEN, Color::BLUE, Color::YELLOW, Color::ORANGE]
 		.into_iter()
 		.map(|c| c * 0.5)
 		.collect()
@@ -163,17 +169,22 @@ fn compute_colourings(input: &ComputeInput) -> Val {
 		.into_iter()
 		.collect::<HashSet<_>>();
 
-	let mut start_index = Some(*available_points
-		.get(&start)
-		.expect("Start value is in available points"));
+	let mut start_index = Some(
+		*available_points
+			.get(&start)
+			.expect("Start value is in available points"),
+	);
 
 	let mut colours = HashMap::new();
 	let mut i = 0;
 	while !all_points.is_empty() {
-		let mut bfs = Bfs::new(&graph, start_index.unwrap_or_else(|| {
-			let point = all_points.iter().next().unwrap();
-			available_points[point]
-		}));
+		let mut bfs = Bfs::new(
+			&graph,
+			start_index.unwrap_or_else(|| {
+				let point = all_points.iter().next().unwrap();
+				available_points[point]
+			}),
+		);
 		start_index = None;
 		let col = COLS[i];
 		while let Some(next_point) = bfs.next(&graph) {
@@ -185,12 +196,6 @@ fn compute_colourings(input: &ComputeInput) -> Val {
 
 		i = (i + 1) % COLS.len();
 	}
-
-	// write vis file to debug
-	// let data = Dot::new(&graph);
-	// let mut file = File::create("graph.dot").unwrap();
-	// let data = format!("{}", data);
-	// file.write_all(data.as_bytes()).unwrap();
 
 	colours
 }
