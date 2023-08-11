@@ -21,6 +21,8 @@ mod moves;
 	Clone,
 	Debug,
 	Eq,
+	PartialOrd,
+	Ord,
 	PartialEq,
 	Serialize,
 	Deserialize,
