@@ -7,9 +7,6 @@ use hamiltonian::hamiltonian_tour_repeatless;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Computation {
-	// Computing {
-	// 	current: Moves,
-	// },
 	Successful {
 		solution: Moves,
 		explored_states: u128,
@@ -275,61 +272,6 @@ impl Board {
 	}
 }
 
-/*  #region old alg */
-// fn warnsdorf_tour_repeatless<P: ChessPiece>(
-// 	piece: &P,
-// 	options: BoardOptions,
-// 	start: ChessPoint,
-// ) -> Computation {
-// 	let mut board = Board::from_options(options);
-// 	let mut moves = Vec::new();
-// 	let mut current = start;
-
-// 	let num_available_cells = board.cell_states.len();
-// 	let mut state_counter = 0_u128;
-
-// 	for _ in 1..num_available_cells {
-// 		if !board.cell_states.contains_key(&current) {
-// 			return Computation::Failed {
-// 				total_states: board.cell_states.len() as u128,
-// 			};
-// 		}
-
-// 		board.set(current, CellState::PreviouslyOccupied);
-
-// 		let mut next = None;
-// 		let mut min_degree = u16::MAX;
-// 		for &(dx, dy) in piece.relative_moves() {
-// 			if let Some(p) = current.displace(&(dx, dy)) {
-// 				if board.get(&p) == Some(CellState::NeverOccupied) {
-// 					state_counter += 1;
-
-// 					let degree = board.get_degree(&p, piece);
-// 					if degree < min_degree {
-// 						min_degree = degree;
-// 						next = Some(p);
-// 					}
-// 				}
-// 			}
-// 		}
-
-// 		if let Some(next) = next {
-// 			moves.push(Move::new(current, next));
-// 			current = next;
-// 		} else {
-// 			return Computation::Failed {
-// 				total_states: state_counter,
-// 			};
-// 		}
-// 	}
-
-// 	Computation::Successful {
-// 		solution: moves.into(),
-// 		explored_states: state_counter,
-// 	}
-// }
-/* #endregion */
-
 /// Recursively solves a knights tour
 fn try_move_recursive(
 	tour_type: TourType,
@@ -432,7 +374,7 @@ fn try_move_recursive(
 	PartialComputation::from(moves)
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 enum TourType {
 	/// Does not always find solution but is significantly faster
 	Weak,

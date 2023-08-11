@@ -22,8 +22,6 @@ mod moves;
 	Debug,
 	Eq,
 	PartialEq,
-	PartialOrd,
-	Ord,
 	Serialize,
 	Deserialize,
 	Reflect,
