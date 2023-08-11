@@ -20,4 +20,4 @@ Prerequisites: `brew install llvm && cargo install cargo-watch && cargo install 
 Clone local dep (at root of project): `git clone https://github.com/ActuallyHappening/bevy_egui_controls.git`
 
 Then, `cargo r` / `cargo w` to run and reload the project respectively.
-`trunk serve` to view in a web browser.
+`./web-dev.sh` to view in a web browser.
