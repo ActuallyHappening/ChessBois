@@ -32,6 +32,9 @@ pub enum ToggleAction {
 
 	#[strum(serialize = "Target / Untarget [t]")]
 	TargetCell,
+
+	#[strum(serialize = "Eliminate cell [e]")]
+	EliminateCell,
 }
 impl Hotkeyable for ToggleAction {}
 
@@ -40,6 +43,7 @@ impl From<ToggleAction> for KeyCode {
 		match value {
 			ToggleAction::TargetCell => KeyCode::T,
 			ToggleAction::ToggleCellEnabled => KeyCode::D,
+			ToggleAction::EliminateCell => KeyCode::E,
 		}
 	}
 }
@@ -78,6 +82,9 @@ fn handle_cell_clicked(
 					CellOption::Unavailable => {
 						state.add(*point);
 					}
+					_ => {
+						debug!("Ignoring click");
+					}
 				},
 				ToggleAction::TargetCell => {
 					match current_point {
@@ -86,9 +93,23 @@ fn handle_cell_clicked(
 							state.toggle_target(*point);
 							state.invalidate();
 						}
-						CellOption::Unavailable => {
-							//
+						CellOption::Unavailable | CellOption::Eliminated => {
+							debug!("Ignoring click");
 						}
+					}
+				},
+				ToggleAction::EliminateCell => {
+					match current_point {
+						CellOption::Available { .. } | CellOption::Unavailable => {
+							info!("Eliminating point {}", *point);
+							state.eliminate(point);
+							state.invalidate();
+						}
+						CellOption::Eliminated => {
+							info!("Un-eliminating point {}", *point);
+							state.add(*point);
+							state.invalidate();
+						},
 					}
 				}
 			},

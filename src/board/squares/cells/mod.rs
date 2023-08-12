@@ -127,6 +127,9 @@ fn spawn_cell(
 	commands: &mut Commands,
 	mma: &mut ResSpawning,
 ) {
+	if options.get(&at) == Some(CellOption::Unavailable) {
+		return;
+	}
 	let transform = cell_get_transform(at, options);
 	let (meshs, materials, _) = mma;
 	let mesh = meshs.add(shape::Box::new(CELL_SIZE, CELL_SIZE, CELL_DEPTH).into());

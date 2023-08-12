@@ -110,13 +110,14 @@ pub enum CellOption {
 		can_finish_on: bool,
 	},
 	Unavailable,
+	Eliminated,
 }
 
 impl CellOption {
 	fn unwrap_available(self) -> bool {
 		match self {
 			CellOption::Available { can_finish_on } => can_finish_on,
-			CellOption::Unavailable => panic!("Tried to unwrap unavailable cell option"),
+			_ => panic!("Tried to unwrap unavailable cell option"),
 		}
 	}
 }
