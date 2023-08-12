@@ -210,6 +210,9 @@ impl BoardOptions {
 		self.options[p.row as usize - 1][p.column as usize - 1] =
 			self.targets_state().into_available_cell_option();
 	}
+	pub fn eliminate(&mut self, p: &ChessPoint) {
+		self.set_p(p, CellOption::Eliminated);
+	}
 
 	pub fn dimensions(&self) -> (u16, u16) {
 		(self.width(), self.height())
@@ -254,7 +257,7 @@ impl BoardOptions {
 
 						self.check_for_targets_reset();
 					}
-					CellOption::Unavailable => {
+					CellOption::Unavailable | CellOption::Eliminated => {
 						debug!("Cannot target a cell that is disabled");
 					}
 				}
@@ -397,6 +400,7 @@ impl Display for BoardOptions {
 					CellOption::Available {
 						can_finish_on: true,
 					} => write!(f, " 🎯 ")?,
+					CellOption::Eliminated => write!(f, " 🚫 ")?,
 				}
 			}
 			writeln!(f)?;

@@ -131,11 +131,17 @@ fn spawn_cell(
 	let (meshs, materials, _) = mma;
 	let mesh = meshs.add(shape::Box::new(CELL_SIZE, CELL_SIZE, CELL_DEPTH).into());
 
+	let mut mat = StandardMaterial::from(colour);
+	if options.get(&at) == Some(CellOption::Eliminated) {
+		let colour = Color::rgba(0., 1., 0., 0.);
+		mat = StandardMaterial::from(colour);
+	}
+
 	let mut cell = commands.spawn((
 		PbrBundle {
 			mesh,
 			transform,
-			material: materials.add(StandardMaterial::from(colour)),
+			material: materials.add(mat),
 			..default()
 		},
 		Name::new(format!("Chess Square ({}, {})", at.row, at.column)),

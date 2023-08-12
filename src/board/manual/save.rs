@@ -289,7 +289,7 @@ mod v0_3_x {
 	impl From<crate::solver::CellOption> for StableCellOptions {
 		fn from(value: crate::solver::CellOption) -> Self {
 			match value {
-				crate::solver::CellOption::Unavailable => Self::Disabled,
+				crate::solver::CellOption::Unavailable | crate::solver::CellOption::Eliminated => Self::Disabled,
 				crate::solver::CellOption::Available { can_finish_on } => {
 					if can_finish_on {
 						Self::Finishable
