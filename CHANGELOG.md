@@ -1,8 +1,9 @@
 
 ## v0.3.6:
-- Can change disabled colour
-- Makes colours stable
-- Can show coloured moves
+- Can eliminate cells
+<!-- - Can change disabled colour -->
+<!-- - Makes colours stable -->
+<!-- - Can show coloured moves -->
 
 ## v0.3.5:
 - Bug fixes
