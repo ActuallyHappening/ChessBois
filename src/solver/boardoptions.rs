@@ -13,6 +13,7 @@ use bevy_egui::*;
 )]
 pub struct BoardOptions {
 	options: Vec<Vec<CellOption>>,
+	recommended_moves: Moves,
 }
 
 impl Default for BoardOptions {
@@ -53,6 +54,17 @@ impl BoardOptions {
 			.step_by(1.0)
 			.text("Height"),
 		);
+
+		if self.recommended_moves.len() > 0 {
+			ui.label(format!(
+				"Currently recommending {} moves",
+				self.recommended_moves.len()
+			));
+			if ui.button("Clear all recommended moves?").clicked() {
+				self.clear_recommended_moves();
+				state = StateInvalidated::InvalidatedAndClearStart;
+			}
+		}
 
 		state
 	}
@@ -132,6 +144,7 @@ impl BoardOptions {
 				];
 				columns as usize
 			],
+			recommended_moves: Moves::default(),
 		}
 	}
 
@@ -147,14 +160,7 @@ impl BoardOptions {
 		self.get(point).map_or(false, |state| state.is_available())
 	}
 
-	// pub fn set(&mut self, point: &ChessPoint, state: CellOption) {
-	// self.options[point.row as usize - 1][point.column as usize - 1] = state;
-	// }
-	pub fn set(self, point: &ChessPoint, state: CellOption) -> Self {
-		let mut options = self.options;
-		options[point.row as usize - 1][point.column as usize - 1] = state;
-		Self { options }
-	}
+	/// Raw, prefer [Self::set_point]
 	fn set_p(&mut self, point: &ChessPoint, state: CellOption) {
 		self.options[point.row as usize - 1][point.column as usize - 1] = state;
 	}
@@ -205,13 +211,26 @@ impl BoardOptions {
 	}
 	/// Sets point to [CellOption::Available].
 	/// Sets can finish to true if no cells are can_finish = false
-	pub fn add(&mut self, p: impl Into<ChessPoint>) {
+	pub fn make_available(&mut self, p: impl Into<ChessPoint>) {
 		let p = p.into();
 		self.options[p.row as usize - 1][p.column as usize - 1] =
 			self.targets_state().into_available_cell_option();
 	}
 	pub fn eliminate(&mut self, p: &ChessPoint) {
 		self.set_p(p, CellOption::Eliminated);
+	}
+
+	/// Panics on invalid point
+	pub fn add_recommended_move(&mut self, recommended_move: Move) {
+		self.validate_point_or_panic(&recommended_move.from);
+		self.validate_point_or_panic(&recommended_move.to);
+		self.recommended_moves.push_move_unchecked(recommended_move);
+	}
+	pub fn clear_recommended_moves(&mut self) {
+		self.recommended_moves.clear();
+	}
+	pub fn recommended_moves(&self) -> &Moves {
+		&self.recommended_moves
 	}
 
 	pub fn dimensions(&self) -> (u16, u16) {
@@ -287,6 +306,7 @@ impl BoardOptions {
 		self.options.len() as u16
 	}
 
+	/// Does a basic bounds check
 	pub fn validate_point(&self, p: &ChessPoint) -> bool {
 		let bounds_check =
 			1 <= p.row && p.row <= self.height() && 1 <= p.column && p.column <= self.width();
@@ -372,8 +392,16 @@ impl BoardOptions {
 		points
 	}
 
-	pub fn get_valid_adjacent_points(&self, start: ChessPoint, piece: &ChessPiece) -> Vec<ChessPoint> {
-		piece.get_unchecked_relative_points(start).into_iter().filter(|p| self.validate_point(p) && self.is_available(p)).collect()
+	pub fn get_valid_adjacent_points(
+		&self,
+		start: ChessPoint,
+		piece: &ChessPiece,
+	) -> Vec<ChessPoint> {
+		piece
+			.get_unchecked_relative_points(start)
+			.into_iter()
+			.filter(|p| self.validate_point(p) && self.is_available(p))
+			.collect()
 	}
 
 	pub fn get_description(&self) -> String {

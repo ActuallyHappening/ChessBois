@@ -17,7 +17,7 @@ pub struct VisualOpts {
 	#[control(bool)]
 	pub show_markers: bool,
 
-	/// Whether to show the visualisation lines at all [h]
+	/// Whether to show the visualisation lines at all
 	#[control(bool)]
 	pub show_visualisation: bool,
 

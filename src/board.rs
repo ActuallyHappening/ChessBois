@@ -63,7 +63,12 @@ pub struct SharedState {
 	pub piece: StandardPieces,
 
 	// visuals
+	/// Moves that are displayed on the board.
+	///
+	/// Recommended moves are under [Self::board_options::recommended_moves]
 	pub moves: Option<ColouredMoves>,
+	/// State holding the last clicked cell when within the recommended move state
+	pub last_clicked_recommended_move: Option<ChessPoint>,
 	pub visual_opts: squares::visualization::VisualOpts,
 	pub cell_colouring: squares::CellColouring,
 	pub cam_zoom: CameraZoom,
@@ -100,8 +105,14 @@ mod shared_state {
 
 	#[must_use = "Not using this skips invalidating state, use .invalidates(state) to fix"]
 	pub enum StateInvalidated {
+		/// Should reset ???
 		Invalidated,
+		/// Should reset and clear start in case start became invalid
 		InvalidatedAndClearStart,
+		/// Should do everything [Self::InvalidatedAndClearStart] does plus clearing recommended,
+		/// esspecially when dimensions change
+		InvalidateClearStartAndRecommended,
+		/// Nothing changed this frame
 		Valid,
 	}
 
@@ -173,12 +184,17 @@ mod shared_state {
 		pub fn invalidates(self, state: &mut SharedState) {
 			if matches!(
 				self,
-				StateInvalidated::Invalidated | StateInvalidated::InvalidatedAndClearStart
+				StateInvalidated::Invalidated
+					| StateInvalidated::InvalidatedAndClearStart
+					| StateInvalidated::InvalidateClearStartAndRecommended
 			) {
 				state.invalidate();
 			}
 			if let StateInvalidated::InvalidatedAndClearStart = self {
 				state.start = None;
+			}
+			if let StateInvalidated::InvalidateClearStartAndRecommended = self {
+				state.invalidate_recommended_moves();
 			}
 		}
 	}
@@ -215,7 +231,10 @@ fn setup(
 						info!("Loaded data: {:?}", data);
 						data.apply_to_state(&mut state);
 
-						info!("State now contains {} moves", state.moves.clone().unwrap().len());
+						info!(
+							"State now contains {} moves",
+							state.moves.clone().unwrap().len()
+						);
 					}
 					Err(err) => {
 						error!("Failed to load data: {:?}", err);

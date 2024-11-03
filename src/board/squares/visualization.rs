@@ -14,13 +14,39 @@ pub use viz_opts::VisualOpts;
 mod viz_colours;
 mod viz_opts;
 
+/// The lines from one cell to another to show the knights movements, or the
+/// moves that the knight should take
 #[derive(Component, Debug, Clone, Copy)]
-pub struct VisComponent {
-	from: ChessPoint,
-	to: ChessPoint,
+pub enum VisComponent {
+	Move {
+		from: ChessPoint,
+		to: ChessPoint,
 
-	colour: Color,
-	number: usize,
+		colour: Color,
+		number: usize,
+	},
+	RecommendedMove {
+		from: ChessPoint,
+		to: ChessPoint,
+
+		number: usize,
+	},
+}
+
+impl VisComponent {
+	fn from(&self) -> &ChessPoint {
+		match self {
+			VisComponent::Move { from, .. } => from,
+			VisComponent::RecommendedMove { from, .. } => from,
+		}
+	}
+
+	fn to(&self) -> &ChessPoint {
+		match self {
+			VisComponent::Move { to, .. } => to,
+			VisComponent::RecommendedMove { to, .. } => to,
+		}
+	}
 }
 
 static PREVIOUS_RENDER: Mutex<Option<OwnedVisState>> = Mutex::new(None);
@@ -38,15 +64,13 @@ impl SharedState {
 			despawn_visualization(&mut commands, visualization);
 
 			if state.visual_opts.show_visualisation {
-				if let Some(moves) = &state.moves {
-					spawn_visualization(
-						moves.clone(),
-						state.board_options.clone(),
-						&state.visual_opts,
-						&mut commands,
-						&mut mma,
-					);
-				}
+				spawn_visualization(
+					state.moves.clone(),
+					state.board_options.clone(),
+					&state.visual_opts,
+					&mut commands,
+					&mut mma,
+				);
 			}
 
 			*PREVIOUS_RENDER.lock().unwrap() = Some(OwnedVisState::clone_new(state));
@@ -78,21 +102,36 @@ mod vis_state {
 	}
 }
 
-/// Actually spawn entities of new solution
+/// Actually spawn entities of new solution every frame
 fn spawn_visualization(
-	moves: ColouredMoves,
+	moves: Option<ColouredMoves>,
 	options: BoardOptions,
 	viz_options: &VisualOpts,
 
 	commands: &mut Commands,
 	mma: &mut ResSpawning,
 ) {
-	for (i, (Move { from, to }, colour)) in moves.iter().enumerate() {
+	if let Some(moves) = moves {
+		for (i, (Move { from, to }, colour)) in moves.iter().enumerate() {
+			spawn_path_line(
+				VisComponent::Move {
+					from: *from,
+					to: *to,
+					colour: (*colour).into(),
+					number: i,
+				},
+				&options,
+				viz_options,
+				commands,
+				mma,
+			)
+		}
+	}
+	for (i, Move { from, to }) in options.recommended_moves().iter().enumerate() {
 		spawn_path_line(
-			VisComponent {
+			VisComponent::RecommendedMove {
 				from: *from,
 				to: *to,
-				colour: (*colour).into(),
 				number: i,
 			},
 			&options,
@@ -120,19 +159,25 @@ fn spawn_path_line(
 	commands: &mut Commands,
 	(meshs, mat, _ass): &mut ResSpawning,
 ) {
-	let VisComponent {
-		from,
-		to,
-		colour,
-		number,
-	} = vis;
+	// let VisComponent {
+	// 	from,
+	// 	to,
+	// 	colour,
+	// 	number,
+	// } = vis;
+	let from = *vis.from();
+	let to = *vis.to();
+
 	let start_pos = get_spacial_coord_2d(options, from);
 	let end_pos = get_spacial_coord_2d(options, to);
 	let start_vec = &Vec3::new(start_pos.x, VISUALIZATION_HEIGHT * 1.1, start_pos.y);
 	let _end_vec = Vec3::new(end_pos.x, VISUALIZATION_HEIGHT * 1.1, end_pos.y);
 
 	let center = (start_pos + end_pos) / 2.; // ✅
-	let length = (start_pos - end_pos).length(); // ✅
+	let mut length = (start_pos - end_pos).length(); // ✅
+	if matches!(vis, VisComponent::RecommendedMove { .. }) {
+		length *= 0.7;
+	}
 	let angle: f32 = -(start_pos.y - end_pos.y).atan2(start_pos.x - end_pos.x);
 
 	// assert_eq!(angle, TAU / 8., "Drawing from {from} [{from:?}] [{from_pos}] to {to} [{to:?}] [{to_pos}], Angle: {angle}, 𝚫y: {}, 𝚫x: {}", (to_pos.y - from_pos.y), (to_pos.x - from_pos.x));
@@ -153,11 +198,18 @@ fn spawn_path_line(
 		.into(),
 	);
 
-	let material = mat.add({
-		let mut mat: StandardMaterial = colour.into();
-		mat.depth_bias = number as f32;
-		mat
-	});
+	let material = match vis {
+		VisComponent::Move { colour, number, .. } => mat.add({
+			let mut mat: StandardMaterial = colour.into();
+			mat.depth_bias = number as f32;
+			mat
+		}),
+		VisComponent::RecommendedMove { number, .. } => mat.add({
+			let mut mat: StandardMaterial = Color::YELLOW.with_a(0.7).into();
+			mat.depth_bias = number as f32 + 10000.0;
+			mat
+		}),
+	};
 	commands.spawn((
 		PbrBundle {
 			mesh: mesh_thin_rectangle,
@@ -169,7 +221,7 @@ fn spawn_path_line(
 	));
 
 	// small dot at start
-	if viz_options.show_dots {
+	if viz_options.show_dots && matches!(vis, VisComponent::Move { .. }) {
 		let start_transform =
 			Transform::from_translation(*start_vec).with_rotation(Quat::from_rotation_y(angle));
 		commands
@@ -190,23 +242,25 @@ fn spawn_path_line(
 	}
 
 	// text
-	if viz_options.show_numbers {
-		let text = format!("{}", number);
-		let (mesh, offset) = get_text_mesh(text, CELL_SIZE / 3., Fonts::Light);
+	if let VisComponent::Move { number, .. } = vis {
+		if viz_options.show_numbers {
+			let text = format!("{}", number);
+			let (mesh, offset) = get_text_mesh(text, CELL_SIZE / 3., Fonts::Light);
 
-		commands
-			.spawn((
-				PbrBundle {
-					mesh: meshs.add(mesh),
-					transform: Transform::from_translation(*start_vec)
-						.translate(offset)
-						.translate(Vec3::X * CELL_SIZE / 4. + Vec3::Y * 1.)
-						.with_rotation(Quat::from_rotation_x(-TAU / 4.)),
-					material: mat.add(Color::RED.into()),
-					..default()
-				},
-				vis,
-			))
-			.name(format!("Number for {}", from));
+			commands
+				.spawn((
+					PbrBundle {
+						mesh: meshs.add(mesh),
+						transform: Transform::from_translation(*start_vec)
+							.translate(offset)
+							.translate(Vec3::X * CELL_SIZE / 4. + Vec3::Y * 1.)
+							.with_rotation(Quat::from_rotation_x(-TAU / 4.)),
+						material: mat.add(Color::RED.into()),
+						..default()
+					},
+					vis,
+				))
+				.name(format!("Number for {}", from));
+		}
 	}
 }

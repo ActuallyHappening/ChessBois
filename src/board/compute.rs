@@ -29,10 +29,17 @@ pub fn get_cached_mark(input: &OwnedComputeInput) -> Option<CellMark> {
 }
 
 impl SharedState {
-	/// Clears the displayed computation if part of State changed that affects computations
+	/// Clears stuff that should change when dimensions or other important factors change.
+	/// Does not invalidate the board options
 	pub fn invalidate(&mut self) -> &mut Self {
 		// warn!("Invalidating state");
 		self.moves = None;
+		// self.board_options.clear_recommended_moves();
+		self
+	}
+
+	pub fn invalidate_recommended_moves(&mut self) -> &mut Self {
+		self.board_options.clear_recommended_moves();
 		self
 	}
 

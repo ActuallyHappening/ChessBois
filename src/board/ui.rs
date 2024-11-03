@@ -29,7 +29,7 @@ pub fn left_ui(mut contexts: EguiContexts, state: ResMut<SharedState>) {
 
 				state.safety_cap.ui(ui);
 			});
-		
+
 		ui.collapsing("Cell Colouring", |ui| {
 			state.cell_colouring.ui(ui);
 		});
@@ -38,6 +38,12 @@ pub fn left_ui(mut contexts: EguiContexts, state: ResMut<SharedState>) {
 			.default_open(true)
 			.show(ui, |ui| {
 				state.board_options.ui(ui).invalidates(state);
+				if let Some(cell) = state.last_clicked_recommended_move {
+					ui.label(format!(
+						"Currently waiting for the second recommended move starting on cell: {:?}",
+						cell
+					));
+				}
 			});
 
 		ui.collapsing("Visualisation options", |ui| {
@@ -51,11 +57,19 @@ pub fn left_ui(mut contexts: EguiContexts, state: ResMut<SharedState>) {
 		});
 
 		ui.collapsing("About", |ui| {
-			ui.label("This project was created to advance the knowledge of humanity in the field of chess, \
+			ui.label(
+				"This project was created to advance the knowledge of humanity in the field of chess, \
 			to entertain its programmer, \
-			and to show that 100% Rust projects are possible and fun.");
-			ui.hyperlink_to("Link to source code", "https://github.com/ActuallyHappening/ChessBois");
-			ui.hyperlink_to("To download a desktop version", "https://github.com/ActuallyHappening/ChessBois/releases");
+			and to show that 100% Rust projects are possible and fun.",
+			);
+			ui.hyperlink_to(
+				"Link to source code",
+				"https://github.com/ActuallyHappening/ChessBois",
+			);
+			ui.hyperlink_to(
+				"To download a desktop version",
+				"https://github.com/ActuallyHappening/ChessBois/releases",
+			);
 		});
 	});
 }

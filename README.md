@@ -21,3 +21,6 @@ Clone local dep (at root of project): `git clone https://github.com/ActuallyHapp
 
 Then, `cargo r` / `cargo w` to run and reload the project respectively.
 `./web-dev.sh` to view in a web browser.
+
+<!-- // echo 'export PATH="/opt/homebrew/opt/llvm/bin:$PATH"' >> ~/.zshrc -->
+<!-- $env.path = $env.path | prepend '/opt/homebrew/opt/llvm/bin' -->

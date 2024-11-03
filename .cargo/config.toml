@@ -7,65 +7,73 @@ wo = "watch -q -c -w src/ -x 'r'"
 w = "watch -q -c -x 'r'"
 rr = "run --release --target x86_64-apple-darwin"
 
-# cargo +nightly -Z build-std bwindows
-
-# # [build]
-# # rustc-wrapper = "/opt/homebrew/bin/sccache"
-
-# Add the contents of this file to `config.toml` to enable "fast build" configuration. Please read the notes below.
-
-# NOTE: For maximum performance, build using a nightly compiler
-# If you are using rust stable, remove the "-Zshare-generics=y" below.
-
-[target.wasm32-unknown-unknown]
-rustflags = "--cfg=web_sys_unstable_apis"
-
-[target.x86_64-unknown-linux-gnu]
-# need to install clang first
-linker = "clang"
-rustflags = ["-Clink-arg=-fuse-ld=lld", "-Zshare-generics=y"]
-
-[target.x86_64-apple-darwin]
-rustflags = [
-    # "-C",
-    # "link-arg=-fuse-ld=/usr/local/opt/llvm/bin/ld64.lld",
-    # "-Zshare-generics=y",
-]
-
-[target.aarch64-apple-darwin]
-rustflags = [
-    "-C",
-    "link-arg=-fuse-ld=/opt/homebrew/opt/llvm/bin/ld64.lld",
-    # "-Zshare-generics=y",
-		# "-C",
-		# "target-cpu=apple-m2"
-]
-
-# [target.x86_64-pc-windows-msvc]
-# linker = "rust-lld.exe"
-# rustflags = ["-Zshare-generics=n"]
-
 # Optional: Uncommenting the following improves compile times, but reduces the amount of debug info to 'line number tables only'
 # In most cases the gains are negligible, but if you are on macos and have slow compile times you should see significant gains.
-[profile.dev]
-debug = 1
+# [profile.dev]
+# debug = 1
 
-# ## Setting up windows build env
-# [target.x86_64-pc-windows-msvc]
-# # linker = "/usr/local/bin/lld"
-# linker = "/opt/homebrew/opt/llvm/bin/ld64.lld"
+# Uses cranelift for debug builds!!
+[unstable]
+codegen-backend = true
+
+[profile.dev]
+# debug = 1
+codegen-backend = "cranelift"
+
+# # cargo +nightly -Z build-std bwindows
+
+# # # [build]
+# # # rustc-wrapper = "/opt/homebrew/bin/sccache"
+
+# # Add the contents of this file to `config.toml` to enable "fast build" configuration. Please read the notes below.
+
+# # NOTE: For maximum performance, build using a nightly compiler
+# # If you are using rust stable, remove the "-Zshare-generics=y" below.
+
+# [target.wasm32-unknown-unknown]
+# rustflags = "--cfg=web_sys_unstable_apis"
+
+# [target.x86_64-unknown-linux-gnu]
+# # need to install clang first
+# linker = "clang"
+# rustflags = ["-Clink-arg=-fuse-ld=lld", "-Zshare-generics=y"]
+
+# [target.x86_64-apple-darwin]
 # rustflags = [
-#   "-Lnative=/Users/calebyates/.xwin/crt/lib/x86_64",
-#   "-Lnative=/Users/calebyates/.xwin/sdk/lib/um/x86_64",
-#   "-Lnative=/Users/calebyates/.xwin/sdk/lib/ucrt/x86_64"
+#     # "-C",
+#     # "link-arg=-fuse-ld=/usr/local/opt/llvm/bin/ld64.lld",
+#     # "-Zshare-generics=y",
 # ]
 
-[target.x86_64-pc-windows-gnu]
-linker = "x86_64-w64-mingw32-gcc"
+# [target.aarch64-apple-darwin]
+# rustflags = [
+#     # "-C",
+#     # "link-arg=-fuse-ld=/opt/homebrew/opt/llvm/bin/ld64.lld",
+#     # "-Zshare-generics=y",
+# 		# "-C",
+# 		# "target-cpu=apple-m2"
+# ]
 
-# [target.'cfg(target_arch = "wasm32")']
-# rustflags = ["-C", "target-feature=+atomics,+bulk-memory"]
-# # rustflags = ["-C", "target-feature=+atomics,+bulk-memory,+mutable-globals"]
+# # [target.x86_64-pc-windows-msvc]
+# # linker = "rust-lld.exe"
+# # rustflags = ["-Zshare-generics=n"]
 
-# [unstable]
-# build-std = ["panic_abort", "std"]
+# # ## Setting up windows build env
+# # [target.x86_64-pc-windows-msvc]
+# # # linker = "/usr/local/bin/lld"
+# # linker = "/opt/homebrew/opt/llvm/bin/ld64.lld"
+# # rustflags = [
+# #   "-Lnative=/Users/calebyates/.xwin/crt/lib/x86_64",
+# #   "-Lnative=/Users/calebyates/.xwin/sdk/lib/um/x86_64",
+# #   "-Lnative=/Users/calebyates/.xwin/sdk/lib/ucrt/x86_64"
+# # ]
+
+# [target.x86_64-pc-windows-gnu]
+# linker = "x86_64-w64-mingw32-gcc"
+
+# # [target.'cfg(target_arch = "wasm32")']
+# # rustflags = ["-C", "target-feature=+atomics,+bulk-memory"]
+# # # rustflags = ["-C", "target-feature=+atomics,+bulk-memory,+mutable-globals"]
+
+# # [unstable]
+# # build-std = ["panic_abort", "std"]

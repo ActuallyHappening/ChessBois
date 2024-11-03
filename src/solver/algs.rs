@@ -1,4 +1,7 @@
-use crate::{solver::{pieces::ChessPiece, *}, board::Hotkeyable};
+use crate::{
+	board::Hotkeyable,
+	solver::{pieces::ChessPiece, *},
+};
 use bevy_egui_controls::ControlPanel;
 use strum::{Display, EnumIter, IntoStaticStr};
 
@@ -104,6 +107,9 @@ pub enum Algorithm {
 
 	#[strum(serialize = "Hamiltonian Cycle [c]")]
 	HamiltonianCycle,
+
+	#[strum(serialize = "Hamiltonian Cycle Brute Force [h]")]
+	HamiltonianBruteForce,
 }
 
 impl From<Algorithm> for KeyCode {
@@ -112,6 +118,7 @@ impl From<Algorithm> for KeyCode {
 			Algorithm::BruteForceWarnsford => KeyCode::F,
 			Algorithm::WarnsdorfBacktrack => KeyCode::W,
 			Algorithm::HamiltonianCycle => KeyCode::C,
+			Algorithm::HamiltonianBruteForce => KeyCode::H,
 		}
 	}
 }
@@ -120,21 +127,25 @@ impl Hotkeyable for Algorithm {}
 impl Algorithm {
 	pub fn get_description(&self) -> &'static str {
 		match self {
-			Algorithm::WarnsdorfBacktrack => "INCOMPLETE open knights tour.
+			Algorithm::WarnsdorfBacktrack => "INCOMPLETE open knights tour. Takes into account targets and recommended moves.
 This algorithm fully implemented Warnsdorf's rule, in that it tries all equal possibilities by backtracking. \
 			As such it is not complete, it won't find a solution to every board (but never finds a false solution). \
 			This algorithm works best with no targets.
 			",
-			Algorithm::BruteForceWarnsford => "COMPLETE open knights tour.
+			Algorithm::BruteForceWarnsford => "COMPLETE open knights tour. Takes into account targets and recommended moves.
 This algorithm is a Warnsdorf-biased brute force, which checks every possible path a knight can take (without repeating squares). \
 			It contains no heuristics for targets, and will finish after the first valid path is found. \
 			This algorithm works best with small boards and with a high saftey-states cap (preferrably not on web).
 			",
-			Algorithm::HamiltonianCycle => "UNTESTED closed knights tour, ignores targets.
+			Algorithm::HamiltonianCycle => "UNTESTED closed knights tour, IGNORES targets and recommended moves.
 This algorithm tries to find a hamiltonian cycle using a copy-pasted algorithm from the internet. \
 			It appears to work but I haven't audited the code. It will stop if it has surpassed the saftey states cap. \
 			This algorithm is not recommended for use, but is added because I am lazy.
 			",
+			Algorithm::HamiltonianBruteForce => "COMPLETE CLOSED knights tour. Takes into account recommended moves, targets don't make sense so are ignored. \
+This algorithm uses brute force and will check every possible knight path, with biasing towards Warnsdorf's rule and complete backtracking. \
+See the Brute Force algorithm's description for more.
+			"
 		}
 	}
 }
@@ -143,18 +154,25 @@ impl Algorithm {
 	pub fn tour_computation(&self, input: OwnedComputeInput) -> Computation {
 		match self {
 			// Algorithm::WarnsdorfUnreliable => warnsdorf_tour_repeatless(piece, options, start),
-			Algorithm::WarnsdorfBacktrack => brute_recursive_tour_repeatless(
+			Algorithm::WarnsdorfBacktrack => brute_recursive_repeatless(
 				&input.piece,
 				input.board_options,
 				input.start,
-				TourType::Weak,
+				TourType::WeakOpen,
 				input.safety_cap,
 			),
-			Algorithm::BruteForceWarnsford => brute_recursive_tour_repeatless(
+			Algorithm::BruteForceWarnsford => brute_recursive_repeatless(
 				&input.piece,
 				input.board_options,
 				input.start,
-				TourType::BruteForce,
+				TourType::BruteForceOpen,
+				input.safety_cap,
+			),
+			Algorithm::HamiltonianBruteForce => brute_recursive_repeatless(
+				&input.piece,
+				input.board_options,
+				input.start,
+				TourType::BruteForceClosed,
 				input.safety_cap,
 			),
 			// Algorithm::HamiltonianPath => hamiltonian_tour_repeatless(piece, options, start, false),
@@ -214,16 +232,17 @@ use std::collections::BTreeMap;
 /// Actual state of cell
 #[derive(Debug, Clone, PartialEq, Hash, Eq, EnumIs)]
 enum CellState {
-	NeverOccupied { can_finish_on: bool },
+	NeverOccupied { target_allows_finish_here: bool },
 	PreviouslyOccupied,
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
-struct Board {
+struct Board<'a> {
 	cell_states: BTreeMap<ChessPoint, CellState>,
+	recommended_moves: &'a Moves,
 }
 
-impl Board {
+impl<'a> Board<'a> {
 	fn get(&self, p: &ChessPoint) -> Option<CellState> {
 		self.cell_states.get(p).cloned()
 	}
@@ -231,8 +250,9 @@ impl Board {
 		self.cell_states.insert(p, state);
 	}
 
-	fn from_options(options: BoardOptions) -> Self {
+	fn from_options(options: &'a BoardOptions) -> Self {
 		Board {
+			recommended_moves: options.recommended_moves(),
 			cell_states: options
 				.get_available_points()
 				.into_iter()
@@ -240,7 +260,7 @@ impl Board {
 					(
 						p,
 						CellState::NeverOccupied {
-							can_finish_on: options.get(&p).unwrap().unwrap_available(),
+							target_allows_finish_here: options.get(&p).unwrap().unwrap_available(),
 						},
 					)
 				})
@@ -248,16 +268,63 @@ impl Board {
 		}
 	}
 
-	fn get_available_moves_from(&self, p: &ChessPoint, piece: &ChessPiece) -> Vec<ChessPoint> {
-		let mut moves = Vec::new();
+	fn get_unrecommended_moves_from(
+		&self,
+		p: &ChessPoint,
+		piece: &ChessPiece,
+		allow_start_location: &ChessPoint,
+	) -> std::collections::HashSet<ChessPoint> {
+		let mut moves = std::collections::HashSet::new();
 		for &(dx, dy) in piece.relative_moves() {
 			if let Some(p) = p.displace(&(dx, dy)) {
 				if self.get(&p).map(|s| s.is_never_occupied()) == Some(true) {
-					moves.push(p);
+					moves.insert(p);
+				} else if p == *allow_start_location {
+					moves.insert(p);
 				}
 			}
 		}
 		moves
+	}
+
+	/// Also takes into account recommended moves
+	fn get_available_moves_from(
+		&self,
+		p: &ChessPoint,
+		piece: &ChessPiece,
+		allow_start_location: &ChessPoint,
+	) -> Vec<ChessPoint> {
+		let mut moves = self.get_unrecommended_moves_from(p, piece, allow_start_location);
+		// take into account recommended moves
+		if !self.recommended_moves.is_empty() {
+			// relevant moves from start
+			let relevant_recommendations: std::collections::HashSet<ChessPoint> = self
+				.recommended_moves
+				.iter()
+				.filter_map(|recommended_move| {
+					if recommended_move.from == *p {
+						Some(recommended_move.to)
+					} else if recommended_move.to == *p {
+						Some(recommended_move.from)
+					} else {
+						None
+					}
+				})
+				.collect();
+			// if any valid moves are contained in the recommendations, we must prioritise them
+			if relevant_recommendations.len() != 0
+				&& moves.intersection(&relevant_recommendations).count() > 0
+			{
+				debug!(message = "Moves before", ?moves);
+				moves = moves
+					.into_iter()
+					.filter(|p| relevant_recommendations.contains(p))
+					.collect();
+				debug!(message = "Moves after", ?moves);
+			}
+		}
+
+		Vec::from_iter(moves)
 	}
 	fn get_degree(&self, p: &ChessPoint, piece: &ChessPiece) -> u16 {
 		let mut degree = 0;
@@ -279,6 +346,7 @@ fn try_move_recursive(
 	piece: &ChessPiece,
 	attempting_board: Board,
 	current_pos: ChessPoint,
+	starting_position: ChessPoint,
 	state_counter: &mut u128,
 	state_cap: u128,
 ) -> PartialComputation {
@@ -291,28 +359,49 @@ fn try_move_recursive(
 	if num_moves_required == 0 {
 		// base case
 		if let Some(state) = attempting_board.get(&current_pos) {
-			match state {
+			match (tour_type, state) {
+				(TourType::WeakOpen | TourType::BruteForceOpen, CellState::PreviouslyOccupied) => {
+					panic!("What, trying to end on point already moved to?")
+				}
 				// If you can finish on this square.
 				// If a target is present, this may be false.
 				// this check rejects solutions that don't end on a target.
-				CellState::NeverOccupied {
-					can_finish_on: true,
-				} => {
+				(
+					TourType::WeakOpen | TourType::BruteForceOpen,
+					CellState::NeverOccupied {
+						target_allows_finish_here: true,
+					},
+				) => {
 					return PartialComputation::Successful {
 						solution: vec![].into(),
 					};
 				}
-				CellState::NeverOccupied {
-					can_finish_on: false,
-				} => {
+				(
+					TourType::WeakOpen | TourType::BruteForceOpen,
+					CellState::NeverOccupied {
+						target_allows_finish_here: false,
+					},
+				) => {
 					return PartialComputation::Failed;
 				}
-				CellState::PreviouslyOccupied => panic!("What, trying to end on point already moved to?"),
+				(TourType::BruteForceClosed, CellState::NeverOccupied { .. }) => {
+					return PartialComputation::Failed; // For brute force closed we must end at the end
+				}
+				(TourType::BruteForceClosed, CellState::PreviouslyOccupied) => {
+					if current_pos == starting_position {
+						return PartialComputation::Successful {
+							solution: vec![].into(),
+						};
+					} else {
+						panic!("The only time we should end on a previously occupied square is when we are back at the start.");
+					}
+				}
 			}
 		}
 	}
 
-	let mut available_moves = attempting_board.get_available_moves_from(&current_pos, piece);
+	let mut available_moves =
+		attempting_board.get_available_moves_from(&current_pos, piece, &starting_position);
 	if available_moves.is_empty() {
 		// stuck, no where to move
 		return PartialComputation::Failed;
@@ -323,12 +412,12 @@ fn try_move_recursive(
 	available_moves.sort_by_cached_key(|p| attempting_board.get_degree(p, piece));
 
 	match tour_type {
-		TourType::Weak => {
+		TourType::WeakOpen => {
 			// IMPORTANT: Only considers moves with the lowest degree. To make brute force, remove this
 			let lowest_degree = attempting_board.get_degree(&available_moves[0], piece);
 			available_moves.retain(|p| attempting_board.get_degree(p, piece) == lowest_degree);
 		}
-		TourType::BruteForce => {}
+		TourType::BruteForceOpen | TourType::BruteForceClosed => {}
 	}
 
 	let mut moves = None;
@@ -346,6 +435,7 @@ fn try_move_recursive(
 			piece,
 			board_with_potential_move,
 			potential_next_move,
+			starting_position,
 			state_counter,
 			state_cap,
 		);
@@ -377,12 +467,15 @@ fn try_move_recursive(
 #[derive(Clone, Copy)]
 enum TourType {
 	/// Does not always find solution but is significantly faster
-	Weak,
+	/// Used by [Algorithm::WarnsdorfBacktrack]
+	WeakOpen,
 	/// Always finds solution but is significantly slower
-	BruteForce,
+	BruteForceOpen,
+	/// [Algorithm::HamiltonianBruteForce]
+	BruteForceClosed,
 }
 
-fn brute_recursive_tour_repeatless(
+fn brute_recursive_repeatless(
 	piece: &ChessPiece,
 	options: BoardOptions,
 	start: ChessPoint,
@@ -394,12 +487,13 @@ fn brute_recursive_tour_repeatless(
 
 	let mut state_counter = 0_u128;
 
-	let board = Board::from_options(options);
+	let board = Board::from_options(&options);
 	try_move_recursive(
 		tour_type,
 		num_moves_required,
 		piece,
 		board,
+		start,
 		start,
 		&mut state_counter,
 		safety_cap,

@@ -1,9 +1,21 @@
-use serde::{Serialize, Deserialize};
 use super::*;
-
+use serde::{Deserialize, Serialize};
 
 /// Represents move from one point to another
-#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Hash, Serialize, Deserialize, FromReflect, Reflect)]
+#[derive(
+	Copy,
+	Clone,
+	Debug,
+	Eq,
+	PartialEq,
+	PartialOrd,
+	Ord,
+	Hash,
+	Serialize,
+	Deserialize,
+	FromReflect,
+	Reflect,
+)]
 pub struct Move {
 	pub from: ChessPoint,
 	pub to: ChessPoint,
@@ -28,7 +40,20 @@ impl Move {
 }
 
 /// Wrapper around `Vec<Move>` with some extra functionality
-#[derive(Debug, Clone, Hash, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[derive(
+	Debug,
+	Clone,
+	Hash,
+	PartialEq,
+	Eq,
+	Default,
+	Serialize,
+	Deserialize,
+	FromReflect,
+	Reflect,
+	PartialOrd,
+	Ord,
+)]
 pub struct Moves {
 	moves: Vec<Move>,
 }
@@ -91,6 +116,11 @@ impl Moves {
 			ret.push(last.to);
 		}
 		ret
+	}
+
+	/// Doesn't do any bounds checks
+	pub fn push_move_unchecked(&mut self, m: Move) {
+		self.moves.push(m);
 	}
 }
 
